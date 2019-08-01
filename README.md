@@ -9,7 +9,7 @@ This is a C++ remake version of the original [Stair Speedtest](https://github.co
   
 ## Installation  
 ### Prebuilt release  
-Go to [Release Page](https://github.com/tindy2013/stairspeedtest-reborn).  
+Go to [Release Page](https://github.com/tindy2013/stairspeedtest-reborn/releases).  
 ### Build
 In general, you need the following build dependencies:  
 * curl
