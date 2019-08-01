@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e
 mkdir obj
 mkdir bin
+set -e
 gcc -I/usr/local/include -Wall -fexceptions -D_MACOS -DCURL_STATICLIB -g -std=c++11   -c logger.cpp -o obj/logger.o
 gcc -I/usr/local/include -Wall -fexceptions -D_MACOS -DCURL_STATICLIB -g -std=c++11   -c main.cpp -o obj/main.o
 gcc -I/usr/local/include -Wall -fexceptions -D_MACOS -DCURL_STATICLIB -g -std=c++11   -c misc.cpp -o obj/misc.o

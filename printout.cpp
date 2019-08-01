@@ -7,36 +7,6 @@ struct LOOKUP_ITEM
     string info;
 };
 
-LOOKUP_ITEM SPEEDTEST_ERRORS[] = {
-    {SPEEDTEST_ERROR_UNDEFINED, "Undefined error!\n"},
-    {SPEEDTEST_ERROR_WSAERR, "WSA Startup error!\n"},
-    {SPEEDTEST_ERROR_SOCKETERR, "Socket error!\n"},
-    {SPEEDTEST_ERROR_NORECOGLINK, "No valid link found. Please check your link.\n"},
-    {SPEEDTEST_ERROR_UNRECOGFILE, "This configure file is invalid. Please make sure this is an ss/ssr gui-config.json file.\n"},
-    {SPEEDTEST_ERROR_NOCONNECTION, "Cannot connect to server.\n"},
-    {SPEEDTEST_ERROR_INVALIDSUB, "Nothing returned from subscribe link. Please check your subscribe link.\n"},
-    {SPEEDTEST_ERROR_NONODES, "No nodes found. Please check your subscribe link.\n"},
-    {SPEEDTEST_ERROR_NORESOLVE, "Cannot resolve server address.\n"},
-    {SPEEDTEST_ERROR_RETEST, "Speedtest returned no speed. Retesting...\n"},
-    {SPEEDTEST_ERROR_NOSPEED, "Speedtest returned no speed 2 times. Skipping...\n"},
-    {-1, ""}
-};
-
-LOOKUP_ITEM SPEEDTEST_ERRORS_RPC[] = {
-    {SPEEDTEST_ERROR_UNDEFINED, "{\"info\":\"error\",\"reason\":\"undef\"}\n"},
-    {SPEEDTEST_ERROR_WSAERR, "{\"info\":\"error\",\"reason\":\"wsaerr\"}\n"},
-    {SPEEDTEST_ERROR_SOCKETERR, "{\"info\":\"error\",\"reason\":\"socketerr\"}\n"},
-    {SPEEDTEST_ERROR_NORECOGLINK, "{\"info\":\"error\",\"reason\":\"norecoglink\"}\n"},
-    {SPEEDTEST_ERROR_UNRECOGFILE, "{\"info\":\"error\",\"reason\":\"unrecogfile\"}\n"},
-    {SPEEDTEST_ERROR_NOCONNECTION, "{\"info\":\"error\",\"reason\":\"noconnection\",\"id\":?id?}\n"},
-    {SPEEDTEST_ERROR_INVALIDSUB, "{\"info\":\"error\",\"reason\":\"invalidsub\"}\n"},
-    {SPEEDTEST_ERROR_NONODES, "{\"info\":\"error\",\"reason\":\"nonodes\"}\n"},
-    {SPEEDTEST_ERROR_NORESOLVE, "{\"info\":\"error\",\"reason\":\"noresolve\",\"id\":?id?}\n"},
-    {SPEEDTEST_ERROR_RETEST, "{\"info\":\"error\",\"reason\":\"retest\",\"id\":?id?}\n"},
-    {SPEEDTEST_ERROR_NOSPEED, "{\"info\":\"error\",\"reason\":\"nospeed\",\"id\":?id?}\n"},
-    {-1, ""}
-};
-
 LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_EOF, "\nSpeedtest done. Press any key to exit..."},
     {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest!\nWhich stair do you want to test today? (Supports single ss/ssd/ssr/v2ray link and their subscribe links)\nLink: "},
@@ -56,6 +26,17 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_FETCHSUB, "Downloading subscription data...\n"},
     {SPEEDTEST_MESSAGE_PARSING, "Parsing configuration file...\n"},
     {SPEEDTEST_MESSAGE_BEGIN, "Speedtest will now begin.\n"},
+    {SPEEDTEST_ERROR_UNDEFINED, "Undefined error!\n"},
+    {SPEEDTEST_ERROR_WSAERR, "WSA Startup error!\n"},
+    {SPEEDTEST_ERROR_SOCKETERR, "Socket error!\n"},
+    {SPEEDTEST_ERROR_NORECOGLINK, "No valid link found. Please check your link.\n"},
+    {SPEEDTEST_ERROR_UNRECOGFILE, "This configure file is invalid. Please make sure this is an ss/ssr gui-config.json file.\n"},
+    {SPEEDTEST_ERROR_NOCONNECTION, "Cannot connect to server.\n"},
+    {SPEEDTEST_ERROR_INVALIDSUB, "Nothing returned from subscribe link. Please check your subscribe link.\n"},
+    {SPEEDTEST_ERROR_NONODES, "No nodes found. Please check your subscribe link.\n"},
+    {SPEEDTEST_ERROR_NORESOLVE, "Cannot resolve server address.\n"},
+    {SPEEDTEST_ERROR_RETEST, "Speedtest returned no speed. Retesting...\n"},
+    {SPEEDTEST_ERROR_NOSPEED, "Speedtest returned no speed 2 times. Skipping...\n"},
     {-1, ""}
 };
 
@@ -80,6 +61,17 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {SPEEDTEST_MESSAGE_PARSING, "{\"info\":\"parsing\"}\n"},
     {SPEEDTEST_MESSAGE_BEGIN, "{\"info\":\"begintest\"}\n"},
     {SPEEDTEST_MESSAGE_PICDATA, "{\"info\":\"picdata\",\"data\":\"?data?\"}\n"},
+    {SPEEDTEST_ERROR_UNDEFINED, "{\"info\":\"error\",\"reason\":\"undef\"}\n"},
+    {SPEEDTEST_ERROR_WSAERR, "{\"info\":\"error\",\"reason\":\"wsaerr\"}\n"},
+    {SPEEDTEST_ERROR_SOCKETERR, "{\"info\":\"error\",\"reason\":\"socketerr\"}\n"},
+    {SPEEDTEST_ERROR_NORECOGLINK, "{\"info\":\"error\",\"reason\":\"norecoglink\"}\n"},
+    {SPEEDTEST_ERROR_UNRECOGFILE, "{\"info\":\"error\",\"reason\":\"unrecogfile\"}\n"},
+    {SPEEDTEST_ERROR_NOCONNECTION, "{\"info\":\"error\",\"reason\":\"noconnection\",\"id\":?id?}\n"},
+    {SPEEDTEST_ERROR_INVALIDSUB, "{\"info\":\"error\",\"reason\":\"invalidsub\"}\n"},
+    {SPEEDTEST_ERROR_NONODES, "{\"info\":\"error\",\"reason\":\"nonodes\"}\n"},
+    {SPEEDTEST_ERROR_NORESOLVE, "{\"info\":\"error\",\"reason\":\"noresolve\",\"id\":?id?}\n"},
+    {SPEEDTEST_ERROR_RETEST, "{\"info\":\"error\",\"reason\":\"retest\",\"id\":?id?}\n"},
+    {SPEEDTEST_ERROR_NOSPEED, "{\"info\":\"error\",\"reason\":\"nospeed\",\"id\":?id?}\n"},
     {-1, ""}
 };
 
@@ -97,22 +89,18 @@ string lookup(int index, LOOKUP_ITEM *items)
 void printmsg(int index,nodeInfo *node,bool rpcmode)
 {
     string printout;
-    if(index<50)
+    if(rpcmode)
     {
-        if(!rpcmode)
-            printout = lookup(index, SPEEDTEST_MESSAGES);
-        else
-            printout = lookup(index, SPEEDTEST_MESSAGES_RPC);
+        printout = lookup(index, SPEEDTEST_MESSAGES_RPC);
     } else {
-        if(!rpcmode)
-            printout = lookup(index, SPEEDTEST_ERRORS);
-        else
-            printout = lookup(index, SPEEDTEST_ERRORS_RPC);
+        printout = lookup(index, SPEEDTEST_MESSAGES);
     }
-    if(!printout.size())
+    if(printout.size() == 0)
+    {
         return;
-    printout = replace_all_distinct(printout, "?group?", node->group);
-    printout = replace_all_distinct(printout, "?remarks?", node->remarks);
+    }
+    printout = replace_all_distinct(printout, "?group?", trim(node->group));
+    printout = replace_all_distinct(printout, "?remarks?", trim(node->remarks));
     printout = replace_all_distinct(printout, "?id?", to_string(node->id));
     printout = replace_all_distinct(printout, "?avgping?", node->avgping);
     printout = replace_all_distinct(printout, "?pkloss?", node->pkloss);
@@ -122,6 +110,7 @@ void printmsg(int index,nodeInfo *node,bool rpcmode)
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
     cout<<printout;
+    cout.clear();
     cout.flush();
 }
 
@@ -129,20 +118,16 @@ void printmsg_with_dict(int index, bool rpcmode, vector<string> dict, vector<str
 {
     string printout;
     //map<string, string> dict;
-    if(index<50)
+    if(rpcmode)
     {
-        if(!rpcmode)
-            printout = lookup(index, SPEEDTEST_MESSAGES);
-        else
-            printout = lookup(index, SPEEDTEST_MESSAGES_RPC);
+        printout = lookup(index, SPEEDTEST_MESSAGES_RPC);
     } else {
-        if(!rpcmode)
-            printout = lookup(index, SPEEDTEST_ERRORS);
-        else
-            printout = lookup(index, SPEEDTEST_ERRORS_RPC);
+        printout = lookup(index, SPEEDTEST_MESSAGES);
     }
-    if(!printout.size())
+    if(printout.size() == 0)
+    {
         return;
+    }
     for(unsigned int i = 0; i < dict.size(); i++)
     {
         printout = replace_all_distinct(printout, dict[i], trans[i]);
@@ -150,6 +135,7 @@ void printmsg_with_dict(int index, bool rpcmode, vector<string> dict, vector<str
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
     cout<<printout;
+    cout.clear();
     cout.flush();
 }
 

@@ -13,6 +13,6 @@ gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c socket.cpp -o obj/so
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c speedtestutil.cpp -o obj/speedtestutil.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c tcping.cpp -o obj/tcping.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c webget.cpp -o obj/webget.o
-g++ -g -o stairspeedtest obj/logger.o obj/main.o obj/misc.o obj/multithread-test.o obj/printout.o obj/processes.o obj/renderer.o obj/socket.o obj/speedtestutil.o obj/tcping.o obj/webget.o -lcurl -lPNGwriter -lpng16 -lfreetype -lz -lssl -lcrypto -ldl -lpthread -lyaml-cpp
+g++ -g -o stairspeedtest obj/logger.o obj/main.o obj/misc.o obj/multithread-test.o obj/printout.o obj/processes.o obj/renderer.o obj/socket.o obj/speedtestutil.o obj/tcping.o obj/webget.o -lcurl -lPNGwriter -lpng16 -lfreetype -lz -lssl -lcrypto -ldl -lpthread -lyaml-cpp -s
 chmod +x stairspeedtest
 
