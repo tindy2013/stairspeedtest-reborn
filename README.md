@@ -65,6 +65,6 @@ Supported proxy types:
  |SS|Shadowsocks-libev|Shadowsocks \| ShadowsocksD \| Clash \| Surge (experimental) |
  |V2RAY|V2Ray-Core|V2RayN \| Quantumult \| Clash
 ## Known Bugs
-You tell me?
+* There is a multi-thread exit problem when running on MacOS, the total file download testing time will exceed 10s.
 ## TODO
 * Web GUI support on all platform

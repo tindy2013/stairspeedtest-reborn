@@ -76,7 +76,7 @@ void StringToWstring(wstring& szDst, string str)
 }
 #endif // _WIN32
 
-string regreplace(string src, string match, string rep)
+string regReplace(string src, string match, string rep)
 {
     string result = "";
     regex reg(match);
@@ -84,7 +84,7 @@ string regreplace(string src, string match, string rep)
     return result;
 }
 
-int regmatch(string src, string match)
+int regMatch(string src, string match)
 {
     regex reg(match);
     return regex_match(src, reg);
@@ -326,7 +326,7 @@ string urlsafe_base64_decode(string encoded_string)
     return base64_decode(urlsafe_base64_reverse(encoded_string));
 }
 
-bool strfind(string str,string target)
+bool strFind(string str,string target)
 {
     return str.find(target) != str.npos;
 }
@@ -339,8 +339,23 @@ string grabContent(string raw)
     content=split(raw,"\r\n\r\n");
     for(unsigned int i=1;i<content.size();i++) strTmp+=content[i];
     */
-    return regreplace(raw.substr(raw.find("\r\n\r\n") + 4), "^\\d*?\\r\\n(.*)\\r\\n\\d", "$1");
+    return regReplace(raw.substr(raw.find("\r\n\r\n") + 4), "^\\d*?\\r\\n(.*)\\r\\n\\d", "$1");
     //return raw;
+}
+
+string trim(const string& str)
+{
+    string::size_type pos = str.find_first_not_of(' ');
+    if (pos == string::npos)
+    {
+        return str;
+    }
+    string::size_type pos2 = str.find_last_not_of(' ');
+    if (pos2 != string::npos)
+    {
+        return str.substr(pos, pos2 - pos + 1);
+    }
+    return str.substr(pos);
 }
 
 bool fileExist(string path)

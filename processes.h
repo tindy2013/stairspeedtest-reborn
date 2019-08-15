@@ -16,14 +16,14 @@
 
 using namespace std;
 
-int ChkProgram(string command);
+int chkProgram(string command);
 #ifdef _WIN32
-bool RunProgram(string command, string runpath, bool wait, HANDLE *hProc);
-void KillByHandle(HANDLE hProc);
+bool runProgram(string command, string runpath, bool wait, HANDLE *hProc);
+void killByHandle(HANDLE hProc);
 #else
-bool RunProgram(string command,string runpath,bool wait);
+bool runProgram(string command,string runpath,bool wait);
 #endif // _WIN32
-bool KillProgram(string program);
+bool killProgram(string program);
 /*
 class Runner
 {

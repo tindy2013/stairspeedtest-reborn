@@ -39,12 +39,15 @@
 #define SPEEDTEST_MESSAGE_PARSING 18
 #define SPEEDTEST_MESSAGE_FOUNDUPD 19
 #define SPEEDTEST_MESSAGE_PICDATA 20
+#define SPEEDTEST_MESSAGE_STARTGPING 21
+#define SPEEDTEST_MESSAGE_GOTGPING 22
+#define SPEEDTEST_MESSAGE_FOUNDSOCKS 23
 #define SPEEDTEST_MESSAGE_EOF 49
 
 using namespace std;
 
-void printmsg(int index, nodeInfo *node, bool rpcmode);
-void printmsg_with_dict(int index, bool rpcmode, vector<string> dict, vector<string> trans);
-int write2file(string path, string content, bool overwrite);
+void printMsg(int index, nodeInfo *node, bool rpcmode);
+void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<string> trans);
+int writeToFile(string path, string content, bool overwrite);
 
 #endif // PRINTOUT_H_INCLUDED

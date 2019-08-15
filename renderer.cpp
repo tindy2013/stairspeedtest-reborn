@@ -62,13 +62,13 @@ void useNewPalette()
 bool comparer(nodeInfo &a, nodeInfo &b)
 {
     if(export_sort_method_render == "speed")
-        return getSpeed(a.avgspeed) < getSpeed(b.avgspeed);
+        return getSpeed(a.avgSpeed) < getSpeed(b.avgSpeed);
     else if(export_sort_method_render == "rspeed")
-        return getSpeed(a.avgspeed) > getSpeed(b.avgspeed);
+        return getSpeed(a.avgSpeed) > getSpeed(b.avgSpeed);
     else if(export_sort_method_render == "ping")
-        return stof(a.avgping) < stof(b.avgping);
+        return stof(a.avgPing) < stof(b.avgPing);
     else if(export_sort_method_render == "rping")
-        return stof(a.avgping) > stof(b.avgping);
+        return stof(a.avgPing) > stof(b.avgPing);
     else
         return 0;
 }
@@ -80,7 +80,7 @@ void getColor(color lc, color rc, float level, color *finalcolor)
     finalcolor->blue = (int)((float)lc.blue * (1.0 - level) + (float)rc.blue * level);
 }
 
-color array_to_color(int colors[3])
+color arrayToColor(int colors[3])
 {
     color retcolor;
     retcolor.red = colors[0];
@@ -96,11 +96,11 @@ void getSpeedColor(string speed, color *finalcolor)
     {
         if(speedval >= bounds[i] && speedval <= bounds[i + 1])
         {
-            getColor(array_to_color(colorgroup[i]), array_to_color(colorgroup[i + 1]), ((float)speedval - (float)bounds[i]) / ((float)bounds[i + 1] - (float)bounds[i]), finalcolor);
+            getColor(arrayToColor(colorgroup[i]), arrayToColor(colorgroup[i + 1]), ((float)speedval - (float)bounds[i]) / ((float)bounds[i + 1] - (float)bounds[i]), finalcolor);
             return;
         }
     }
-    getColor(array_to_color(colorgroup[color_count - 1]), array_to_color(colorgroup[color_count - 1]), 1, finalcolor);
+    getColor(arrayToColor(colorgroup[color_count - 1]), arrayToColor(colorgroup[color_count - 1]), 1, finalcolor);
     return;
 }
 
@@ -124,7 +124,7 @@ int getTextLength(string str)
 
 #ifndef _FAST_RENDER
 
-string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method)
+string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, string export_sort_method)
 {
     string pngname = replace_all_distinct(resultpath, ".log", ".png");
     nodeInfo node;
@@ -152,50 +152,51 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
     //add title line into the list
     node.group = "Group";
     node.remarks = "Remarks";
-    node.pkloss = "Pk.Loss";
-    node.avgping = "TCP Ping";
-    //node.siteping = "Bing Ping";
-    node.avgspeed = "Avg.Speed";
-    node.maxspeed = "Max.Speed";
+    node.pkLoss = "Pk.Loss";
+    node.avgPing = "TCP Ping";
+    node.sitePing = "Google Ping";
+    node.avgSpeed = "Avg.Speed";
+    node.maxSpeed = "Max.Speed";
     nodes.insert(nodes.begin(), node);
 
     //calculate the width of all columns
-    int group_width = 0, remarks_width = 0, pkloss_width = 0, avgping_width = 0, avgspeed_width = 0, /* siteping_width = 0, */maxspeed_width = 0, onlines = 0, final_width = 0;
-    int group_widths[node_count], remarks_widths[node_count], pkloss_widths[node_count], avgping_widths[node_count], avgspeed_widths[node_count], maxspeed_widths[node_count];
+    int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0,  sitePing_width = 0, maxSpeed_width = 0, onlines = 0, final_width = 0;
+    int group_widths[node_count], remarks_widths[node_count], pkLoss_widths[node_count], avgPing_widths[node_count], avgSpeed_widths[node_count], sitePing_widths[node_count], maxSpeed_widths[node_count];
     long long total_traffic = 0;
     for(int i = 0; i <= node_count; i++)
     {
         //store them all into arrays first
         group_widths[i] = getTextWidth(font, fontsize, nodes[i].group);
         remarks_widths[i] = getTextWidth(font, fontsize, nodes[i].remarks);
-        pkloss_widths[i] = getTextWidth(font, fontsize, nodes[i].pkloss);
-        avgping_widths[i] = getTextWidth(font, fontsize, nodes[i].avgping);
-        avgspeed_widths[i] = getTextWidth(font, fontsize, nodes[i].avgspeed);
+        pkLoss_widths[i] = getTextWidth(font, fontsize, nodes[i].pkLoss);
+        avgPing_widths[i] = getTextWidth(font, fontsize, nodes[i].avgPing);
+        avgSpeed_widths[i] = getTextWidth(font, fontsize, nodes[i].avgSpeed);
+        //sitePing_widths[i] = getTextWidth(font, fontsize, nodes[i].sitePing);
 
         group_width = max(group_widths[i] + center_align_offset, group_width);
         remarks_width = max(remarks_widths[i] + center_align_offset, remarks_width);
-        pkloss_width = max(pkloss_widths[i] + center_align_offset, pkloss_width);
-        avgping_width = max(avgping_widths[i] + center_align_offset, avgping_width);
-        //siteping_width = max(getTextWidth(font, fontsize, nodes[i].siteping) + center_align_offset, siteping_width);
-        avgspeed_width = max(avgspeed_widths[i] + center_align_offset, avgspeed_width);
-        if(export_with_maxspeed)
+        pkLoss_width = max(pkLoss_widths[i] + center_align_offset, pkLoss_width);
+        avgPing_width = max(avgPing_widths[i] + center_align_offset, avgPing_width);
+        //sitePing_width = max(sitePing_widths[i] + center_align_offset, sitePing_width);
+        avgSpeed_width = max(avgSpeed_widths[i] + center_align_offset, avgSpeed_width);
+        if(export_with_maxSpeed)
         {
-            maxspeed_widths[i] = getTextWidth(font, fontsize, nodes[i].maxspeed);
-            maxspeed_width = max(maxspeed_widths[i] + center_align_offset, maxspeed_width);
+            maxSpeed_widths[i] = getTextWidth(font, fontsize, nodes[i].maxSpeed);
+            maxSpeed_width = max(maxSpeed_widths[i] + center_align_offset, maxSpeed_width);
         }
-        total_traffic += nodes[i].total_recv_bytes;
+        total_traffic += nodes[i].totalRecvBytes;
         if(nodes[i].online)
             onlines++;
     }
-    //int width_all[8] =  {0, group_width, remarks_width, pkloss_width, avgping_width, siteping_width, avgspeed_width, maxspeed_width}; //put them into an array for reading
-    int width_all[7] =  {0, group_width, remarks_width, pkloss_width, avgping_width, avgspeed_width, maxspeed_width}; //put them into an array for reading
-    total_width = group_width + remarks_width + pkloss_width + avgping_width + /* siteping_width + */avgspeed_width;
-    if(export_with_maxspeed)
-        total_width += maxspeed_width;
+    //int width_all[8] =  {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
+    int width_all[7] =  {0, group_width, remarks_width, pkLoss_width, avgPing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
+    total_width = group_width + remarks_width + pkLoss_width + avgPing_width + sitePing_width + avgSpeed_width;
+    if(export_with_maxSpeed)
+        total_width += maxSpeed_width;
 
     //generating information
-    string gentime = "Generated at "+getTime(3);
-    string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+to_string(onlines)+"/"+to_string(node_count)+"]";
+    string gentime = "Generated at " + getTime(3);
+    string traffic = "Traffic used : " + speedCalc((double)total_traffic) + ". Working Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
     string about = "By Stair Speedtest Reborn " VERSION ".";
 
     final_width = max(getTextWidth(font, fontsize, gentime) + center_align_offset, total_width);
@@ -240,34 +241,34 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //packet loss
-        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(pkloss_widths[i], pkloss_width), this_y_offset, 0.0, nodes[i].pkloss, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(pkLoss_widths[i], pkLoss_width), this_y_offset, 0.0, nodes[i].pkLoss, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //average ping
-        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgping_widths[i], avgping_width), this_y_offset, 0.0, nodes[i].avgping, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgPing_widths[i], avgPing_width), this_y_offset, 0.0, nodes[i].avgPing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         /*
         //site ping, unused
-        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].siteping, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(sitePing_widths[i], sitePing_width), this_y_offset, 0.0, nodes[i].sitePing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         */
         //draw color background
-        if(i>0)
+        if(i > 0)
         {
-            getSpeedColor(nodes[i].avgspeed, &bg_color);
+            getSpeedColor(nodes[i].avgSpeed, &bg_color);
             png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1]-1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
         }
         //average speed
-        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgspeed_widths[i], avgspeed_width), this_y_offset, 0.0, nodes[i].avgspeed, text_red, text_green, text_blue);
-        if(export_with_maxspeed) //see if we want to draw max speed
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
+        if(export_with_maxSpeed) //see if we want to draw max speed
         {
             j++;
             line_offset += width_all[j];
@@ -276,11 +277,11 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
             //draw color background
             if(i>0)
             {
-                getSpeedColor(nodes[i].maxspeed, &bg_color);
+                getSpeedColor(nodes[i].maxSpeed, &bg_color);
                 png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
             }
             //max speed
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxspeed_widths[i], maxspeed_width), this_y_offset, 0.0, nodes[i].maxspeed, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
         }
         line_index++; //one line completed,  moving up
         png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
@@ -299,7 +300,7 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
 
 #else
 
-string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method)
+string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, string export_sort_method)
 {
     string pngname = replace_all_distinct(resultpath, ".log", ".png");
     nodeInfo node;
@@ -323,16 +324,16 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
     //add title line into the list
     node.group = "Group";
     node.remarks = "Remarks";
-    node.pkloss = "Pk.Loss";
-    node.avgping = "TCP Ping";
-    //node.siteping = "Bing Ping";
-    node.avgspeed = "Avg.Speed";
-    node.maxspeed = "Max.Speed";
+    node.pkLoss = "Pk.Loss";
+    node.avgPing = "TCP Ping";
+    //node.sitePing = "Bing Ping";
+    node.avgSpeed = "Avg.Speed";
+    node.maxSpeed = "Max.Speed";
     nodes.insert(nodes.begin(), node);
 
     //calculate the width of all columns
-    int group_width = 0, remarks_width = 0, pkloss_width = 0, avgping_width = 0, avgspeed_width = 0, /* siteping_width = 0, */maxspeed_width = 0, onlines = 0, final_width = 0;
-    string longest_group, longest_remarks, longest_pkloss, longest_avgping, longest_avgspeed, /*longest_siteping,*/longest_maxspeed;
+    int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0, /* sitePing_width = 0, */maxSpeed_width = 0, onlines = 0, final_width = 0;
+    string longest_group, longest_remarks, longest_pkLoss, longest_avgPing, longest_avgSpeed, /*longest_sitePing,*/longest_maxSpeed;
     long long total_traffic = 0;
     for(int i = 0; i <= node_count; i++)
     {
@@ -341,16 +342,16 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
             longest_group = nodes[i].group;
         if(getTextLength(nodes[i].remarks) > getTextLength(longest_remarks))
             longest_remarks = nodes[i].remarks;
-        if(getTextLength(nodes[i].pkloss) > getTextLength(longest_pkloss))
-            longest_pkloss = nodes[i].pkloss;
-        if(getTextLength(nodes[i].avgping) > getTextLength(longest_avgping))
-            longest_avgping = nodes[i].avgping;
-        if(getTextLength(nodes[i].avgspeed) > getTextLength(longest_avgspeed))
-            longest_avgspeed = nodes[i].avgspeed;
-        if(export_with_maxspeed)
+        if(getTextLength(nodes[i].pkLoss) > getTextLength(longest_pkLoss))
+            longest_pkLoss = nodes[i].pkLoss;
+        if(getTextLength(nodes[i].avgPing) > getTextLength(longest_avgPing))
+            longest_avgPing = nodes[i].avgPing;
+        if(getTextLength(nodes[i].avgSpeed) > getTextLength(longest_avgSpeed))
+            longest_avgSpeed = nodes[i].avgSpeed;
+        if(export_with_maxSpeed)
         {
-            if(getTextLength(nodes[i].maxspeed) > getTextLength(longest_maxspeed))
-                longest_maxspeed = nodes[i].maxspeed;
+            if(getTextLength(nodes[i].maxSpeed) > getTextLength(longest_maxSpeed))
+                longest_maxSpeed = nodes[i].maxSpeed;
         }
         total_traffic += nodes[i].total_recv_bytes;
         if(nodes[i].online)
@@ -359,17 +360,17 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
     //store them all into arrays first
     group_width = getTextWidth(font, fontsize, longest_group) + center_align_offset;
     remarks_width = getTextWidth(font, fontsize, longest_remarks) + center_align_offset;
-    pkloss_width = getTextWidth(font, fontsize, longest_pkloss) + center_align_offset;
-    avgping_width = getTextWidth(font, fontsize, longest_avgping) + center_align_offset;
-    avgspeed_width = getTextWidth(font, fontsize, longest_avgspeed) + center_align_offset;
-    if(export_with_maxspeed)
-        maxspeed_width = getTextWidth(font, fontsize, longest_maxspeed) + center_align_offset;
+    pkLoss_width = getTextWidth(font, fontsize, longest_pkLoss) + center_align_offset;
+    avgPing_width = getTextWidth(font, fontsize, longest_avgPing) + center_align_offset;
+    avgSpeed_width = getTextWidth(font, fontsize, longest_avgSpeed) + center_align_offset;
+    if(export_with_maxSpeed)
+        maxSpeed_width = getTextWidth(font, fontsize, longest_maxSpeed) + center_align_offset;
 
-    //int width_all[8] =  {0, group_width, remarks_width, pkloss_width, avgping_width, siteping_width, avgspeed_width, maxspeed_width}; //put them into an array for reading
-    int width_all[7] =  {0, group_width, remarks_width, pkloss_width, avgping_width, avgspeed_width, maxspeed_width}; //put them into an array for reading
-    total_width = group_width + remarks_width + pkloss_width + avgping_width + /* siteping_width + */avgspeed_width;
-    if(export_with_maxspeed)
-        total_width += maxspeed_width;
+    //int width_all[8] =  {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
+    int width_all[7] =  {0, group_width, remarks_width, pkLoss_width, avgPing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
+    total_width = group_width + remarks_width + pkLoss_width + avgPing_width + /* sitePing_width + */avgSpeed_width;
+    if(export_with_maxSpeed)
+        total_width += maxSpeed_width;
 
     //generating information
     string gentime = "Generated at "+getTime(3);
@@ -418,20 +419,20 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //packet loss
-        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].pkloss, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].pkLoss, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //average ping
-        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].avgping, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].avgPing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         /*
         //site ping, unused
-        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].siteping, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].sitePing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
@@ -440,12 +441,12 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
         //draw color background
         if(i>0)
         {
-            getSpeedColor(nodes[i].avgspeed, &bg_color);
+            getSpeedColor(nodes[i].avgSpeed, &bg_color);
             png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1]-1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
         }
         //average speed
-        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].avgspeed, text_red, text_green, text_blue);
-        if(export_with_maxspeed) //see if we want to draw max speed
+        plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
+        if(export_with_maxSpeed) //see if we want to draw max speed
         {
             j++;
             line_offset += width_all[j];
@@ -454,11 +455,11 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
             //draw color background
             if(i>0)
             {
-                getSpeedColor(nodes[i].maxspeed, &bg_color);
+                getSpeedColor(nodes[i].maxSpeed, &bg_color);
                 png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
             }
             //max speed
-            plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].maxspeed, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
         }
         line_index++; //one line completed,  moving up
         png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter

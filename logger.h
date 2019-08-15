@@ -16,18 +16,18 @@
 #define LOG_TYPE_ERROR 2
 #define LOG_TYPE_RAW 3
 
-extern string resultpath, logpath;
+extern string resultPath, logPath;
 
 using namespace std;
 
-int makedir(const char *path);
+int makeDir(const char *path);
 string getTime(int type);
-void resultinit(bool export_with_maxspeed);
-void loginit(bool rpcmode);
-void writeresult(nodeInfo *node, bool export_with_maxspeed);
-void writelog(int type, string content);
-void resulteof(string traffic, int worknodes, int totnodes);
-void logeof();
-void exportresult(string outpath, string utiljspath, string stylepath, bool export_with_maxspeed);
+void resultInit(bool export_with_maxspeed);
+void logInit(bool rpcmode);
+void writeResult(nodeInfo *node, bool export_with_maxspeed);
+void writeLog(int type, string content);
+void resultEOF(string traffic, int worknodes, int totnodes);
+void logEOF();
+void exportResult(string outpath, string utiljspath, string stylepath, bool export_with_maxspeed);
 
 #endif // LOGGER_H_INCLUDED

@@ -35,11 +35,11 @@ string httpGet(string host, string addr, string uri)
     sHost = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return string();
-    startconnect(sHost, addr, 80);
+    startConnect(sHost, addr, 80);
 
-    string content = "GET "+uri+" HTTP/1.1\r\n"
-                   "Host: "+host+"\r\n"
-                   "User-Agent: "+user_agent_str+"\r\n"
+    string content = "GET " + uri + " HTTP/1.1\r\n"
+                   "Host: " + host + "\r\n"
+                   "User-Agent: " + user_agent_str + "\r\n"
                    "Accept: */*\r\n\r\n";
 
     setTimeout(sHost, 1000);
@@ -53,7 +53,7 @@ string httpGet(string host, string addr, string uri)
     {
         ZeroMemory(bufRecv, BUF_SIZE);
         cur_len = Recv(sHost, bufRecv, BUF_SIZE, 0);
-        if(cur_len<0)
+        if(cur_len < 0)
         {
             if(errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN)
                 continue;
@@ -86,12 +86,12 @@ string httpsGet(string host, string addr, string uri)
         ERR_print_errors_fp(stdout);
         return string();
     }
-    if ((sHost = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if((sHost = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         cerr<<"socket error "<<errno<<endl;
         return string();
     }
-    if (startconnect(sHost, addr, 443) != 0)
+    if(startConnect(sHost, addr, 443) != 0)
     {
         cerr<<"Connect err "<<errno<<endl;
         return string();
@@ -105,9 +105,9 @@ string httpsGet(string host, string addr, string uri)
     else
     {
         //cerr<<"connected with "<<SSL_get_cipher(ssl)<<" encryption."<<endl;
-        string data = "GET "+uri+" HTTP/1.1\r\n"
-                    "Host: "+host+"\r\n"
-                    "User-Agent: "+user_agent_str+"\r\n"
+        string data = "GET " + uri + " HTTP/1.1\r\n"
+                    "Host: " + host + "\r\n"
+                    "User-Agent: " + user_agent_str + "\r\n"
                     "Accept: */*\r\n\r\n";
         cerr<<data<<endl;
         SSL_write(ssl, data.data(), data.size());
@@ -117,7 +117,7 @@ string httpsGet(string host, string addr, string uri)
         {
             ZeroMemory(tmpbuf, BUF_SIZE);
             len = SSL_read(ssl, tmpbuf, BUF_SIZE-1);
-            if(len<=0)
+            if(len <= 0)
                 break;
             recvdata += tmpbuf;
         }
@@ -170,11 +170,11 @@ string webGet(string url)
     */
 }
 
-curl_off_t getLoadPageTime(string url, long timeout, string proxy)
+double getLoadPageTime(string url, long timeout, string proxy)
 {
     CURL *curl_handle;
     CURLcode res;
-    curl_off_t time_total = 0;
+    double time_total = 0.0;
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle = curl_easy_init();
     curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
@@ -189,9 +189,9 @@ curl_off_t getLoadPageTime(string url, long timeout, string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
     res = curl_easy_perform(curl_handle);
     if(CURLE_OK == res) {
-        curl_off_t val;
-        res  =  curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME_T, &val);
-        if(val>0)
+        double val;
+        res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME, &val);
+        if(val > 0.0)
             time_total = val;
     }
     else
@@ -201,44 +201,35 @@ curl_off_t getLoadPageTime(string url, long timeout, string proxy)
     return time_total;
 }
 
-int website_ping(nodeInfo *node, string url, string local_addr, int local_port, string user, string pass)
+int websitePing(nodeInfo *node, string url, string local_addr, int local_port, string user, string pass)
 {
-    //find some time to complete this
-    /*
-    SOCKET sHost = 0;
-    sHost = socket(AF_INET, SOCK_STREAM, 0);
-    if(sHost = INVALID_SOCKET) return SPEEDTEST_ERROR_SOCKETERR;
-    if(connectSocks5(sHost, user, pass) == -1) return SPEEDTEST_ERROR_NOCONNECTION;
-    if(connectThruSocks(sHost, host) == -1) return SPEEDTEST_ERROR_NOCONNECTION;
-    */
-    float time = 0.0;
-    long long retval = 0;
-    string proxystr = "socks5://"+local_addr+":"+to_string(local_port);
-    int loop_times = 0, times_to_ping = 3, succeedcounter = 0, failcounter = 0;
-    while(loop_times<times_to_ping)
+    double time_total = 0.0, retval = 0.0;
+    string authstr = user != "" && pass != "" ? user + ":" + pass + "@" : "";
+    string proxystr = "socks5://" + authstr + local_addr + ":" + to_string(local_port);
+    int loop_times = 0, times_to_ping = 6, succeedcounter = 0, failcounter = 0;
+    while(loop_times < times_to_ping)
     {
-        retval = getLoadPageTime(url, 5L, proxystr);
-        if(retval>0)
+        retval = getLoadPageTime(url, 3L, proxystr);
+        if(retval > 0)
         {
             succeedcounter++;
-            time += retval/1000.0;
-            node->raw_site_ping[loop_times] = retval/1000.0;
+            time_total += retval * 1000.0;
+            node->rawSitePing[loop_times] = retval * 1000.0;
         }
         else
         {
             failcounter++;
-            node->raw_site_ping[loop_times] = 0;
+            node->rawSitePing[loop_times] = 0;
         }
         loop_times++;
         sleep(200);
     }
+
     if(succeedcounter)
     {
         char strtmp[16] = {};
-        snprintf(strtmp, sizeof(strtmp), "%0.2f", time/succeedcounter*1.0);
-        node->siteping = strtmp;
+        snprintf(strtmp, sizeof(strtmp), "%0.2f", time_total / succeedcounter * 1.0);
+        node->sitePing = strtmp;
     }
-    else
-        node->siteping = "0.00";
     return 0;
 }

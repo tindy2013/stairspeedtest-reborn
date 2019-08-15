@@ -18,9 +18,9 @@ int tcping(nodeInfo *node)
     port = node->port;
 
     char* addrstr = {};
-    if(!regmatch(host, "\\d+\\.\\d+\\.\\d+\\.\\d+") && !strfind(host,":"))
+    if(!regMatch(host, "\\d+\\.\\d+\\.\\d+\\.\\d+") && !strFind(host,":"))
     {
-        addrstr = hostname2ipv4(host, port);
+        addrstr = hostnameToIPv4(host, port);
         if(strlen(addrstr) == 0)
             return SPEEDTEST_ERROR_NORESOLVE;
         addr = addrstr;
@@ -40,13 +40,13 @@ int tcping(nodeInfo *node)
             succeedcounter++;
             auto duration = duration_cast<milliseconds>(end - start);
             int deltatime = duration.count();
-            node->raw_ping[loopcounter] = deltatime;
+            node->rawPing[loopcounter] = deltatime;
             totduration += deltatime;
         }
         else
         {
             failcounter++;
-            node->raw_ping[loopcounter] = 0;
+            node->rawPing[loopcounter] = 0;
         }
         loopcounter++;
         sleep(1000);
@@ -55,10 +55,10 @@ int tcping(nodeInfo *node)
     if(succeedcounter > 0)
         pingval = totduration * 1.0 / succeedcounter;
     char strtmp[16] = {};
-    float pkloss = failcounter * 100.0 / times_to_ping;
-    snprintf(strtmp, sizeof(strtmp), "%0.2f", pkloss);
-    node->pkloss = string(strtmp) + string("%");
+    float pkLoss = failcounter * 100.0 / times_to_ping;
+    snprintf(strtmp, sizeof(strtmp), "%0.2f", pkLoss);
+    node->pkLoss = string(strtmp) + string("%");
     snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
-    node->avgping = string(strtmp);
+    node->avgPing = string(strtmp);
     return SPEEDTEST_MESSAGE_GOTPING;
 }

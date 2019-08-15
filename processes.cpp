@@ -6,7 +6,7 @@
 FILE *pPipe;
 #endif // _WIN32
 
-int ChkProgram(string command)
+int chkProgram(string command)
 {
     /*
     char psBuffer[128];
@@ -31,7 +31,7 @@ int ChkProgram(string command)
 }
 
 #ifdef _WIN32
-bool RunProgram(string command,string runpath,bool wait,HANDLE *hProc)
+bool runProgram(string command,string runpath,bool wait,HANDLE *hProc)
 {
     //convert string to wstring first
     wstring wcommand, wrunpath;
@@ -71,13 +71,13 @@ bool RunProgram(string command,string runpath,bool wait,HANDLE *hProc)
     return retval;
 }
 
-void KillByHandle(HANDLE hProc)
+void killByHandle(HANDLE hProc)
 {
     TerminateProcess(hProc, 0);
     CloseHandle(hProc);
 }
 #else
-bool RunProgram(string command,string runpath,bool wait)
+bool runProgram(string command,string runpath,bool wait)
 {
     string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
     total_path += command + "&";
@@ -124,7 +124,7 @@ void runprogram(string command,string runpath,bool wait)
 }
 */
 
-bool KillProgram(string program)
+bool killProgram(string program)
 {
 #ifdef _WIN32
     //using an effective method

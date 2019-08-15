@@ -4,9 +4,9 @@
 using namespace std;
 
 string curtime, result_content;
-string resultpath, logpath;
+string resultPath, logPath;
 
-int makedir(const char *path)
+int makeDir(const char *path)
 {
 #ifdef _WIN32
     return mkdir(path);
@@ -38,32 +38,32 @@ string getTime(int type)
     return string(tmpbuf);
 }
 
-void loginit(bool rpcmode)
+void logInit(bool rpcmode)
 {
     curtime = getTime(1);
-    logpath = "logs" PATH_SLASH + curtime + ".log";
+    logPath = "logs" PATH_SLASH + curtime + ".log";
     string log_header = "Stair Speedtest started in ";
     if(rpcmode)
         log_header += "GUI mode.";
     else
         log_header += "CLI mode.";
-    makedir("logs");
-    writelog(LOG_TYPE_INFO,log_header);
+    makeDir("logs");
+    writeLog(LOG_TYPE_INFO,log_header);
 }
 
-void resultinit(bool export_with_maxspeed)
+void resultInit(bool export_with_maxspeed)
 {
-    resultpath = "results" PATH_SLASH + curtime + ".log";
-    makedir("results");
+    resultPath = "results" PATH_SLASH + curtime + ".log";
+    makeDir("results");
     result_content = "group,remarks,loss,ping,avgspeed";
     if(export_with_maxspeed)
         result_content += ",maxspeed";
     result_content += "\n";
     //result_content<<endl;
-    write2file(resultpath,result_content,true);
+    writeToFile(resultPath,result_content,true);
 }
 
-void writelog(int type,string content)
+void writeLog(int type,string content)
 {
     string timestr = "[" + getTime(2) + "]",typestr;
     switch(type)
@@ -79,78 +79,78 @@ void writelog(int type,string content)
         break;
     }
     content = timestr + typestr + content;
-    write2file(logpath,content,false);
+    writeToFile(logPath,content,false);
 }
 
-void writeresult(nodeInfo *node,bool export_with_maxspeed)
+void writeResult(nodeInfo *node,bool export_with_maxspeed)
 {
-    string content = node->group + "," + node->remarks + "," + node->pkloss + "," + node->avgping + "," + node->avgspeed;
+    string content = node->group + "," + node->remarks + "," + node->pkLoss + "," + node->avgPing + "," + node->avgSpeed;
     if(export_with_maxspeed)
-        content += "," + node->maxspeed;
+        content += "," + node->maxSpeed;
     result_content += content + "\n";
-    //write2file(resultpath,result_content.str(),true);
-    write2file(resultpath,content,false);
+    //write2file(resultPath,result_content.str(),true);
+    writeToFile(resultPath,content,false);
 }
 
-void logeof()
+void logEOF()
 {
-    writelog(LOG_TYPE_INFO,"Program terminated.");
-    write2file(logpath,"--EOF--",false);
+    writeLog(LOG_TYPE_INFO,"Program terminated.");
+    writeToFile(logPath,"--EOF--",false);
 }
 
-void resulteof(string traffic,int worknodes,int totnodes)
+void resultEOF(string traffic,int worknodes,int totnodes)
 {
     result_content += "Traffic used : " + traffic + ". Working Node(s) : [" + to_string(worknodes) + "/" + to_string(totnodes) + "]\n";
     result_content += "Generated at " + getTime(3) + "\n";
     result_content += "By Stair Speedtest " VERSION ".\n";
-    write2file(resultpath,result_content,true);
+    writeToFile(resultPath,result_content,true);
 }
 
-void exportresult(string outpath,string utiljspath,string stylepath,bool export_with_maxspeed)
+void exportResult(string outpath,string utiljspath,string stylepath,bool export_with_maxspeed)
 {
-    if(utiljspath=="")
+    if(utiljspath == "")
         return;
     string strInput;
     vector<string> params;
-    ifstream inputjs,inputstyle;
+    ifstream inputjs, inputstyle;
     ofstream outfile;
     stringstream result_content_stream;
     result_content_stream<<result_content;
-    inputjs.open(utiljspath,ios::in);
-    inputstyle.open(stylepath,ios::in);
-    outfile.open(outpath,ios::out);
+    inputjs.open(utiljspath, ios::in);
+    inputstyle.open(stylepath, ios::in);
+    outfile.open(outpath, ios::out);
     outfile<<"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><style type=\"text/css\">"<<endl;
-    while(getline(inputstyle,strInput))
+    while(getline(inputstyle, strInput))
     {
         outfile<<strInput<<endl;
     }
     inputstyle.close();
     outfile<<"</style><script language=\"javascript\">"<<endl;
-    while(getline(inputjs,strInput))
+    while(getline(inputjs, strInput))
     {
         outfile<<strInput<<endl;
     }
     inputjs.close();
     outfile<<"</script></head><body onload=\"loadevent()\"><table id=\"table\" rules=\"all\">";
-    while(getline(result_content_stream,strInput))
+    while(getline(result_content_stream, strInput))
     {
-        if(strInput=="")
+        if(strInput == "")
             continue;
-        if(strfind(strInput,"avgspeed"))
+        if(strFind(strInput, "avgspeed"))
             continue;
-        if(strfind(strInput,"%,"))
+        if(strFind(strInput, "%,"))
         {
-            params = split(strInput,",");
+            params = split(strInput, ",");
             outfile<<"<tr><td>"<<params[0]<<"</td><td>"<<params[1]<<"</td><td>"<<params[2]<<"</td><td>"<<params[3]<<"</td><td class=\"speed\">"<<params[4]<<"</td>";
             if(export_with_maxspeed)
                 outfile<<"<td class=\"speed\">"<<params[5]<<"</td>";
             outfile<<"</tr>";
         }
-        if(strfind(strInput,"Traffic used :"))
+        if(strFind(strInput, "Traffic used :"))
             outfile<<"<tr id=\"traffic\"><td>"<<strInput<<"</td></tr>";
-        if(strfind(strInput,"Generated at"))
+        if(strFind(strInput, "Generated at"))
             outfile<<"<tr id=\"gentime\"><td>"<<strInput<<"</td></tr>";
-        if(strfind(strInput,"By "))
+        if(strFind(strInput, "By "))
             outfile<<"<tr id=\"about\"><td>"<<strInput<<"</td></tr>";
     }
     outfile<<"</table></body></html>";

@@ -18,6 +18,6 @@ extern int colorgroup[MAX_COLOR_COUNT][3];
 extern int bounds[MAX_COLOR_COUNT];
 extern int color_count;
 
-string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method);
+string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method);
 
 #endif // RENDERER_H_INCLUDED

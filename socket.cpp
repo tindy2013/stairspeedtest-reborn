@@ -27,7 +27,7 @@ int def_timeout = 2000;
 #define SOCKS5_REP_EXPIRED      0x06    /* TTL expired */
 #define SOCKS5_REP_CNOTSUP      0x07    /* Command not supported */
 #define SOCKS5_REP_ANOTSUP      0x08    /* Address not supported */
-#define SOCKS5_REP_INVADDR      0x09    /* Inalid address */
+#define SOCKS5_REP_INVADDR      0x09    /* Invalid address */
 
 /* SOCKS5 authentication methods */
 #define SOCKS5_AUTH_REJECT      0xFF    /* No acceptable auth method */
@@ -153,8 +153,6 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     ul = 0;
     ioctlsocket(sockfd, FIONBIO, &ul); //设置为阻塞模式
 #else
-    //not using signal timeout
-
     struct sigaction act, oldact;
     act.sa_handler = connect_sigalarm;
     sigemptyset(&act.sa_mask);
@@ -202,7 +200,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     return ret;
 }
 
-int startconnect(SOCKET sHost, string addr, int port)
+int startConnect(SOCKET sHost, string addr, int port)
 {
     int retVal;
     SOCKADDR_IN servAddr; //服务器地址
@@ -226,7 +224,7 @@ int simpleSend(string addr, int port, string data)
     setTimeout(sHost, 1000);
     if(sHost == INVALID_SOCKET)
         return INVALID_SOCKET;
-    if(startconnect(sHost, addr, port) == SOCKET_ERROR)
+    if(startConnect(sHost, addr, port) == SOCKET_ERROR)
         return SOCKET_ERROR;
     unsigned int retVal = send_simple(sHost, data);
     if(retVal == data.size())
@@ -245,7 +243,7 @@ int simpleSend(string addr, int port, string data)
     }
 }
 
-char* hostname2ipv4(string host, int port)
+char* hostnameToIPv4(string host, int port)
 {
     //old function
     /*
@@ -285,7 +283,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
     char* ptr;
     ptr = buf;
     PUT_BYTE(ptr++, 5); //socks5
-    PUT_BYTE(ptr++, 2); //1 auth method
+    PUT_BYTE(ptr++, 2); //2 auth methods
     PUT_BYTE(ptr++, 0); //no auth
     PUT_BYTE(ptr++, 2); //user pass auth
     Send(sHost, buf, ptr-buf, 0);
@@ -311,7 +309,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
         break;
 
     case SOCKS5_AUTH_USERPASS:
-        //auth_result = socks5_do_auth_userpass(sHost);
+        auth_result = socks5_do_auth_userpass(sHost, username, password);
         break;
 
     default:
@@ -364,7 +362,7 @@ int connectThruSocks(SOCKET sHost, string host, string addr, int port)
     Send(sHost, buf, ptr - buf, 0);
     //ZeroMemory(bufRecv, BUF_SIZE);
     Recv(sHost, buf, 4, 0); // 接收服务器端的数据
-    if (buf[1] != SOCKS5_REP_SUCCEEDED)     // check reply code
+    if(buf[1] != SOCKS5_REP_SUCCEEDED)     // check reply code
     {
         cerr<<"socks5: got error response from SOCKS server"<<endl;
         return -1;

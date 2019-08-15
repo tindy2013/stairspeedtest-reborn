@@ -15,7 +15,7 @@ typedef lock_guard<mutex> guarded_mutex;
 long long received_bytes = 0;
 int launched = 0, still_running = 0, buffer_size = 4096;
 bool EXIT_FLAG = false;
-mutex received_mutex, thread_count_mutex, launched_mutex;
+mutex received_mutex, thread_count_mutex, launched_mutex, exit_flag_mutex;
 
 void launch_acc()
 {
@@ -51,6 +51,20 @@ int safe_read_launched()
     return retVal;
 }
 
+bool safe_read_exit_flag()
+{
+    bool retVal;
+    guarded_mutex guard(exit_flag_mutex);
+    retVal = EXIT_FLAG;
+    return retVal;
+}
+
+void safe_set_exit_flag()
+{
+    guarded_mutex guard(exit_flag_mutex);
+    EXIT_FLAG = true;
+}
+
 static inline void append_recv_bytes(int received)
 {
     guarded_mutex guard(received_mutex);
@@ -67,11 +81,13 @@ static inline void draw_progress(int progress, long long this_bytes)
         cerr<<"=";
     }
     if(progress < 20)
-    cerr<<">";
-    cerr<<"] "<<progress * 5<<"% "<<speedCalc(this_bytes)<<"\r";
+        cerr<<">";
+    else
+        cerr<<"]";
+    cerr<<" "<<progress * 5<<"% "<<speedCalc(this_bytes)<<"\r";
 }
 
-int _thread_download(string host, string uri, string localaddr, int localport)
+int _thread_download(string host, string uri, string localaddr, int localport, string username, string password)
 {
     launch_acc();
     running_acc();
@@ -84,9 +100,9 @@ int _thread_download(string host, string uri, string localaddr, int localport)
     if(INVALID_SOCKET == sHost)
         goto end;
     setTimeout(sHost, 3000);
-    if(startconnect(sHost, localaddr, localport) == SOCKET_ERROR)
+    if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
         goto end;
-    if(connectSocks5(sHost, "", "") == -1)
+    if(connectSocks5(sHost, username, password) == -1)
         goto end;
     if(connectThruSocks(sHost, host, "", 80) == -1)
         goto end;
@@ -118,7 +134,7 @@ int _thread_download(string host, string uri, string localaddr, int localport)
         //recv_len += cur_len;
         append_recv_bytes(cur_len);
         //if(recv_len >= MAX_FILE_SIZE) break;
-        if(EXIT_FLAG)
+        if(safe_read_exit_flag())
             break;
     }
 end:
@@ -127,11 +143,11 @@ end:
     return 0;
 }
 
-int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, int thread_count)
+int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count)
 {
     //prep up vars first
     string host, uri;
-    testfile = regreplace(testfile, "^(http|https)://", "");
+    testfile = regReplace(testfile, "^(http|https)://", "");
     host = testfile.substr(0, testfile.find("/"));
     uri = testfile.substr(testfile.find("/"));
     received_bytes = 0;
@@ -141,7 +157,7 @@ int perform_test(nodeInfo *node, string testfile, string localaddr, int localpor
     thread threads[thread_count];
     for(int i = 0; i != thread_count; i++)
     {
-        threads[i]=thread(_thread_download, host, uri, localaddr, localport);
+        threads[i]=thread(_thread_download, host, uri, localaddr, localport, username, password);
     }
     while(!safe_read_launched())
         sleep(20);
@@ -155,7 +171,7 @@ int perform_test(nodeInfo *node, string testfile, string localaddr, int localpor
         //cerr<<this_bytes<<" "<<last_bytes<<endl;
         sleep(5);//slow down to prevent some problem
         received_mutex.unlock();
-        node->raw_speed[i - 1] = this_bytes;
+        node->rawSpeed[i - 1] = this_bytes;
         max_speed = max(max_speed, this_bytes);
         running = safe_read_running();
         if(!running)
@@ -165,16 +181,16 @@ int perform_test(nodeInfo *node, string testfile, string localaddr, int localpor
     }
     cerr<<endl;
     received_mutex.lock();//lock it to prevent any further data writing
+    safe_set_exit_flag(); //terminate all threads right now
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     //cerr<<deltatime<<" "<<received_bytes<<endl;
     sleep(5);//slow down to prevent some problem
-    node->duration_ms = deltatime;
-    node->total_recv_bytes = received_bytes;
-    node->avgspeed = speedCalc(received_bytes * 1000.0 / deltatime);
-    node->maxspeed = speedCalc(max_speed);
-    EXIT_FLAG = true;
+    node->duration = deltatime;
+    node->totalRecvBytes = received_bytes;
+    node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
+    node->maxSpeed = speedCalc(max_speed);
     received_mutex.unlock();//unlock to make threads continue running
     for(int i = 0; i < thread_count; i++)
     {
