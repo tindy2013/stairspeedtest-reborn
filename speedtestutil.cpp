@@ -149,27 +149,36 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     string remarks, group, server, port, method, password, protocol, protoparam, obfs, obfsparam, remarks_base64;
     ssr = ssr.substr(6);
     ssr = urlsafe_base64_decode(ssr);
-    ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*?)\\/\\?(.*)", "$1,$2,$3,$4,$5,$6,$7");
-    strcfg = split(ssr, ",");
-    strobfs = strcfg[6];
-    group = urlsafe_base64_decode(getUrlArg(strobfs, "group"));
-    if(group == "")
-        group = "SSRProvider";
-    remarks = urlsafe_base64_decode(getUrlArg(strobfs, "remarks"));
-    remarks_base64 = urlsafe_base64_reverse(getUrlArg(strobfs, "remarks"));
-    server = strcfg[0];
-    if(remarks == "")
+    if(strFind(ssr, "/?"))
     {
-        remarks = server;
-        remarks_base64 = base64_encode(remarks);
+        ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*?)\\/\\?(.*)", "$1,$2,$3,$4,$5,$6,$7");
+        strobfs = strcfg[6];
+        group = urlsafe_base64_decode(getUrlArg(strobfs, "group"));
+        remarks = urlsafe_base64_decode(getUrlArg(strobfs, "remarks"));
+        remarks_base64 = urlsafe_base64_reverse(getUrlArg(strobfs, "remarks"));
+        obfsparam = base64_decode(getUrlArg(strobfs, "obfsparam"));
+        protoparam = base64_decode(getUrlArg(strobfs, "protoparam"));
     }
+    else
+    {
+        ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*)", "$1,$2,$3,$4,$5,$6");
+    }
+
+    strcfg = split(ssr, ",");
+    server = strcfg[0];
     port = custom_port == "" ? strcfg[1] : custom_port;
     protocol = strcfg[2];
     method = strcfg[3];
     obfs = strcfg[4];
     password = base64_decode(strcfg[5]);
-    obfsparam = base64_decode(getUrlArg(strobfs, "obfsparam"));
-    protoparam = base64_decode(getUrlArg(strobfs, "protoparam"));
+
+    if(group == "")
+        group = "SSRProvider";
+    if(remarks == "")
+    {
+        remarks = server;
+        remarks_base64 = base64_encode(remarks);
+    }
 
     node->linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
     node->group = group;
