@@ -152,6 +152,7 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     if(strFind(ssr, "/?"))
     {
         ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*?)\\/\\?(.*)", "$1,$2,$3,$4,$5,$6,$7");
+        strcfg = split(ssr, ",");
         strobfs = strcfg[6];
         group = urlsafe_base64_decode(getUrlArg(strobfs, "group"));
         remarks = urlsafe_base64_decode(getUrlArg(strobfs, "remarks"));
@@ -162,9 +163,9 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     else
     {
         ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*)", "$1,$2,$3,$4,$5,$6");
+        strcfg = split(ssr, ",");
     }
 
-    strcfg = split(ssr, ",");
     server = strcfg[0];
     port = custom_port == "" ? strcfg[1] : custom_port;
     protocol = strcfg[2];
