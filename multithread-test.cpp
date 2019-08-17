@@ -194,10 +194,13 @@ end:
     return 0;
 }
 
-int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count, bool useTLS = false)
+int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count)
 {
     //prep up vars first
     string host, uri;
+    bool useTLS = false;
+    if(regMatch(testfile, "^https://(.*)"))
+        useTLS = true;
     testfile = regReplace(testfile, "^(http|https)://", "");
     host = testfile.substr(0, testfile.find("/"));
     uri = testfile.substr(testfile.find("/"));

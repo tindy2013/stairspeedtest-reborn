@@ -127,7 +127,7 @@ string httpsGet(string host, string addr, string uri)
     return recvdata;
 }
 
-string curlGet(string url)
+string curlGet(string url, string proxy)
 {
     CURL *curl_handle;
     string data;
@@ -145,6 +145,8 @@ string curlGet(string url)
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &data);
+    if(proxy != "")
+        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
 
     curl_easy_perform(curl_handle);
     curl_easy_cleanup(curl_handle);
@@ -152,9 +154,16 @@ string curlGet(string url)
     return data;
 }
 
-string webGet(string url)
+string buildSocks5ProxyString(string addr, int port, string username, string password)
 {
-    return curlGet(url);
+    string authstr = username != "" && password != "" ? username + ":" + password + "@" : "";
+    string proxystr = "socks5://" + authstr + addr + ":" + to_string(port);
+    return proxystr;
+}
+
+string webGet(string url, string proxy)
+{
+    return curlGet(url, proxy);
     /*
     string host,uri, addr;
     bool https = regmatch(url, "^https(.*)");
@@ -204,8 +213,7 @@ double getLoadPageTime(string url, long timeout, string proxy)
 int websitePing(nodeInfo *node, string url, string local_addr, int local_port, string user, string pass)
 {
     double time_total = 0.0, retval = 0.0;
-    string authstr = user != "" && pass != "" ? user + ":" + pass + "@" : "";
-    string proxystr = "socks5://" + authstr + local_addr + ":" + to_string(local_port);
+    string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
     int loop_times = 0, times_to_ping = 6, succeedcounter = 0, failcounter = 0;
     while(loop_times < times_to_ping)
     {

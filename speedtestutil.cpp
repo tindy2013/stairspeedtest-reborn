@@ -654,23 +654,7 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
 {
     int index = 0, filetype = -1;
     vector<nodeInfo>::iterator iter;
-    if(explodeSurge(content, custom_port, local_port, nodes, sslibev))
-    {
-        return SPEEDTEST_ERROR_NONE;
-    }
-    try
-    {
-        Node yamlnode = Load(content);
-        if(yamlnode.size()&&yamlnode["Proxy"])
-        {
-            explodeClash(yamlnode, custom_port, local_port, nodes, sslibev);
-            return SPEEDTEST_ERROR_NONE;
-        }
-    }
-    catch (exception &e)
-    {
-        //ignore
-    }
+
     if(strFind(content, "\"version\""))
         filetype = SPEEDTEST_MESSAGE_FOUNDSS;
     else if(strFind(content, "\"serverSubscribes\""))
@@ -690,7 +674,12 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
         explodeVmessConf(content, custom_port, local_port, sslibev, nodes);
         break;
     default:
-        return SPEEDTEST_ERROR_UNRECOGFILE;
+        //try to parse as a local subscription
+        explodeSub(content, sslibev, ssrlibev, custom_port, local_port, nodes, exclude_remarks, include_remarks);
+        if(nodes->size() == 0)
+            return SPEEDTEST_ERROR_UNRECOGFILE;
+        else
+            return SPEEDTEST_ERROR_NONE;
     }
 
     iter = nodes->begin();
@@ -819,11 +808,11 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
         }
         if(chkIgnore(&node, exclude_remarks, include_remarks))
         {
-            writeLog(LOG_TYPE_INFO, "Node  "+node.group+" - "+node.remarks+"  has been ignored and will not be tested.");
+            writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been ignored and will not be tested.");
             continue;
         }
         else
-            writeLog(LOG_TYPE_INFO, "Node  "+node.group+" - "+node.remarks+"  has been added.");
+            writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
         node.id = index;
         nodes->push_back(node);
         index++;

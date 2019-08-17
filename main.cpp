@@ -33,7 +33,6 @@ int def_thread_count = 4;
 bool export_with_maxspeed = false;
 bool test_site_ping = false;
 string export_sort_method = "none";
-bool useTLS = false;
 
 int avail_status[3] = {1, 1, 1};
 
@@ -43,7 +42,7 @@ HANDLE hProc = 0;
 
 //declarations
 
-int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count, bool useTLS = false);
+int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count);
 int tcping(nodeInfo *node);
 
 //original codes
@@ -263,9 +262,9 @@ void readConf(string path)
                 def_test_file = itemval;
             else if(vchild[0] == "thread_count")
                 def_thread_count = stoi(itemval);
+            /*
             else if(vchild[0] == "speetest_with_tls")
                 useTLS = itemval == "true";
-            /*
             else if(vchild[0] == "colorset")
                 colorgroup = vchild[1];
             else if(vchild[0] == "bounds")
@@ -406,7 +405,7 @@ int singleTest(string testfile, nodeInfo *node)
     if(speedtest_mode != "pingonly")
     {
         writeLog(LOG_TYPE_INFO, "Now performing file download speed test...");
-        perform_test(node, testfile, testserver, testport, username, password, def_thread_count, useTLS);
+        perform_test(node, testfile, testserver, testport, username, password, def_thread_count);
         logdata = "";
         for(int i = 0; i < 20; i++)
         {
@@ -417,7 +416,7 @@ int singleTest(string testfile, nodeInfo *node)
         {
             writeLog(LOG_TYPE_ERROR, "Speedtest returned no speed.");
             printMsg(SPEEDTEST_ERROR_RETEST, node, rpcmode);
-            perform_test(node, testfile, testserver, testport, username, password, def_thread_count, useTLS);
+            perform_test(node, testfile, testserver, testport, username, password, def_thread_count);
             logdata = "";
             for(int i = 0; i < 20; i++)
             {

@@ -32,7 +32,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_ERROR_WSAERR, "WSA Startup error!\n"},
     {SPEEDTEST_ERROR_SOCKETERR, "Socket error!\n"},
     {SPEEDTEST_ERROR_NORECOGLINK, "No valid link found. Please check your link.\n"},
-    {SPEEDTEST_ERROR_UNRECOGFILE, "This configure file is invalid. Please make sure this is an Shadowsocks/ShadowsocksR/v2rayN configuration file.\n"},
+    {SPEEDTEST_ERROR_UNRECOGFILE, "This configure file is invalid. Please make sure this is an Shadowsocks/ShadowsocksR/v2rayN configuration file or a standard subscription file.\n"},
     {SPEEDTEST_ERROR_NOCONNECTION, "Cannot connect to server.\n"},
     {SPEEDTEST_ERROR_INVALIDSUB, "Nothing returned from subscribe link. Please check your subscribe link.\n"},
     {SPEEDTEST_ERROR_NONODES, "No nodes found. Please check your subscribe link.\n"},
