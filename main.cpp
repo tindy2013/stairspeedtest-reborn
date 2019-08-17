@@ -33,6 +33,7 @@ int def_thread_count = 4;
 bool export_with_maxspeed = false;
 bool test_site_ping = false;
 string export_sort_method = "none";
+bool useTLS = false;
 
 int avail_status[3] = {1, 1, 1};
 
@@ -42,7 +43,7 @@ HANDLE hProc = 0;
 
 //declarations
 
-int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count);
+int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count, bool useTLS = false);
 int tcping(nodeInfo *node);
 
 //original codes
@@ -239,21 +240,21 @@ void readConf(string path)
             if(vchild.size() < 2)
                 continue;
             itemval = "";
-            for(unsigned i = 1; i<vchild.size(); i++)
+            for(unsigned i = 1; i < vchild.size(); i++)
                 itemval += vchild[i];
             if(vchild[0] == "speedtest_mode")
                 speedtest_mode = vchild[1];
             #ifdef _WIN32
             //csharp version only works on windows
-            else if(vchild[0] == "preferred_ss_client" && vchild[1] == "ss-csharp")
+            else if(vchild[0] == "preferred_ss_client" && itemval == "ss-csharp")
                 ss_libev = false;
-            else if(vchild[0] == "preferred_ssr_client" && vchild[1] == "ssr-csharp")
+            else if(vchild[0] == "preferred_ssr_client" && itemval == "ssr-csharp")
                 ssr_libev = false;
             #endif // _WIN32
             else if(vchild[0] == "export_with_maxspeed")
-                export_with_maxspeed = vchild[1] == "true";
+                export_with_maxspeed = itemval == "true";
             else if(vchild[0] == "override_conf_port")
-                override_conf_port = vchild[1];
+                override_conf_port = itemval;
             else if(strFind(vchild[0], "exclude_remarks"))
                 exclude_remarks.push_back(itemval);
             else if(strFind(vchild[0], "include_remarks"))
@@ -262,6 +263,8 @@ void readConf(string path)
                 def_test_file = itemval;
             else if(vchild[0] == "thread_count")
                 def_thread_count = stoi(itemval);
+            else if(vchild[0] == "speetest_with_tls")
+                useTLS = itemval == "true";
             /*
             else if(vchild[0] == "colorset")
                 colorgroup = vchild[1];
@@ -403,7 +406,7 @@ int singleTest(string testfile, nodeInfo *node)
     if(speedtest_mode != "pingonly")
     {
         writeLog(LOG_TYPE_INFO, "Now performing file download speed test...");
-        perform_test(node, testfile, testserver, testport, username, password, def_thread_count);
+        perform_test(node, testfile, testserver, testport, username, password, def_thread_count, useTLS);
         logdata = "";
         for(int i = 0; i < 20; i++)
         {
@@ -414,7 +417,7 @@ int singleTest(string testfile, nodeInfo *node)
         {
             writeLog(LOG_TYPE_ERROR, "Speedtest returned no speed.");
             printMsg(SPEEDTEST_ERROR_RETEST, node, rpcmode);
-            perform_test(node, testfile, testserver, testport, username, password, def_thread_count);
+            perform_test(node, testfile, testserver, testport, username, password, def_thread_count, useTLS);
             logdata = "";
             for(int i = 0; i < 20; i++)
             {

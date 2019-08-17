@@ -809,7 +809,8 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
     sub = base64_decode(sub);
     strstream<<sub;
     int index = 0;
-    while(getline(strstream, strLink))
+    char delimiter = split(sub, "\n").size() <= 1 ? ' ' : '\n';
+    while(getline(strstream, strLink, delimiter))
     {
         explode(strLink, sslibev, ssrlibev, custom_port, local_port, &node);
         if(strLink.size() == 0 || node.linkType == -1)

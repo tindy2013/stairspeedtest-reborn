@@ -69,7 +69,7 @@ int Send(SOCKET sHost, const char* data, int len, int flags)
 #ifdef _WIN32
     return send(sHost, data, len, flags);
 #else
-    return send(sHost, data, len, flags|MSG_NOSIGNAL);
+    return send(sHost, data, len, flags | MSG_NOSIGNAL);
 #endif // _WIN32
 }
 
@@ -78,7 +78,7 @@ int Recv(SOCKET sHost, char* data, int len, int flags)
 #ifdef _WIN32
     return recv(sHost, data, len, flags);
 #else
-    return recv(sHost, data, len, flags|MSG_NOSIGNAL);
+    return recv(sHost, data, len, flags | MSG_NOSIGNAL);
 #endif // _WIN32
 }
 
