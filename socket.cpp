@@ -243,7 +243,7 @@ int simpleSend(string addr, int port, string data)
     }
 }
 
-char* hostnameToIPv4(string host, int port)
+char* hostnameToIPv4(string host)
 {
     //old function
     /*
@@ -257,7 +257,7 @@ char* hostnameToIPv4(string host, int port)
     */
     //new function
     int retVal;
-    string portstr = to_string(port);
+    string portstr = to_string(80);
     struct sockaddr_in *target;
     struct addrinfo hint = {}, *retAddrInfo, *cur;
     retVal = getaddrinfo(host.data(), portstr.data(), &hint, &retAddrInfo);

@@ -75,7 +75,7 @@ static inline void append_recv_bytes(int received)
 
 static inline void draw_progress(int progress, long long this_bytes)
 {
-    cerr<<"[";
+    cerr<<"\r[";
     for(int j = 0; j < progress; j++)
     {
         cerr<<"=";
@@ -84,7 +84,7 @@ static inline void draw_progress(int progress, long long this_bytes)
         cerr<<">";
     else
         cerr<<"]";
-    cerr<<" "<<progress * 5<<"% "<<speedCalc(this_bytes)<<"\r";
+    cerr<<" "<<progress * 5<<"% "<<speedCalc(this_bytes);
 }
 
 int _thread_download(string host, string uri, string localaddr, int localport, string username, string password, bool useTLS = false)
@@ -194,10 +194,13 @@ end:
     return 0;
 }
 
-int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count, bool useTLS = false)
+int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count)
 {
     //prep up vars first
-    string host, uri;
+    string host, uri, testfile = node->testFile;
+    bool useTLS = false;
+    if(regMatch(testfile, "^https://(.*)"))
+        useTLS = true;
     testfile = regReplace(testfile, "^(http|https)://", "");
     host = testfile.substr(0, testfile.find("/"));
     uri = testfile.substr(testfile.find("/"));

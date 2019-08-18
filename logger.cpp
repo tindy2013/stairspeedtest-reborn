@@ -11,15 +11,18 @@ int makeDir(const char *path)
 #ifdef _WIN32
     return mkdir(path);
 #else
-    return mkdir(path,0755);
+    return mkdir(path, 0755);
 #endif // _WIN32
 }
 
 string getTime(int type)
 {
     time_t lt;
-    char tmpbuf[32];
+    char tmpbuf[32], cMillis[7];
     string format;
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    snprintf(cMillis, 7, "%.6ld", tv.tv_usec);
     lt = time(NULL);
     struct tm *local = localtime(&lt);
     switch(type)
@@ -28,13 +31,13 @@ string getTime(int type)
         format = "%Y%m%d-%H%M%S";
         break;
     case 2:
-        format = "%Y/%m/%d %a %H:%M:%S";
+        format = "%Y/%m/%d %a %H:%M:%S." + string(cMillis);
         break;
     case 3:
-        format = "%Y-%m-%d %H:%M:%S";
+        format = "%Y-%m-%d %H:%M:%S." + string(cMillis);
         break;
     }
-    strftime(tmpbuf,32,format.data(),local);
+    strftime(tmpbuf, 32, format.data(), local);
     return string(tmpbuf);
 }
 
@@ -48,7 +51,7 @@ void logInit(bool rpcmode)
     else
         log_header += "CLI mode.";
     makeDir("logs");
-    writeLog(LOG_TYPE_INFO,log_header);
+    writeLog(LOG_TYPE_INFO, log_header);
 }
 
 void resultInit(bool export_with_maxspeed)
@@ -60,10 +63,10 @@ void resultInit(bool export_with_maxspeed)
         result_content += ",maxspeed";
     result_content += "\n";
     //result_content<<endl;
-    writeToFile(resultPath,result_content,true);
+    writeToFile(resultPath, result_content, true);
 }
 
-void writeLog(int type,string content)
+void writeLog(int type, string content)
 {
     string timestr = "[" + getTime(2) + "]",typestr;
     switch(type)
@@ -79,26 +82,26 @@ void writeLog(int type,string content)
         break;
     }
     content = timestr + typestr + content;
-    writeToFile(logPath,content,false);
+    writeToFile(logPath, content, false);
 }
 
-void writeResult(nodeInfo *node,bool export_with_maxspeed)
+void writeResult(nodeInfo *node, bool export_with_maxspeed)
 {
     string content = node->group + "," + node->remarks + "," + node->pkLoss + "," + node->avgPing + "," + node->avgSpeed;
     if(export_with_maxspeed)
         content += "," + node->maxSpeed;
     result_content += content + "\n";
     //write2file(resultPath,result_content.str(),true);
-    writeToFile(resultPath,content,false);
+    writeToFile(resultPath, content, false);
 }
 
 void logEOF()
 {
     writeLog(LOG_TYPE_INFO,"Program terminated.");
-    writeToFile(logPath,"--EOF--",false);
+    writeToFile(logPath, "--EOF--", false);
 }
 
-void resultEOF(string traffic,int worknodes,int totnodes)
+void resultEOF(string traffic, int worknodes, int totnodes)
 {
     result_content += "Traffic used : " + traffic + ". Working Node(s) : [" + to_string(worknodes) + "/" + to_string(totnodes) + "]\n";
     result_content += "Generated at " + getTime(3) + "\n";
@@ -106,7 +109,7 @@ void resultEOF(string traffic,int worknodes,int totnodes)
     writeToFile(resultPath,result_content,true);
 }
 
-void exportResult(string outpath,string utiljspath,string stylepath,bool export_with_maxspeed)
+void exportResult(string outpath, string utiljspath, string stylepath, bool export_with_maxspeed)
 {
     if(utiljspath == "")
         return;

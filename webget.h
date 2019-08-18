@@ -18,9 +18,11 @@
 
 using namespace std;
 
-string webGet(string url);
+string webGet(string url, string proxy = "");
 string httpGet(string host, string addr, string uri);
 string httpsGet(string host, string addr, string uri);
 int websitePing(nodeInfo *node, string url, string local_addr, int local_port, string user, string pass);
+string buildSocks5ProxyString(string addr, int port, string username, string password);
+string buildSocks5ProxyString(socks5Proxy proxy);
 
 #endif // WEBGET_H_INCLUDED

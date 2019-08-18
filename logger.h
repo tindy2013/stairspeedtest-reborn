@@ -2,6 +2,7 @@
 #define LOGGER_H_INCLUDED
 
 #include <bits/stdc++.h>
+#include <sys/time.h>
 #ifdef _WIN32
 #include <direct.h>
 #else
