@@ -108,8 +108,9 @@ string ssConstruct(string server, string port, string password, string method, s
 
 void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *node)
 {
-    string ps, add, port, type, id, aid, net, path, host, tls;
+    string version, ps, add, port, type, id, aid, net, path, host, tls;
     Document jsondata;
+    vector<string> vchild;
     vmess = vmess.substr(8);
     vmess = base64_decode(vmess);
     if(regMatch(vmess, "(.*?) = (.*)"))
@@ -118,10 +119,10 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
         return;
     }
     jsondata.Parse(vmess.data());
+    version = jsondata["v"].GetString();
     ps = jsondata["ps"].GetString();
     add = jsondata["add"].GetString();
-    port = custom_port == ""?jsondata["port"].GetString():custom_port;
-    path = jsondata["path"].GetString();
+    port = custom_port == "" ? jsondata["port"].GetString() : custom_port;
     type = jsondata["type"].GetString();
     id = jsondata["id"].GetString();
     if(jsondata["aid"].IsInt())
@@ -129,11 +130,22 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
     else
         aid = jsondata["aid"].GetString();
     net = jsondata["net"].GetString();
-    host = jsondata["host"].GetString();
     tls = jsondata["tls"].GetString();
+    if(version == "1")
+    {
+        vchild = split(jsondata["host"].GetString(), ";");
+        if(vchild.size() == 2)
+        {
+            host = vchild[0];
+            path = vchild[1];
+        }
+    }
+    else if(version == "2")
+    {
+        host = jsondata["host"].GetString();
+        path = jsondata["path"].GetString();
+    }
 
-    //cout<<"vmess, V2RayProvider, "<<UTF8ToGBK(ps)<<", "<<add<<", "<<port<<", ";
-    //cout<<base<<endl;
     node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
     node->group = "V2rayProvider";
     node->remarks = ps;
