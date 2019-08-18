@@ -119,7 +119,10 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
         return;
     }
     jsondata.Parse(vmess.data());
-    version = jsondata["v"].GetString();
+    if(jsondata["v"].IsInt())
+        version = to_string(jsondata["v"].GetInt());
+    else
+        version = jsondata["v"].GetString();
     ps = jsondata["ps"].GetString();
     add = jsondata["add"].GetString();
     port = custom_port == "" ? jsondata["port"].GetString() : custom_port;
