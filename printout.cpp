@@ -19,6 +19,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_GROUP, "If you have imported an V2Ray subscribe link which doesn't contain a Group Name, you can specify a custom name below.\nIf you have imported an Shadowsocks/ShadowsocksR link which contains a Group Name, press Enter to skip.\nCustom Group Name: "},
     {SPEEDTEST_MESSAGE_GOTSERVER, "\nCurrent Server Group: ?group? Remarks: ?remarks?\n"},
     {SPEEDTEST_MESSAGE_STARTPING, "Now performing TCP Ping...\n"},
+    {SPEEDTEST_MESSAGE_STARTGEOIP, "Now performing GeoIP parse...\n"},
     {SPEEDTEST_MESSAGE_STARTGPING, "Now performing Google Ping...\n"},
     {SPEEDTEST_MESSAGE_STARTSPEED, "Now performing Speed Test...\n"},
     {SPEEDTEST_MESSAGE_GOTRESULT, "Result: DL.Speed: ?speed? Max.Speed: ?maxspeed? Pk.Loss: ?pkloss? Avg.Ping: ?avgping? Google Ping: ?siteping?\n"},
@@ -28,6 +29,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_FETCHSUB, "Downloading subscription data...\n"},
     {SPEEDTEST_MESSAGE_PARSING, "Parsing configuration file...\n"},
     {SPEEDTEST_MESSAGE_BEGIN, "Speed Test will now begin.\n"},
+    {SPEEDTEST_MESSAGE_GOTGEOIP, "Parsed outbound server ISP: ?isp?  Country Code: ?location?\n"},
     {SPEEDTEST_ERROR_UNDEFINED, "Undefined error!\n"},
     {SPEEDTEST_ERROR_WSAERR, "WSA Startup error!\n"},
     {SPEEDTEST_ERROR_SOCKETERR, "Socket error!\n"},
@@ -39,6 +41,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_ERROR_NORESOLVE, "Cannot resolve server address.\n"},
     {SPEEDTEST_ERROR_RETEST, "Speed Test returned no speed. Retesting...\n"},
     {SPEEDTEST_ERROR_NOSPEED, "Speed Test returned no speed 2 times. Skipping...\n"},
+    {SPEEDTEST_ERROR_SUBFETCHERR, "Cannot fetch subscription data with direct connect. Trying with system proxy...\n"},
     {-1, ""}
 };
 
@@ -55,6 +58,8 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {SPEEDTEST_MESSAGE_GOTSERVER, "{\"info\":\"gotserver\",\"id\":?id?,\"group\":\"?group?\",\"remarks\":\"?remarks?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTPING, "{\"info\":\"startping\",\"id\":?id?}\n"},
     {SPEEDTEST_MESSAGE_GOTPING, "{\"info\":\"gotping\",\"id\":?id?,\"ping\":\"?avgping?\",\"loss\":\"?pkloss?\"}\n"},
+    {SPEEDTEST_MESSAGE_STARTGEOIP, "{\"info\":\"startgeoip\",\"id\":?id?}\n"},
+    {SPEEDTEST_MESSAGE_GOTGEOIP, "{\"info\":\"gotgeoip\",\"id\":?id?,\"isp\":\"?isp?\",\"location\":\"?location?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTSPEED, "{\"info\":\"startspeed\",\"id\":?id?}\n"},
     {SPEEDTEST_MESSAGE_GOTSPEED, "{\"info\":\"gotspeed\",\"id\":?id?,\"speed\":\"?speed?\",\"maxspeed\":\"?maxspeed?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTGPING, "{\"info\":\"startgping\",\"id\":?id?}\n"},
@@ -77,6 +82,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {SPEEDTEST_ERROR_NORESOLVE, "{\"info\":\"error\",\"reason\":\"noresolve\",\"id\":?id?}\n"},
     {SPEEDTEST_ERROR_RETEST, "{\"info\":\"error\",\"reason\":\"retest\",\"id\":?id?}\n"},
     {SPEEDTEST_ERROR_NOSPEED, "{\"info\":\"error\",\"reason\":\"nospeed\",\"id\":?id?}\n"},
+    {SPEEDTEST_ERROR_SUBFETCHERR, "{\"info\":\"error\",\"reason\":\"subfetcherr\"}\n"},
     {-1, ""}
 };
 
@@ -91,7 +97,7 @@ string lookUp(int index, LOOKUP_ITEM *items)
     return string("");
 }
 
-void printMsg(int index,nodeInfo *node,bool rpcmode)
+void printMsg(int index, nodeInfo *node, bool rpcmode)
 {
     string printout;
     if(rpcmode)

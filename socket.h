@@ -56,9 +56,17 @@ int setTimeout(SOCKET s, int timeout);
 int startConnect(SOCKET sHost, string addr, int port);
 int simpleSend(string addr, int port, string data);
 int send_simple(SOCKET sHost, string data);
-char* hostnameToIPv4(string host, int port);
+char* hostnameToIPv4(string host);
 int connectSocks5(SOCKET sHost, string username, string password);
 int connectThruSocks(SOCKET sHost, string host, string addr, int port);
 int checkPort(int startport);
+
+struct socks5Proxy
+{
+    string address;
+    int port;
+    string username;
+    string password;
+};
 
 #endif // SOCKET_H_INCLUDED

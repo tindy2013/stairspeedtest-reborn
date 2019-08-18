@@ -9,6 +9,7 @@
 #include "logger.h"
 #include "renderer.h"
 #include "processes.h"
+#include "rulematch.h"
 
 using namespace std;
 using namespace chrono;
@@ -26,6 +27,8 @@ string pngpath;
 bool ss_libev = true;
 bool ssr_libev = true;
 string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe";
+vector<downloadLink> downloadFiles;
+vector<linkMatchRule> matchRules;
 vector<string> exclude_remarks, include_remarks, dict, trans;
 string speedtest_mode = "all";
 string override_conf_port = "";
@@ -42,8 +45,9 @@ HANDLE hProc = 0;
 
 //declarations
 
-int perform_test(nodeInfo *node, string testfile, string localaddr, int localport, string username, string password, int thread_count);
+int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count);
 int tcping(nodeInfo *node);
+void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downloadFiles, vector<linkMatchRule> *matchRules, string defaultTestFile);
 
 //original codes
 
@@ -218,11 +222,15 @@ int killClient(int client)
 
 void readConf(string path)
 {
-    string strTemp, itemval = "";
+    string strTemp, itemname, itemval;
     string parent = "^\\[(.*?)\\]$", child = "^(.*?)=(.*?)$";
     vector<string> vchild;
     ifstream infile;
     smatch result;
+    downloadLink link;
+    linkMatchRule rule;
+    unsigned int i;
+
     infile.open(path, ios::in);
     while(getline(infile, strTemp))
     {
@@ -235,41 +243,71 @@ void readConf(string path)
         }
         else if(regMatch(strTemp, child))
         {
+            /*
             vchild = split(strTemp, "=");
             if(vchild.size() < 2)
                 continue;
+            itemname = vchild[0];
             itemval = "";
             for(unsigned i = 1; i < vchild.size(); i++)
                 itemval += vchild[i];
-            if(vchild[0] == "speedtest_mode")
-                speedtest_mode = vchild[1];
+            */
+            itemname = strTemp.substr(0, strTemp.find("="));
+            itemval = strTemp.substr(strTemp.find("=") + 1);
+
+            if(itemname == "speedtest_mode")
+                speedtest_mode = itemval;
             #ifdef _WIN32
             //csharp version only works on windows
-            else if(vchild[0] == "preferred_ss_client" && itemval == "ss-csharp")
+            else if(itemname == "preferred_ss_client" && itemval == "ss-csharp")
                 ss_libev = false;
-            else if(vchild[0] == "preferred_ssr_client" && itemval == "ssr-csharp")
+            else if(itemname == "preferred_ssr_client" && itemval == "ssr-csharp")
                 ssr_libev = false;
             #endif // _WIN32
-            else if(vchild[0] == "export_with_maxspeed")
+            else if(itemname == "export_with_maxspeed")
                 export_with_maxspeed = itemval == "true";
-            else if(vchild[0] == "override_conf_port")
+            else if(itemname == "override_conf_port")
                 override_conf_port = itemval;
-            else if(strFind(vchild[0], "exclude_remarks"))
+            else if(strFind(itemname, "exclude_remarks"))
                 exclude_remarks.push_back(itemval);
-            else if(strFind(vchild[0], "include_remarks"))
+            else if(strFind(itemname, "include_remarks"))
                 include_remarks.push_back(itemval);
-            else if(vchild[0] == "test_file_url")
-                def_test_file = itemval;
-            else if(vchild[0] == "thread_count")
+            else if(itemname == "test_file_urls")
+            {
+                vchild = split(itemval, "|");
+                if(vchild.size() == 2)
+                {
+                    link.url = vchild[0];
+                    link.tag = vchild[1];
+                    downloadFiles.push_back(link);
+                }
+
+            }
+            else if(itemname == "rules")
+            {
+                vchild = split(itemval, "|");
+                if(vchild.size() >= 3)
+                {
+                    rule.rules.clear();
+                    rule.mode = vchild[0];
+                    for(i = 1; i < vchild.size() - 1; i++)
+                    {
+                        rule.rules.push_back(vchild[i]);
+                    }
+                    rule.tag = vchild[vchild.size() - 1];
+                    matchRules.push_back(rule);
+                }
+            }
+            else if(itemname == "thread_count")
                 def_thread_count = stoi(itemval);
             /*
-            else if(vchild[0] == "speetest_with_tls")
+            else if(itemname == "speetest_with_tls")
                 useTLS = itemval == "true";
-            else if(vchild[0] == "colorset")
+            else if(itemname == "colorset")
                 colorgroup = vchild[1];
-            else if(vchild[0] == "bounds")
+            else if(itemname == "bounds")
                 bounds = vchild[1];
-            else if(vchild[0] == "colorcount")
+            else if(itemname == "colorcount")
                 color_count = stoi(vchild[1]);
             */
         }
@@ -305,38 +343,13 @@ void exportHTML()
     //runprogram(rendercmd, "results", true);
 }
 
-/*
-string getRegVal()
-{
-    HKEY key;
-    DWORD dwSize;
-    DWORD dwType = REG_SZ;
-    wchar_t *data = {};
-    string retdata;
-
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", 0, KEY_QUERY_VALUE, &key) == 0)
-    {
-        if (RegQueryValueEx(key, "ProxyServer", 0, &dwType, NULL, &dwSize) == 0)
-        {
-            RegQueryValueEx(key, "ProxyServer", 0, &dwType, (LPBYTE)data, &dwSize);
-        }
-    }
-    cout<<data;
-    DWORD dwNum = WideCharToMultiByte(CP_OEMCP, NULL, data, -1, NULL, 0, NULL, FALSE);
-    char *psText;
-    psText = new char[dwNum];
-    WideCharToMultiByte (CP_OEMCP, NULL, data, -1, psText, dwNum, NULL, FALSE);
-    retdata = psText;
-    delete []psText;
-    return retdata;
-}
-*/
-
-int singleTest(string testfile, nodeInfo *node)
+int singleTest(nodeInfo *node)
 {
     int retVal = 0;
     string logdata = "", testserver, username, password;
     int testport;
+    socks5Proxy proxy;
+
     if(node->linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
     {
         testserver = node->server;
@@ -350,10 +363,13 @@ int singleTest(string testfile, nodeInfo *node)
         testport = socksport;
         writeLog(LOG_TYPE_INFO, "Writing config file...");
         writeToFile("config.json", node->proxyStr, true);
-        //retVal = execve("tools\\clients\\v2ray-core\\v2-core.exe", NULL, NULL);
-        //if(retVal == ENOENT) cout<<"error"<<endl;
         runClient(node->linkType, "");
     }
+    proxy.address = testserver;
+    proxy.port = testport;
+    proxy.username = username;
+    proxy.password = password;
+
     printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
     writeLog(LOG_TYPE_INFO, "Received server. Group: " + node->group + " Name: " + node->remarks);
     printMsg(SPEEDTEST_MESSAGE_STARTPING, node, rpcmode);
@@ -385,6 +401,17 @@ int singleTest(string testfile, nodeInfo *node)
         node->pkLoss = "0.00%";
     printMsg(SPEEDTEST_MESSAGE_GOTPING, node, rpcmode);
 
+    writeLog(LOG_TYPE_INFO, "Now performing GeoIP parse...");
+    printMsg(SPEEDTEST_MESSAGE_STARTGEOIP, node, rpcmode);
+    getTestFile(node, proxy, &downloadFiles, &matchRules, def_test_file);
+    {
+        clearTrans();
+        addTrans("?isp?", node->outboundGeoIP.organization);
+        addTrans("?location?", node->outboundGeoIP.country_code);
+        writeLog(LOG_TYPE_INFO, "Got outbound ISP: " + node->outboundGeoIP.organization + "  Country code: " + node->outboundGeoIP.country_code);
+        printMsgWithDict(SPEEDTEST_MESSAGE_GOTGEOIP, rpcmode, dict, trans);
+    }
+
     if(test_site_ping)
     {
         printMsg(SPEEDTEST_MESSAGE_STARTGPING, node, rpcmode);
@@ -405,7 +432,7 @@ int singleTest(string testfile, nodeInfo *node)
     if(speedtest_mode != "pingonly")
     {
         writeLog(LOG_TYPE_INFO, "Now performing file download speed test...");
-        perform_test(node, testfile, testserver, testport, username, password, def_thread_count);
+        perform_test(node, testserver, testport, username, password, def_thread_count);
         logdata = "";
         for(int i = 0; i < 20; i++)
         {
@@ -416,7 +443,7 @@ int singleTest(string testfile, nodeInfo *node)
         {
             writeLog(LOG_TYPE_ERROR, "Speedtest returned no speed.");
             printMsg(SPEEDTEST_ERROR_RETEST, node, rpcmode);
-            perform_test(node, testfile, testserver, testport, username, password, def_thread_count);
+            perform_test(node, testserver, testport, username, password, def_thread_count);
             logdata = "";
             for(int i = 0; i < 20; i++)
             {
@@ -463,7 +490,7 @@ void batchTest(vector<nodeInfo> nodes)
         {
             if(custom_group.size() != 0)
                 nodes[i].group = custom_group;
-            singleTest(def_test_file, &nodes[i]);
+            singleTest(&nodes[i]);
             writeResult(&nodes[i], export_with_maxspeed);
             tottraffic += nodes[i].totalRecvBytes;
             if(nodes[i].online)
@@ -495,7 +522,7 @@ int main(int argc, char* argv[])
 {
     vector<nodeInfo> nodes;
     nodeInfo node;
-    string link, strSub, strInput, filecontent;
+    string link, strSub, strInput, fileContent, strProxy;
     int linkType = -1;
     cout<<fixed;
     cout<<setprecision(2);
@@ -516,7 +543,7 @@ int main(int argc, char* argv[])
     if(rpcmode)
         switchCodepage();
     else
-        SetConsoleTitle(L"Stair Speedtest");
+        SetConsoleTitle("Stair Speedtest");
 #endif // _WIN32
     //kill any client before testing
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
@@ -581,6 +608,13 @@ int main(int argc, char* argv[])
         writeLog(LOG_TYPE_INFO, "Downloading subscription data...");
         printMsg(SPEEDTEST_MESSAGE_FETCHSUB, &node, rpcmode);
         strSub = webGet(link);
+        if(strSub.size() == 0)
+        {
+            //try to get it again with system proxy
+            strProxy = getSystemProxy();
+            if(strProxy != "")
+                strSub = webGet(link, strProxy);
+        }
         if(strSub.size())
         {
             explodeSub(strSub, ss_libev, ssr_libev, override_conf_port, socksport, &nodes, &exclude_remarks, &include_remarks);
@@ -623,13 +657,13 @@ int main(int argc, char* argv[])
         printMsg(SPEEDTEST_MESSAGE_FOUNDUPD, &node, rpcmode);
         cin.clear();
         //now we should ready to receive a large amount of data from stdin
-        getline(cin, filecontent);
-        //writeLog(LOG_TYPE_RAW, filecontent);
-        filecontent = base64_decode(filecontent.substr(filecontent.find(",") + 1));
-        writeLog(LOG_TYPE_RAW, filecontent);
+        getline(cin, fileContent);
+        //writeLog(LOG_TYPE_RAW, fileContent);
+        fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
+        writeLog(LOG_TYPE_RAW, fileContent);
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsg(SPEEDTEST_MESSAGE_PARSING, &node, rpcmode);
-        if(explodeConfContent(filecontent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsg(SPEEDTEST_ERROR_UNRECOGFILE, &node, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
@@ -649,7 +683,7 @@ int main(int argc, char* argv[])
             if(custom_group.size() != 0)
                 node.group = custom_group;
             printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
-            singleTest(def_test_file, &node);
+            singleTest(&node);
             writeLog(LOG_TYPE_INFO, "Single node test completed.");
         }
         else

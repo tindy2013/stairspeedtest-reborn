@@ -123,14 +123,18 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
     ps = jsondata["ps"].GetString();
     add = jsondata["add"].GetString();
     port = custom_port == "" ? jsondata["port"].GetString() : custom_port;
-    type = jsondata["type"].GetString();
-    id = jsondata["id"].GetString();
+    if(!jsondata["type"].IsNull())
+        type = jsondata["type"].GetString();
+    if(!jsondata["id"].IsNull())
+        id = jsondata["id"].GetString();
     if(jsondata["aid"].IsInt())
         aid = to_string(jsondata["aid"].GetInt());
     else
         aid = jsondata["aid"].GetString();
-    net = jsondata["net"].GetString();
-    tls = jsondata["tls"].GetString();
+    if(!jsondata["net"].IsNull())
+        net = jsondata["net"].GetString();
+    if(!jsondata["tls"].IsNull())
+        tls = jsondata["tls"].GetString();
     if(version == "1")
     {
         vchild = split(jsondata["host"].GetString(), ";");
@@ -169,8 +173,8 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
         group = urlsafe_base64_decode(getUrlArg(strobfs, "group"));
         remarks = urlsafe_base64_decode(getUrlArg(strobfs, "remarks"));
         remarks_base64 = urlsafe_base64_reverse(getUrlArg(strobfs, "remarks"));
-        obfsparam = base64_decode(getUrlArg(strobfs, "obfsparam"));
-        protoparam = base64_decode(getUrlArg(strobfs, "protoparam"));
+        obfsparam = urlsafe_base64_decode(getUrlArg(strobfs, "obfsparam"));
+        protoparam = urlsafe_base64_decode(getUrlArg(strobfs, "protoparam"));
     }
     else
     {
@@ -322,7 +326,7 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
             else if(itemname == "obfs-header")
             {
                 vector<string> headers = split(replace_all_distinct(replace_all_distinct(itemval, "\"", ""), "[Rr][Nn]", "|"), "|");
-                for(unsigned int j = 0; j<headers.size(); j++)
+                for(unsigned int j = 0; j < headers.size(); j++)
                 {
                     if(strFind(headers[j], "Host: "))
                         host = headers[j].substr(6);
@@ -401,7 +405,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
     nodeInfo node;
     int index = 0;
     string proxytype, strTemp, ps, server, port, cipher, group;
-    for(unsigned int i = 0; i<yamlnode["Proxy"].size(); i++)
+    for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
     {
         yamlnode["Proxy"][i]["type"]>>proxytype;
         yamlnode["Proxy"][i]["name"]>>ps;
@@ -480,15 +484,21 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
         if(strFind(remarks, retremark))
             excluded = true;
     }
-    writeLog(LOG_TYPE_INFO, "Comparing include remarks...");
-    for(i = 0; i < include_remarks->size(); i++)
+    if(include_remarks->size() != 0)
     {
-        retremark = (*include_remarks)[i];
-        if(strFind(remarks, retremark))
-            included = true;
+        writeLog(LOG_TYPE_INFO, "Comparing include remarks...");
+        for(i = 0; i < include_remarks->size(); i++)
+        {
+            retremark = (*include_remarks)[i];
+            if(strFind(remarks, retremark))
+                included = true;
+        }
     }
-    if(include_remarks->size() == 0)
+    else
+    {
         included = true;
+    }
+
     if(!excluded && included)
         return false;
     else
@@ -531,7 +541,7 @@ void explodeSSRConf(string content, string custom_port, int local_port, bool lib
     string base, config, remarks, remarks_base64, group, server, port, method, password, protocol, protoparam, obfs, obfsparam;
 
     json.Parse(content.data());
-    for(unsigned int i = 0; i<json["configs"].Size(); i++)
+    for(unsigned int i = 0; i < json["configs"].Size(); i++)
     {
         config = config_ssr_libev;
         group = json["configs"][i]["group"].GetString();
@@ -542,7 +552,7 @@ void explodeSSRConf(string content, string custom_port, int local_port, bool lib
         password = json["configs"][i]["password"].GetString();
         method = json["configs"][i]["method"].GetString();
         server = json["configs"][i]["server"].GetString();
-        port = custom_port == ""?to_string(json["configs"][i]["server_port"].GetInt()):custom_port;
+        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
         protocol = json["configs"][i]["protocol"].GetString();
         protoparam = json["configs"][i]["protocolparam"].GetString();
         obfs = json["configs"][i]["obfs"].GetString();
@@ -598,10 +608,6 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
             cipher = json["vmess"][i]["security"].GetString();
             subid = json["vmess"][i]["subid"].GetString();
             group = "V2rayProvider";
-            if(ps == "")
-            {
-                ps = add;
-            }
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
             break;
@@ -611,11 +617,8 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
             port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
             id = json["vmess"][i]["id"].GetString();
             cipher = json["vmess"][i]["security"].GetString();
+            subid = json["vmess"][i]["subid"].GetString();
             group = "SSProvider";
-            if(ps == "")
-            {
-                ps = add;
-            }
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
             node.proxyStr = ssConstruct(add, port, id, cipher, "", "", ps, local_port, true);
             break;
@@ -623,11 +626,8 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
             ps = json["vmess"][i]["remarks"].GetString();
             add = json["vmess"][i]["address"].GetString();
             port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
+            subid = json["vmess"][i]["subid"].GetString();
             group = "SocksProvider";
-            if(ps == "")
-            {
-                ps = add;
-            }
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
             node.proxyStr = "user=&pass=";
         default:
@@ -640,6 +640,10 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
             {
                 group = iter->second;
             }
+        }
+        if(ps == "")
+        {
+            ps = add;
         }
         node.group = group;
         node.remarks = ps;

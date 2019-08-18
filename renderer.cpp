@@ -161,7 +161,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
 
     //calculate the width of all columns
     int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0,  sitePing_width = 0, maxSpeed_width = 0, onlines = 0, final_width = 0;
-    int group_widths[node_count], remarks_widths[node_count], pkLoss_widths[node_count], avgPing_widths[node_count], avgSpeed_widths[node_count], sitePing_widths[node_count], maxSpeed_widths[node_count];
+    int group_widths[node_count], remarks_widths[node_count], pkLoss_widths[node_count], avgPing_widths[node_count], avgSpeed_widths[node_count], /*sitePing_widths[node_count],*/ maxSpeed_widths[node_count];
     long long total_traffic = 0;
     for(int i = 0; i <= node_count; i++)
     {

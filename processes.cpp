@@ -31,34 +31,23 @@ int chkProgram(string command)
 }
 
 #ifdef _WIN32
-bool runProgram(string command,string runpath,bool wait,HANDLE *hProc)
+bool runProgram(string command, string runpath, bool wait, HANDLE *hProc)
 {
-    //convert string to wstring first
-    wstring wcommand, wrunpath;
-    StringToWstring(wcommand, command);
-    StringToWstring(wrunpath, runpath);
-
     BOOL retval = false;
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
     ZeroMemory(&si, sizeof(si));
     ZeroMemory(&pi, sizeof(pi));
-    wchar_t curdir[512] = {}, *cmdstr = {}, *pathstr = {};
-    wstring wcmdstr, wpathstr;
-    //command = "cmd /c " + command;
-    //cmdstr = const_cast<wchar_t*>(command.data());
-    cmdstr = const_cast<wchar_t*>(wcommand.data());
+    char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
+    cmdstr = const_cast<char*>(command.data());
     GetCurrentDirectory(512, curdir);
-    //getcwd(curdir, 512);
-    wstring path = wstring(curdir) + L"\\";
+    string path = string(curdir) + "\\";
     if(runpath != "")
-        path += wrunpath + L"\\";
-    pathstr = const_cast<wchar_t*>(path.data());
-    wstring prgname = path + wcommand.substr(0, wcommand.find(L" "));
-    wstring prgargs = wcommand.substr(wcommand.find(L" ") + 1);
-    //spawnle(_P_DETACH, prgname.data(), prgargs.data());
+        path += runpath + "\\";
+    pathstr = const_cast<char*>(path.data());
+    string prgname = path + command.substr(0, command.find(" "));
+    string prgargs = command.substr(command.find(" ") + 1);
     retval = CreateProcess(NULL, cmdstr, NULL, NULL, false, CREATE_NO_WINDOW, NULL, pathstr, &si, &pi);
-    //ShellExecute(NULL, "open",  "cmd.exe", cmdstr,  NULL, SW_HIDE);
 
     /*
     hProc = &pi.hProcess;

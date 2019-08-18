@@ -76,38 +76,6 @@ void StringToWstring(wstring& szDst, string str)
 }
 #endif // _WIN32
 
-string regReplace(string src, string match, string rep)
-{
-    string result = "";
-    regex reg(match);
-    regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
-    return result;
-}
-
-int regMatch(string src, string match)
-{
-    regex reg(match);
-    return regex_match(src, reg);
-}
-
-string speedCalc(double speed)
-{
-    if(speed == 0.0)
-        return string("0.00B");
-    char str[10];
-    string retstr;
-    if(speed >= 1073741824.0)
-        sprintf(str, "%.2fGB", speed / 1073741824.0);
-    else if(speed >= 1048576.0)
-        sprintf(str, "%.2fMB", speed / 1048576.0);
-    else if(speed >= 1024.0)
-        sprintf(str, "%.2fKB", speed / 1024.0);
-    else
-        sprintf(str, "%.2fB", speed);
-    retstr = str;
-    return retstr;
-}
-
 unsigned char FromHex(unsigned char x)
 {
     unsigned char y;
@@ -287,6 +255,80 @@ vector<string> split(const string &s, const string &seperator)
     return result;
 }
 
+string getSystemProxy()
+{
+#ifdef _WIN32
+    HKEY key;
+    auto ret = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings)", 0, KEY_ALL_ACCESS, &key);
+    if(ret != ERROR_SUCCESS){
+        //std::cout << "open failed: " << ret << std::endl;
+        return string();
+    }
+
+    DWORD values_count, max_value_name_len, max_value_len;
+    ret = RegQueryInfoKey(key, NULL, NULL, NULL, NULL, NULL, NULL,
+        &values_count, &max_value_name_len, &max_value_len, NULL, NULL);
+    if(ret != ERROR_SUCCESS){
+        //std::cout << "query failed" << std::endl;
+        return string();
+    }
+
+    std::vector<std::tuple<std::shared_ptr<char>, DWORD, std::shared_ptr<BYTE>>> values;
+    for(DWORD i = 0; i < values_count; i++){
+		std::shared_ptr<char> value_name(new char[max_value_name_len + 1],
+			std::default_delete<char[]>());
+        DWORD value_name_len = max_value_name_len + 1;
+        DWORD value_type, value_len;
+        RegEnumValue(key, i, value_name.get(), &value_name_len, NULL, &value_type, NULL, &value_len);
+        std::shared_ptr<BYTE> value(new BYTE[value_len],
+			std::default_delete<BYTE[]>());
+        value_name_len = max_value_name_len + 1;
+        RegEnumValue(key, i, value_name.get(), &value_name_len, NULL, &value_type, value.get(), &value_len);
+        values.push_back(std::make_tuple(value_name, value_type, value));
+    }
+
+	DWORD ProxyEnable = 0;
+	for (auto x : values) {
+		if (strcmp(std::get<0>(x).get(), "ProxyEnable") == 0) {
+			ProxyEnable = *(DWORD*)(std::get<2>(x).get());
+		}
+	}
+
+	if (ProxyEnable) {
+		for (auto x : values) {
+			if (strcmp(std::get<0>(x).get(), "ProxyServer") == 0) {
+				//std::cout << "ProxyServer: " << (char*)(std::get<2>(x).get()) << std::endl;
+				return string((char*)(std::get<2>(x).get()));
+			}
+		}
+	}
+	/*
+	else {
+		//std::cout << "Proxy not Enabled" << std::endl;
+	}
+	*/
+	//return 0;
+	return string();
+#else
+	return string(getenv("ALL_PROXY"));
+#endif // _WIN32
+}
+
+string trim(const string& str)
+{
+    string::size_type pos = str.find_first_not_of(' ');
+    if (pos == string::npos)
+    {
+        return str;
+    }
+    string::size_type pos2 = str.find_last_not_of(' ');
+    if (pos2 != string::npos)
+    {
+        return str.substr(pos, pos2 - pos + 1);
+    }
+    return str.substr(pos);
+}
+
 string getUrlArg(string url, string request)
 {
     smatch result;
@@ -316,6 +358,38 @@ string replace_all_distinct(string str, string old_value, string new_value)
     return str;
 }
 
+string regReplace(string src, string match, string rep)
+{
+    string result = "";
+    regex reg(match);
+    regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
+    return result;
+}
+
+int regMatch(string src, string match)
+{
+    regex reg(match);
+    return regex_match(src, reg);
+}
+
+string speedCalc(double speed)
+{
+    if(speed == 0.0)
+        return string("0.00B");
+    char str[10];
+    string retstr;
+    if(speed >= 1073741824.0)
+        sprintf(str, "%.2fGB", speed / 1073741824.0);
+    else if(speed >= 1048576.0)
+        sprintf(str, "%.2fMB", speed / 1048576.0);
+    else if(speed >= 1024.0)
+        sprintf(str, "%.2fKB", speed / 1024.0);
+    else
+        sprintf(str, "%.2fB", speed);
+    retstr = str;
+    return retstr;
+}
+
 string urlsafe_base64_reverse(string encoded_string)
 {
     return replace_all_distinct(replace_all_distinct(encoded_string, "-", "+"), "_", "/");
@@ -341,21 +415,6 @@ string grabContent(string raw)
     */
     return regReplace(raw.substr(raw.find("\r\n\r\n") + 4), "^\\d*?\\r\\n(.*)\\r\\n\\d", "$1");
     //return raw;
-}
-
-string trim(const string& str)
-{
-    string::size_type pos = str.find_first_not_of(' ');
-    if (pos == string::npos)
-    {
-        return str;
-    }
-    string::size_type pos2 = str.find_last_not_of(' ');
-    if (pos2 != string::npos)
-    {
-        return str.substr(pos, pos2 - pos + 1);
-    }
-    return str.substr(pos);
 }
 
 bool fileExist(string path)
@@ -398,4 +457,9 @@ string fileToBase64(string filepath)
     strdata = strstrm.str();
     infile.close();
     return base64_encode(strdata);
+}
+
+bool isIPv4(string address)
+{
+    return regMatch(address, "\\d+\\.\\d+\\.\\d+\\.\\d");
 }

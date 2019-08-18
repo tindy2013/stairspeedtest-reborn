@@ -161,6 +161,13 @@ string buildSocks5ProxyString(string addr, int port, string username, string pas
     return proxystr;
 }
 
+string buildSocks5ProxyString(socks5Proxy proxy)
+{
+    string authstr = proxy.username != "" && proxy.password != "" ? proxy.username + ":" + proxy.password + "@" : "";
+    string proxystr = "socks5://" + authstr + proxy.address + ":" + to_string(proxy.port);
+    return proxystr;
+}
+
 string webGet(string url, string proxy)
 {
     return curlGet(url, proxy);
@@ -177,6 +184,11 @@ string webGet(string url, string proxy)
 
     if(https) return httpsGet(host, addr, uri); else return httpGet(host, addr, uri);
     */
+}
+
+string webGet(string url, socks5Proxy proxy)
+{
+    return curlGet(url, buildSocks5ProxyString(proxy));
 }
 
 double getLoadPageTime(string url, long timeout, string proxy)
