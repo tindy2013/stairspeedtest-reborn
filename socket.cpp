@@ -129,7 +129,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     fd_set set;
     unsigned long ul = 1;
     int len = sizeof(int);
-    ioctlsocket(sockfd, FIONBIO, &ul); //设置为非阻塞模式
+    ioctlsocket(sockfd, FIONBIO, &ul); //set to non-blocking mode
     if(connect(sockfd, addr, addrsize) == -1)
     {
         tm.tv_sec = 0;
@@ -151,13 +151,13 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
         ret = 0;
 
     ul = 0;
-    ioctlsocket(sockfd, FIONBIO, &ul); //设置为阻塞模式
+    ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
 #else
     struct sigaction act, oldact;
     act.sa_handler = connect_sigalarm;
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGALRM);
-    act.sa_flags = SA_INTERRUPT; //由此信号中断的系统调用不会自动重启
+    act.sa_flags = SA_INTERRUPT;
     sigaction(SIGALRM, &act, &oldact);
     if(alarm(def_timeout / 1000) != 0)
     {
@@ -203,7 +203,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
 int startConnect(SOCKET sHost, string addr, int port)
 {
     int retVal;
-    SOCKADDR_IN servAddr; //服务器地址
+    SOCKADDR_IN servAddr;
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = inet_addr(addr.data());
     servAddr.sin_port = htons((short)port);
@@ -288,7 +288,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
     PUT_BYTE(ptr++, 2); //user pass auth
     Send(sHost, buf, ptr-buf, 0);
     ZeroMemory(bufRecv, BUF_SIZE);
-    Recv(sHost, bufRecv, 2, 0); // 接收服务器端的数据
+    Recv(sHost, bufRecv, 2, 0);
     if ((bufRecv[0] != 5) ||                       // ver5 response
             ((unsigned char)buf[1] == 0xFF))  	// check auth method
     {
@@ -352,7 +352,7 @@ int connectThruSocks(SOCKET sHost, string host, string addr, int port)
     }
     else
     {
-        // resolved localy
+        // resolved locally
         PUT_BYTE(ptr++, 1);                   // ATYP: IPv4
         memcpy(ptr, &dest_addr.sin_addr.s_addr, sizeof(dest_addr.sin_addr));
         ptr += sizeof(dest_addr.sin_addr);
@@ -360,8 +360,7 @@ int connectThruSocks(SOCKET sHost, string host, string addr, int port)
     PUT_BYTE(ptr++, dest_port>>8);     // DST.PORT
     PUT_BYTE(ptr++, dest_port & 0xFF);
     Send(sHost, buf, ptr - buf, 0);
-    //ZeroMemory(bufRecv, BUF_SIZE);
-    Recv(sHost, buf, 4, 0); // 接收服务器端的数据
+    Recv(sHost, buf, 4, 0);
     if(buf[1] != SOCKS5_REP_SUCCEEDED)     // check reply code
     {
         cerr<<"socks5: got error response from SOCKS server"<<endl;
