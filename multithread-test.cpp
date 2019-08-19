@@ -68,9 +68,7 @@ void safe_set_exit_flag()
 static inline void append_recv_bytes(int received)
 {
     guarded_mutex guard(received_mutex);
-    //received_mutex.lock();
     received_bytes += received;
-    //received_mutex.unlock();
 }
 
 static inline void draw_progress(int progress, long long this_bytes)
@@ -223,17 +221,16 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     while(!safe_read_launched())
         sleep(20); //wait until any one of the threads start up
 
-    if(useTLS)
-        sleep(500); //slow down because TLS takes longer to initialize
     auto start = steady_clock::now();
     long long last_bytes = 0, this_bytes = 0, max_speed = 0;
     for(int i = 1; i < 21; i++)
     {
-        received_mutex.lock();
+        sleep(500); //accumulate data
+        received_mutex.lock(); //stop the receive
         this_bytes = (received_bytes - last_bytes) * 2; //these bytes were received in 0.5s
         last_bytes = received_bytes;
         //cerr<<this_bytes<<" "<<last_bytes<<endl;
-        sleep(5);//slow down to prevent some problem
+        sleep(5); //slow down to prevent some problem
         received_mutex.unlock();
         node->rawSpeed[i - 1] = this_bytes;
         max_speed = max(max_speed, this_bytes);
@@ -241,21 +238,20 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
         if(!running)
             break;
         draw_progress(i, this_bytes);
-        sleep(500);
     }
     cerr<<endl;
-    received_mutex.lock();//lock it to prevent any further data writing
     safe_set_exit_flag(); //terminate all threads right now
+    received_mutex.lock(); //lock it to prevent any further data writing
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     //cerr<<deltatime<<" "<<received_bytes<<endl;
-    sleep(5);//slow down to prevent some problem
+    sleep(5); //slow down to prevent some problem
     node->duration = deltatime;
     node->totalRecvBytes = received_bytes;
     node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
     node->maxSpeed = speedCalc(max_speed);
-    received_mutex.unlock();//unlock to make threads continue running
+    received_mutex.unlock(); //unlock to make threads continue running
     for(int i = 0; i < thread_count; i++)
     {
         if(threads[i].joinable())

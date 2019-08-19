@@ -404,12 +404,19 @@ int singleTest(nodeInfo *node)
     writeLog(LOG_TYPE_INFO, "Now performing GeoIP parse...");
     printMsg(SPEEDTEST_MESSAGE_STARTGEOIP, node, rpcmode);
     getTestFile(node, proxy, &downloadFiles, &matchRules, def_test_file);
+    if(node->outboundGeoIP.organization != "")
     {
         clearTrans();
+        addTrans("?id?", to_string(node->id));
         addTrans("?isp?", node->outboundGeoIP.organization);
         addTrans("?location?", node->outboundGeoIP.country_code);
         writeLog(LOG_TYPE_INFO, "Got outbound ISP: " + node->outboundGeoIP.organization + "  Country code: " + node->outboundGeoIP.country_code);
         printMsgWithDict(SPEEDTEST_MESSAGE_GOTGEOIP, rpcmode, dict, trans);
+    }
+    else
+    {
+        clearTrans();
+        printMsgWithDict(SPEEDTEST_ERROR_GEOIPERR, rpcmode, dict, trans);
     }
 
     if(test_site_ping)

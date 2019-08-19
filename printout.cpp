@@ -42,6 +42,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_ERROR_RETEST, "Speed Test returned no speed. Retesting...\n"},
     {SPEEDTEST_ERROR_NOSPEED, "Speed Test returned no speed 2 times. Skipping...\n"},
     {SPEEDTEST_ERROR_SUBFETCHERR, "Cannot fetch subscription data with direct connect. Trying with system proxy...\n"},
+    {SPEEDTEST_ERROR_GEOIPERR, "Cannot fetch GeoIP information. Skipping...\n"},
     {-1, ""}
 };
 
@@ -83,6 +84,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {SPEEDTEST_ERROR_RETEST, "{\"info\":\"error\",\"reason\":\"retest\",\"id\":?id?}\n"},
     {SPEEDTEST_ERROR_NOSPEED, "{\"info\":\"error\",\"reason\":\"nospeed\",\"id\":?id?}\n"},
     {SPEEDTEST_ERROR_SUBFETCHERR, "{\"info\":\"error\",\"reason\":\"subfetcherr\"}\n"},
+    {SPEEDTEST_ERROR_GEOIPERR, "{\"info\":\"error\",\"reason\":\"geoiperr\",\"id\":?id?}\n"},
     {-1, ""}
 };
 
