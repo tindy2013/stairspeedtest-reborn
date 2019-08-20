@@ -221,7 +221,6 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
     if(!strFind(ss, "/?"))
     {
         ss = ss.substr(5);
-        //ss = base64_decode(ss);
         strTemp = regReplace(ss, "(.*?)@(.*?):(.*)", "$1,$2,$3");
         vector<string> args = split(strTemp, ",");
         secret = split(urlsafe_base64_decode(args[0]), ":");
@@ -313,13 +312,13 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
         id = trim(replace_all_distinct(configs[5], "\"", ""));
 
         //read link
-        for(unsigned int i = 6; i<configs.size(); i++)
+        for(unsigned int i = 6; i < configs.size(); i++)
         {
             vchild = split(configs[i], "=");
-            if(vchild.size()<2)
+            if(vchild.size() < 2)
                 continue;
             itemname = trim(vchild[0]);
-            itemval = vchild[1];
+            itemval = trim(vchild[1]);
             if(itemname == "group")
                 group = itemval;
             else if(itemname == "over-tls")
@@ -482,13 +481,12 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
 bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *include_remarks)
 {
     bool excluded = false, included = false;
-    string remarks = UTF8ToGBK(node->remarks), retremark;
+    string remarks = UTF8ToGBK(node->remarks);
     unsigned i;
     writeLog(LOG_TYPE_INFO, "Comparing exclude remarks...");
     for(i = 0; i < exclude_remarks->size(); i++)
     {
-        retremark = (*exclude_remarks)[i];
-        if(strFind(remarks, retremark))
+        if(strFind(remarks, (*exclude_remarks)[i]))
             excluded = true;
     }
     if(include_remarks->size() != 0)
@@ -496,8 +494,7 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
         writeLog(LOG_TYPE_INFO, "Comparing include remarks...");
         for(i = 0; i < include_remarks->size(); i++)
         {
-            retremark = (*include_remarks)[i];
-            if(strFind(remarks, retremark))
+            if(strFind(remarks, (*include_remarks)[i]))
                 included = true;
         }
     }
@@ -519,14 +516,14 @@ void explodeSSConf(string content, string custom_port, int local_port, bool libe
     string config, ps, password, method, server, port, plugin, pluginopts, group = "SSProvider";
 
     json.Parse(content.data());
-    for(unsigned int i = 0; i<json["configs"].Size(); i++)
+    for(unsigned int i = 0; i < json["configs"].Size(); i++)
     {
         config = config_ss_libev;
         ps = json["configs"][i]["remarks"].GetString();
         password = json["configs"][i]["password"].GetString();
         method = json["configs"][i]["method"].GetString();
         server = json["configs"][i]["server"].GetString();
-        port = custom_port == ""?to_string(json["configs"][i]["server_port"].GetInt()):custom_port;
+        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
         plugin = json["configs"][i]["plugin"].GetString();
         pluginopts = json["configs"][i]["plugin_opts"].GetString();
         if(ps == "")
@@ -598,17 +595,20 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
 
     for(unsigned int i = 0; i < json["vmess"].Size(); i++)
     {
+        if(json["vmess"][i]["address"].IsNull() || json["vmess"][i]["port"].IsNull() || json["vmess"][i]["id"].IsNull())
+        {
+            continue;
+        }
+        //common info
+        ps = json["vmess"][i]["remarks"].GetString();
+        add = json["vmess"][i]["address"].GetString();
+        port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
+        subid = json["vmess"][i]["subid"].GetString();
+
         configType = json["vmess"][i]["configType"].GetInt();
         switch(configType)
         {
         case 1: //vmess config
-            if(json["vmess"][i]["address"].IsNull() || json["vmess"][i]["port"].IsNull() || json["vmess"][i]["id"].IsNull())
-            {
-                continue;
-            }
-            ps = json["vmess"][i]["remarks"].GetString();
-            add = json["vmess"][i]["address"].GetString();
-            port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
             type = json["vmess"][i]["headerType"].GetString();
             id = json["vmess"][i]["id"].GetString();
             aid = to_string(json["vmess"][i]["alterId"].GetInt());
@@ -617,27 +617,18 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
             host = json["vmess"][i]["requestHost"].GetString();
             tls = json["vmess"][i]["streamSecurity"].GetString();
             cipher = json["vmess"][i]["security"].GetString();
-            subid = json["vmess"][i]["subid"].GetString();
             group = "V2rayProvider";
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
             break;
         case 3: //ss config
-            ps = json["vmess"][i]["remarks"].GetString();
-            add = json["vmess"][i]["address"].GetString();
-            port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
             id = json["vmess"][i]["id"].GetString();
             cipher = json["vmess"][i]["security"].GetString();
-            subid = json["vmess"][i]["subid"].GetString();
             group = "SSProvider";
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
             node.proxyStr = ssConstruct(add, port, id, cipher, "", "", ps, local_port, true);
             break;
         case 4: //socks config
-            ps = json["vmess"][i]["remarks"].GetString();
-            add = json["vmess"][i]["address"].GetString();
-            port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
-            subid = json["vmess"][i]["subid"].GetString();
             group = "SocksProvider";
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
             node.proxyStr = "user=&pass=";
