@@ -222,18 +222,25 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
         sleep(20); //wait until any one of the threads start up
 
     auto start = steady_clock::now();
-    long long last_bytes = 0, this_bytes = 0, max_speed = 0;
+    long long transferred_bytes = 0, last_bytes = 0, this_bytes = 0, max_speed = 0;
     for(int i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
         received_mutex.lock(); //stop the receive
-        this_bytes = (received_bytes - last_bytes) * 2; //these bytes were received in 0.5s
-        last_bytes = received_bytes;
+        this_bytes = (received_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
+        transferred_bytes = received_bytes;
         //cerr<<this_bytes<<" "<<last_bytes<<endl;
         sleep(5); //slow down to prevent some problem
         received_mutex.unlock();
         node->rawSpeed[i - 1] = this_bytes;
-        max_speed = max(max_speed, this_bytes);
+        if(i % 2 == 0)
+        {
+            max_speed = max(max_speed, (this_bytes + last_bytes) / 2); //pick 2 speed point and get average before calculating max speed
+        }
+        else
+        {
+            last_bytes = this_bytes;
+        }
         running = safe_read_running();
         if(!running)
             break;
