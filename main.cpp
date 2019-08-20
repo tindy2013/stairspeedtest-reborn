@@ -540,7 +540,7 @@ int main(int argc, char* argv[])
     chkArg(argc, argv);
 #ifdef _WIN32
     //start up windows socket library first
-    WSADATA wsd; //WSADATA变量
+    WSADATA wsd;
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
     {
         printMsg(SPEEDTEST_ERROR_WSAERR, &node, rpcmode);
@@ -587,9 +587,9 @@ int main(int argc, char* argv[])
         linkType = SPEEDTEST_MESSAGE_FOUNDSS;
     else if(strFind(link, "ssr://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
-    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks"))
+    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-    else if(strFind(link, "http://") || strFind(link, "https://"))
+    else if(strFind(link, "http://") || strFind(link, "https://") || strFind(link, "surge:///install-config"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSUB;
     else if(link == "data:upload")
         linkType = SPEEDTEST_MESSAGE_FOUNDUPD;
@@ -614,6 +614,8 @@ int main(int argc, char* argv[])
         switchCodepage();
         writeLog(LOG_TYPE_INFO, "Downloading subscription data...");
         printMsg(SPEEDTEST_MESSAGE_FETCHSUB, &node, rpcmode);
+        if(strFind(link, "surge:///install-config")) //surge config link
+            link = UrlDecode(getUrlArg(link, "url"));
         strSub = webGet(link);
         if(strSub.size() == 0)
         {
@@ -622,9 +624,10 @@ int main(int argc, char* argv[])
             if(strProxy != "")
                 strSub = webGet(link, strProxy);
         }
+        writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
         if(strSub.size())
         {
-            explodeSub(strSub, ss_libev, ssr_libev, override_conf_port, socksport, &nodes, &exclude_remarks, &include_remarks);
+            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks);
             batchTest(nodes);
             writeLog(LOG_TYPE_INFO, "Subscription test completed.");
         }
@@ -689,8 +692,16 @@ int main(int argc, char* argv[])
             explode(link, ss_libev, ssr_libev, override_conf_port, socksport, &node);
             if(custom_group.size() != 0)
                 node.group = custom_group;
-            printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
-            singleTest(&node);
+            if(node.server == "")
+            {
+                writeLog(LOG_TYPE_ERROR, "No valid link found.");
+                printMsg(SPEEDTEST_ERROR_NORECOGLINK, &node, rpcmode);
+            }
+            else
+            {
+                printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
+                singleTest(&node);
+            }
             writeLog(LOG_TYPE_INFO, "Single node test completed.");
         }
         else

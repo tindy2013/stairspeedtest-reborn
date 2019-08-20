@@ -211,22 +211,24 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
 void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeInfo *node)
 {
     string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = "SSProvider";
+    vector<string> secret;
     string strTemp;
     if(strFind(ss, "#"))
     {
-        ps = UrlDecode(ss.substr(ss.find("#") + 1));
+        ps = replace_all_distinct(UrlDecode(ss.substr(ss.find("#") + 1)), "\r", "");
         ss = ss.substr(0, ss.find("#"));
     }
     if(!strFind(ss, "/?"))
     {
         ss = ss.substr(5);
-        ss = base64_decode(ss);
-        strTemp = regReplace(ss, "(.*?):(.*?)@(.*?):(.*?)", "$1,$2,$3,$4");
+        //ss = base64_decode(ss);
+        strTemp = regReplace(ss, "(.*?)@(.*?):(.*)", "$1,$2,$3");
         vector<string> args = split(strTemp, ",");
-        method = args[0];
-        password = args[1];
-        server = args[2];
-        port = custom_port == "" ? args[3] : custom_port;
+        secret = split(urlsafe_base64_decode(args[0]), ":");
+        method = secret[0];
+        password = secret[1];
+        server = args[1];
+        port = custom_port == "" ? args[2] : custom_port;
     }
     else
     {
@@ -271,7 +273,7 @@ void explodeSocks(string link, string custom_port, nodeInfo *node)
         server = arguments[0];
         port = arguments[1];
     }
-    else if(strFind(link, "https://t.me/socks"))
+    else if(strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
     {
         server = getUrlArg(link, "server");
         port = getUrlArg(link, "port");
@@ -387,6 +389,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                     node.port = stoi(port);
                     node.proxyStr = ssConstruct(server, port, password, method, "", "", remarks, local_port, libev);
                     nodes->push_back(node);
+                    writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
                 }
             }
             else
@@ -470,6 +473,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
         node.port = stoi(port);
         node.id = index;
         nodes->push_back(node);
+        writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
         index++;
     }
     return;
@@ -657,6 +661,36 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
     return;
 }
 
+void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
+{
+    Document json;
+    nodeInfo node;
+    string ps, password, method, server, port, group = "SSProvider";
+    //first add some extra data before parsing
+    ss = "{\"nodes\":" + ss + "}";
+    json.Parse(ss.data());
+
+    for(unsigned int i = 0; i < json["nodes"].Size(); i++)
+    {
+        server = json["nodes"][i]["server"].GetString();
+        port = custom_port == "" ? to_string(json["nodes"][i]["server_port"].GetInt()) : custom_port;
+        password = json["nodes"][i]["password"].GetString();
+        method = json["nodes"][i]["method"].GetString();
+        ps = json["nodes"][i]["remarks"].GetString();
+
+        if(ps == "")
+            ps = server;
+
+        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+        node.group = group;
+        node.remarks = ps;
+        node.server = server;
+        node.port = stoi(port);
+        node.proxyStr = ssConstruct(server, port, password, method, "", "", ps, local_port, libev);
+        nodes->push_back(node);
+    }
+}
+
 int explodeConf(string filepath, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
 {
     ifstream infile;
@@ -680,6 +714,8 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
         filetype = SPEEDTEST_MESSAGE_FOUNDSSR;
     else if(strFind(content, "\"uiItem\""))
         filetype = SPEEDTEST_MESSAGE_FOUNDVMESS;
+    else if(strFind(content, "\"proxy_apps\""))
+        filetype = SPEEDTEST_MESSAGE_FOUNDSSCONF;
 
     switch(filetype)
     {
@@ -691,6 +727,9 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
         break;
     case SPEEDTEST_MESSAGE_FOUNDVMESS:
         explodeVmessConf(content, custom_port, local_port, sslibev, nodes);
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDSSCONF:
+        explodeSSAndroid(content, sslibev, custom_port, local_port, nodes);
         break;
     default:
         //try to parse as a local subscription
@@ -729,7 +768,7 @@ void explode(string link, bool sslibev, bool ssrlibev, string custom_port, int l
         explodeVmess(link, custom_port, local_port, node);
     else if(strFind(link, "ss://"))
         explodeSS(link, sslibev, custom_port, local_port, node);
-    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks"))
+    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
         explodeSocks(link, custom_port, node);
 }
 
@@ -774,7 +813,7 @@ void explodeSSD(string link, bool libev, string custom_port, int local_port, vec
         node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
         node.id = i;
         nodes->push_back(node);
-        //nodes->insert(nodes->end(), node);
+        writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
     }
     return;
 }
@@ -817,7 +856,7 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
     sub = base64_decode(sub);
     strstream<<sub;
     int index = 0;
-    char delimiter = split(sub, "\n").size() <= 1 ? ' ' : '\n';
+    char delimiter = split(sub, "\n").size() <= 1 ? split(sub, "\r").size() <= 1 ? ' ' : '\r' : '\n';
     while(getline(strstream, strLink, delimiter))
     {
         explode(strLink, sslibev, ssrlibev, custom_port, local_port, &node);
