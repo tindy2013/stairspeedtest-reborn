@@ -529,6 +529,10 @@ void explodeSSConf(string content, string custom_port, int local_port, bool libe
         port = custom_port == ""?to_string(json["configs"][i]["server_port"].GetInt()):custom_port;
         plugin = json["configs"][i]["plugin"].GetString();
         pluginopts = json["configs"][i]["plugin_opts"].GetString();
+        if(ps == "")
+        {
+            ps = server;
+        }
 
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
         node.group = group;
