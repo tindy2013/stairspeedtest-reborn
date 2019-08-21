@@ -119,9 +119,11 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
         return;
     }
     jsondata.Parse(vmess.data());
-    if(jsondata["v"].IsInt())
+    if(!jsondata.HasMember("v"))
+        version = "1"; //link without version will treat as version 1
+    else if(jsondata["v"].IsInt())
         version = to_string(jsondata["v"].GetInt());
-    else
+    else if(jsondata["v"].IsString())
         version = jsondata["v"].GetString();
     ps = jsondata["ps"].GetString();
     add = jsondata["add"].GetString();
@@ -211,7 +213,7 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
 void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeInfo *node)
 {
     string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = "SSProvider";
-    vector<string> secret;
+    vector<string> args, secret;
     string strTemp;
     if(strFind(ss, "#"))
     {
@@ -221,13 +223,25 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
     if(!strFind(ss, "/?"))
     {
         ss = ss.substr(5);
-        strTemp = regReplace(ss, "(.*?)@(.*?):(.*)", "$1,$2,$3");
-        vector<string> args = split(strTemp, ",");
-        secret = split(urlsafe_base64_decode(args[0]), ":");
-        method = secret[0];
-        password = secret[1];
-        server = args[1];
-        port = custom_port == "" ? args[2] : custom_port;
+        if(strFind(ss, "@"))
+        {
+            strTemp = regReplace(ss, "(.*?)@(.*?):(.*)", "$1,$2,$3");
+            args = split(strTemp, ",");
+            secret = split(urlsafe_base64_decode(args[0]), ":");
+            method = secret[0];
+            password = secret[1];
+            server = args[1];
+            port = custom_port == "" ? args[2] : custom_port;
+        }
+        else
+        {
+            strTemp = regReplace(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*?):(.*)", "$1,$2,$3,$4");
+            args = split(strTemp, ",");
+            method = args[0];
+            password = args[1];
+            server = args[2];
+            port = custom_port == "" ? args[3] : custom_port;
+        }
     }
     else
     {

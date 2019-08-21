@@ -6,13 +6,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "misc.h"
+
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
 #include <psapi.h>
 #endif // _WIN32
-
-#include "misc.h"
 
 using namespace std;
 

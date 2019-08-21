@@ -11,7 +11,7 @@ int def_timeout = 2000;
 #endif
 
 #ifdef _WIN32
-#define EINPROGRESS 115 //extra errno
+//#define EINPROGRESS 115 //extra errno
 #ifndef ECONNRESET
 #define ECONNRESET WSAECONNRESET
 #endif	/* not ECONNRESET */
