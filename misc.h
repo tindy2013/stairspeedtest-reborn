@@ -5,6 +5,8 @@
 #include <rapidjson/document.h>
 #include <unistd.h>
 
+#include "geoip.h"
+
 #ifdef _WIN32
 //#include <io.h>
 #include <windows.h>
@@ -20,8 +22,6 @@
 #include <sys/socket.h>
 #define PATH_SLASH "//"
 #endif // _WIN32
-
-#include "geoip.h"
 
 using namespace std;
 

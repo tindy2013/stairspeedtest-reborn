@@ -16,8 +16,8 @@
 #define WINVER 0x0501
 #endif // WINVER
 #include <ws2tcpip.h>
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #else
 //translate windows functions to linux functions
 #define SOCKET int
