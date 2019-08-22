@@ -12,7 +12,6 @@ wget https://curl.haxx.se/download/curl-7.65.1.tar.gz
 tar xvf curl-7.65.1.tar.gz
 cd curl-7.65.1
 ./configure --with-ssl --disable-shared
-make -j8
 make install -j8
 cd ..
 
@@ -21,7 +20,6 @@ wget http://www.zlib.net/zlib-1.2.11.tar.gz
 tar xvf zlib-1.2.11.tar.gz
 cd zlib-1.2.11
 ./configure
-make -j8
 make install -j8
 cd ..
 
@@ -30,7 +28,6 @@ wget https://nchc.dl.sourceforge.net/project/libpng/libpng16/1.6.37/libpng-1.6.3
 tar xvf libpng-1.6.37.tar.gz
 cd libpng-1.6.37
 ./configure
-make -j8
 make install -j8
 cd ..
 
@@ -39,15 +36,16 @@ wget https://nchc.dl.sourceforge.net/project/freetype/freetype2/2.10.1/freetype-
 tar xvf freetype-2.10.1.tar.xz
 cd freetype-2.10.1
 ./configure
-make -j8
 make install -j8
+#fix incorrect path
+mv /usr/local/include/freetype2/* /usr/local/include/
+rm -r /usr/local/include/freetype2
 cd ..
 
 echo downloading and compiling pngwriter
 git clone https://github.com/pngwriter/pngwriter
 cd pngwriter
 cmake .
-make -j8
 make install -j8
 cd ..
 
@@ -55,8 +53,15 @@ echo downloading and installing rapidjson
 git clone https://github.com/tencent/rapidjson
 cd rapidjson
 cmake .
-make -j8
 make install -j8
+cd ..
+
+echo downloading and compiling yaml-cpp
+git clone https://github.com/jbeder/yaml-cpp
+cd yaml-cpp
+cmake .
+make install -j8
+cd ..
 
 echo installing shadowsocks-libev
 apt install shadowsocks-libev -y

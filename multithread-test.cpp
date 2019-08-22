@@ -85,7 +85,7 @@ static inline void draw_progress(int progress, long long this_bytes)
     cerr<<" "<<progress * 5<<"% "<<speedCalc(this_bytes);
 }
 
-int _thread_download(string host, string uri, string localaddr, int localport, string username, string password, bool useTLS = false)
+int _thread_download(string host, int port, string uri, string localaddr, int localport, string username, string password, bool useTLS = false)
 {
     launch_acc();
     running_acc();
@@ -104,11 +104,11 @@ int _thread_download(string host, string uri, string localaddr, int localport, s
         goto end;
     if(connectSocks5(sHost, username, password) == -1)
         goto end;
+    if(connectThruSocks(sHost, host, "", port) == -1)
+        goto end;
 
     if(useTLS)
     {
-        if(connectThruSocks(sHost, host, "", 443) == -1)
-            goto end;
         SSL_CTX *ctx;
         SSL *ssl;
 
@@ -154,8 +154,6 @@ int _thread_download(string host, string uri, string localaddr, int localport, s
     }
     else
     {
-        if(connectThruSocks(sHost, host, "", 80) == -1)
-            goto end;
         retVal = Send(sHost, request.data(), request.size(), 0);
         if (SOCKET_ERROR == retVal)
         {
@@ -196,12 +194,25 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
 {
     //prep up vars first
     string host, uri, testfile = node->testFile;
+    int port;
     bool useTLS = false;
     if(regMatch(testfile, "^https://(.*)"))
         useTLS = true;
     testfile = regReplace(testfile, "^(http|https)://", "");
     host = testfile.substr(0, testfile.find("/"));
     uri = testfile.substr(testfile.find("/"));
+    if(strFind(host, ":"))
+    {
+        port = stoi(host.substr(host.rfind(":") + 1));
+        host = host.substr(0, host.rfind(":"));
+    }
+    else
+    {
+        if(useTLS)
+            port = 443;
+        else
+            port = 80;
+    }
     received_bytes = 0;
     EXIT_FLAG = false;
 
@@ -216,7 +227,7 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     thread threads[thread_count];
     for(int i = 0; i != thread_count; i++)
     {
-        threads[i]=thread(_thread_download, host, uri, localaddr, localport, username, password, useTLS);
+        threads[i]=thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
     }
     while(!safe_read_launched())
         sleep(20); //wait until any one of the threads start up
