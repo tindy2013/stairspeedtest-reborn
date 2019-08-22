@@ -23,11 +23,11 @@
 #define SOCKET int
 #define INVALID_SOCKET (SOCKET)(~0)
 #define SOCKET_ERROR	(-1)
+#define ioctlsocket ioctl
 #define closesocket close
 #define SOCKADDR_IN sockaddr_in
 #define ZeroMemory(d,l) memset((d), 0, (l))
 #ifdef _MACOS
-#define ioctlsocket ioctl
 #define SA_INTERRUPT SV_INTERRUPT
 #define MSG_NOSIGNAL 0 //ignore this signal
 #endif // _MACOS

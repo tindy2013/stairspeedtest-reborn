@@ -286,7 +286,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
     PUT_BYTE(ptr++, 2); //2 auth methods
     PUT_BYTE(ptr++, 0); //no auth
     PUT_BYTE(ptr++, 2); //user pass auth
-    Send(sHost, buf, ptr-buf, 0);
+    Send(sHost, buf, ptr - buf, 0);
     ZeroMemory(bufRecv, BUF_SIZE);
     Recv(sHost, bufRecv, 2, 0);
     if ((bufRecv[0] != 5) ||                       // ver5 response

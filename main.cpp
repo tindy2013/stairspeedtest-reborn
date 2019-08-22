@@ -10,6 +10,7 @@
 #include "renderer.h"
 #include "processes.h"
 #include "rulematch.h"
+#include "version.h"
 
 using namespace std;
 using namespace chrono;
@@ -38,6 +39,7 @@ bool test_site_ping = false;
 string export_sort_method = "none";
 
 int avail_status[3] = {1, 1, 1};
+unsigned int node_count = 0;
 
 #ifdef _WIN32
 HANDLE hProc = 0;
@@ -370,7 +372,16 @@ int singleTest(nodeInfo *node)
     proxy.username = username;
     proxy.password = password;
 
-    printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
+    //printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
+    if(!rpcmode)
+    {
+        clearTrans();
+        addTrans("?group?", node->group);
+        addTrans("?remarks?", node->remarks);
+        addTrans("?index?", to_string(node->id + 1));
+        addTrans("?total?", to_string(node_count));
+        printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
+    }
     writeLog(LOG_TYPE_INFO, "Received server. Group: " + node->group + " Name: " + node->remarks);
     printMsg(SPEEDTEST_MESSAGE_STARTPING, node, rpcmode);
     if(speedtest_mode != "speedonly")
@@ -416,6 +427,7 @@ int singleTest(nodeInfo *node)
     else
     {
         clearTrans();
+        addTrans("?id?", to_string(node->id));
         printMsgWithDict(SPEEDTEST_ERROR_GEOIPERR, rpcmode, dict, trans);
     }
 
@@ -478,7 +490,7 @@ int singleTest(nodeInfo *node)
 void batchTest(vector<nodeInfo> nodes)
 {
     nodeInfo node;
-    unsigned int node_count = 0, onlines = 0;
+    unsigned int onlines = 0, index = 0;
     long long tottraffic = 0;
 
     node_count = nodes.size();
@@ -493,14 +505,23 @@ void batchTest(vector<nodeInfo> nodes)
         resultInit(export_with_maxspeed);
         writeLog(LOG_TYPE_INFO, "Speedtest will now begin.");
         printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
-        for(unsigned i = 0; i < node_count; i++)
+        //first print out all nodes when in Web mode
+        if(rpcmode)
+        {
+            for(index = 0; index < node_count; index++)
+            {
+                printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &nodes[index], rpcmode);
+            }
+        }
+        //then we start testing nodes
+        for(index = 0; index < node_count; index++)
         {
             if(custom_group.size() != 0)
-                nodes[i].group = custom_group;
-            singleTest(&nodes[i]);
-            writeResult(&nodes[i], export_with_maxspeed);
-            tottraffic += nodes[i].totalRecvBytes;
-            if(nodes[i].online)
+                nodes[index].group = custom_group;
+            singleTest(&nodes[index]);
+            writeResult(&nodes[index], export_with_maxspeed);
+            tottraffic += nodes[index].totalRecvBytes;
+            if(nodes[index].online)
                 onlines++;
         }
         resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes.size());
@@ -550,7 +571,7 @@ int main(int argc, char* argv[])
     if(rpcmode)
         switchCodepage();
     else
-        SetConsoleTitle("Stair Speedtest");
+        SetConsoleTitle("Stair Speedtest " VERSION);
 #endif // _WIN32
     //kill any client before testing
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
@@ -687,6 +708,7 @@ int main(int argc, char* argv[])
     default:
         if(linkType > 0)
         {
+            node_count = 1;
             switchCodepage();
             printMsg(linkType, &node, rpcmode);
             explode(link, ss_libev, ssr_libev, override_conf_port, socksport, &node);
@@ -700,6 +722,14 @@ int main(int argc, char* argv[])
             else
             {
                 printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
+                if(rpcmode)
+                {
+                    clearTrans();
+                    addTrans("?group?", node.group);
+                    addTrans("?remarks?", node.remarks);
+                    addTrans("?index?", to_string(node.id + 1));
+                    printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
+                }
                 singleTest(&node);
             }
             writeLog(LOG_TYPE_INFO, "Single node test completed.");
@@ -708,7 +738,6 @@ int main(int argc, char* argv[])
         {
             writeLog(LOG_TYPE_ERROR, "No valid link found.");
             printMsg(SPEEDTEST_ERROR_NORECOGLINK, &node, rpcmode);
-            //node.linkType = linkType;
         }
     }
     logEOF();

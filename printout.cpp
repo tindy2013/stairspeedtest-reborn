@@ -1,4 +1,5 @@
 #include "printout.h"
+#include "version.h"
 
 //define print-out messages
 struct LOOKUP_ITEM
@@ -9,7 +10,7 @@ struct LOOKUP_ITEM
 
 LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
-    {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nLink: "},
+    {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nLink: "},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "Found single V2Ray link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSS, "Found single Shadowsocks link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSSR, "Found single ShadowsocksR link.\n"},
@@ -17,7 +18,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_FOUNDSUB, "Found subscribe link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDLOCAL, "Found local configure file.\n"},
     {SPEEDTEST_MESSAGE_GROUP, "If you have imported an V2Ray subscribe link which doesn't contain a Group Name, you can specify a custom name below.\nIf you have imported an Shadowsocks/ShadowsocksR link which contains a Group Name, press Enter to skip.\nCustom Group Name: "},
-    {SPEEDTEST_MESSAGE_GOTSERVER, "\nCurrent Server Group: ?group? Remarks: ?remarks?\n"},
+    {SPEEDTEST_MESSAGE_GOTSERVER, "\nCurrent Server Group: ?group? Remarks: ?remarks? Index: ?index?/?total?\n"},
     {SPEEDTEST_MESSAGE_STARTPING, "Now performing TCP Ping...\n"},
     {SPEEDTEST_MESSAGE_STARTGEOIP, "Now performing GeoIP parse...\n"},
     {SPEEDTEST_MESSAGE_STARTGPING, "Now performing Google Ping...\n"},
