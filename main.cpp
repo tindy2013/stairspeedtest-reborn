@@ -725,10 +725,9 @@ int main(int argc, char* argv[])
                 if(rpcmode)
                 {
                     clearTrans();
-                    addTrans("?id?", node.id);
+                    addTrans("?id?", to_string(node.id));
                     addTrans("?group?", node.group);
                     addTrans("?remarks?", node.remarks);
-                    addTrans("?index?", to_string(node.id + 1));
                     printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
                 }
                 singleTest(&node);
