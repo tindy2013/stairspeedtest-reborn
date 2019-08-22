@@ -1,4 +1,5 @@
 #include "printout.h"
+#include "version.h"
 
 //define print-out messages
 struct LOOKUP_ITEM
@@ -9,7 +10,7 @@ struct LOOKUP_ITEM
 
 LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
-    {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nLink: "},
+    {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nLink: "},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "Found single V2Ray link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSS, "Found single Shadowsocks link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSSR, "Found single ShadowsocksR link.\n"},

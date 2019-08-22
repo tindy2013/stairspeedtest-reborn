@@ -45,7 +45,7 @@ void logInit(bool rpcmode)
 {
     curtime = getTime(1);
     logPath = "logs" PATH_SLASH + curtime + ".log";
-    string log_header = "Stair Speedtest started in ";
+    string log_header = "Stair Speedtest " VERSION " started in ";
     if(rpcmode)
         log_header += "GUI mode.";
     else

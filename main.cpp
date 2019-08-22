@@ -10,6 +10,7 @@
 #include "renderer.h"
 #include "processes.h"
 #include "rulematch.h"
+#include "version.h"
 
 using namespace std;
 using namespace chrono;
@@ -570,7 +571,7 @@ int main(int argc, char* argv[])
     if(rpcmode)
         switchCodepage();
     else
-        SetConsoleTitle("Stair Speedtest");
+        SetConsoleTitle("Stair Speedtest " VERSION);
 #endif // _WIN32
     //kill any client before testing
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
