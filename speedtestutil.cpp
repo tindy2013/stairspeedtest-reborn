@@ -156,11 +156,90 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
     }
 
     node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-    node->group = "V2rayProvider";
+    node->group = V2RAY_DEFAULT_GROUP;
     node->remarks = ps;
     node->server = add;
     node->port = stoi(port);
     node->proxyStr = vmessConstruct(add, port, type, id, aid, net, "auto", path, host, tls, local_port);
+}
+
+void explodeVmessConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
+{
+    nodeInfo node;
+    Document json;
+    string group, ps, add, port, type, id, aid, net, path, host, tls, cipher, subid;
+    int configType;
+    map<string, string> subdata;
+    map<string, string>::iterator iter;
+
+    json.Parse(content.data());
+    //read all subscribe remark as group name
+    for(unsigned int i = 0; i < json["subItem"].Size(); i++)
+    {
+        subdata.insert(pair<string, string>(json["subItem"][i]["id"].GetString(), json["subItem"][i]["remarks"].GetString()));
+    }
+
+    for(unsigned int i = 0; i < json["vmess"].Size(); i++)
+    {
+        if(json["vmess"][i]["address"].IsNull() || json["vmess"][i]["port"].IsNull() || json["vmess"][i]["id"].IsNull())
+        {
+            continue;
+        }
+        //common info
+        ps = json["vmess"][i]["remarks"].GetString();
+        add = json["vmess"][i]["address"].GetString();
+        port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
+        subid = json["vmess"][i]["subid"].GetString();
+
+        configType = json["vmess"][i]["configType"].GetInt();
+        switch(configType)
+        {
+        case 1: //vmess config
+            type = json["vmess"][i]["headerType"].GetString();
+            id = json["vmess"][i]["id"].GetString();
+            aid = to_string(json["vmess"][i]["alterId"].GetInt());
+            net = json["vmess"][i]["network"].GetString();
+            path = json["vmess"][i]["path"].GetString();
+            host = json["vmess"][i]["requestHost"].GetString();
+            tls = json["vmess"][i]["streamSecurity"].GetString();
+            cipher = json["vmess"][i]["security"].GetString();
+            group = V2RAY_DEFAULT_GROUP;
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+            node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
+            break;
+        case 3: //ss config
+            id = json["vmess"][i]["id"].GetString();
+            cipher = json["vmess"][i]["security"].GetString();
+            group = SS_DEFAULT_GROUP;
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+            node.proxyStr = ssConstruct(add, port, id, cipher, "", "", ps, local_port, true);
+            break;
+        case 4: //socks config
+            group = SOCKS_DEFAULT_GROUP;
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+            node.proxyStr = "user=&pass=";
+        default:
+            continue;
+        }
+        if(subid != "")
+        {
+            iter = subdata.find(subid);
+            if(iter != subdata.end())
+            {
+                group = iter->second;
+            }
+        }
+        if(ps == "")
+        {
+            ps = add;
+        }
+        node.group = group;
+        node.remarks = ps;
+        node.server = add;
+        node.port = stoi(port);
+        nodes->push_back(node);
+    }
+    return;
 }
 
 void explodeSSR(string ssr, bool libev, string custom_port, int local_port, nodeInfo *node)
@@ -195,7 +274,7 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     password = base64_decode(strcfg[5]);
 
     if(group == "")
-        group = "SSRProvider";
+        group = SSR_DEFAULT_GROUP;
     if(remarks == "")
     {
         remarks = server;
@@ -210,9 +289,44 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     node->proxyStr = ssrConstruct(group, remarks, remarks_base64, server, port, protocol, method, obfs, password, obfsparam, protoparam, local_port, libev);
 }
 
+void explodeSSRConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
+{
+    nodeInfo node;
+    Document json;
+    string base, config, remarks, remarks_base64, group, server, port, method, password, protocol, protoparam, obfs, obfsparam;
+
+    json.Parse(content.data());
+    for(unsigned int i = 0; i < json["configs"].Size(); i++)
+    {
+        config = config_ssr_libev;
+        group = json["configs"][i]["group"].GetString();
+        if(group == "")
+            group = SSR_DEFAULT_GROUP;
+        remarks = json["configs"][i]["remarks"].GetString();
+        remarks_base64 = json["configs"][i]["remarks_base64"].GetString();
+        password = json["configs"][i]["password"].GetString();
+        method = json["configs"][i]["method"].GetString();
+        server = json["configs"][i]["server"].GetString();
+        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
+        protocol = json["configs"][i]["protocol"].GetString();
+        protoparam = json["configs"][i]["protocolparam"].GetString();
+        obfs = json["configs"][i]["obfs"].GetString();
+        obfsparam = json["configs"][i]["obfsparam"].GetString();
+
+        node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
+        node.group = group;
+        node.remarks = remarks;
+        node.server = server;
+        node.port = stoi(port);
+        node.proxyStr = ssrConstruct(group, remarks, remarks_base64, server, port, protocol, method, obfs, password, obfsparam, protoparam, local_port, libev);
+        nodes->push_back(node);
+    }
+    return;
+}
+
 void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeInfo *node)
 {
-    string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = "SSProvider";
+    string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP;
     vector<string> args, secret;
     string strTemp;
     if(strFind(ss, "#"))
@@ -270,6 +384,115 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
     node->proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
 }
 
+void explodeSSD(string link, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
+{
+    Document jsondata;
+    nodeInfo node;
+    string group, port, method, password, server, remarks;
+    string plugin, pluginopts;
+    link = base64_decode(link.substr(6));
+    jsondata.Parse(link.c_str());
+    for(unsigned int i = 0; i < jsondata["servers"].Size(); i++)
+    {
+        group = jsondata["airport"].GetString();
+        port = to_string(jsondata["port"].GetInt());
+        method = jsondata["encryption"].GetString();
+        password = jsondata["password"].GetString();
+        remarks = jsondata["servers"][i]["remarks"].GetString();
+        server = jsondata["servers"][i]["server"].GetString();
+        if(jsondata["servers"][i].HasMember("plugin"))
+            plugin = jsondata["servers"][i]["plugin"].GetString();
+        else
+            plugin = "";
+        if(jsondata["servers"][i].HasMember("plugin_options"))
+            pluginopts = jsondata["servers"][i]["plugin_options"].GetString();
+        else
+            pluginopts = "";
+        if(jsondata["servers"][i].HasMember("encryption"))
+            method = jsondata["servers"][i]["encryption"].GetString();
+        if(jsondata["servers"][i].HasMember("port"))
+            port = to_string(jsondata["servers"][i]["port"].GetInt());
+        if(jsondata["servers"][i].HasMember("password"))
+            password = jsondata["password"][i]["password"].GetString();
+        if(custom_port != "")
+            port = custom_port;
+
+        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+        node.group = group;
+        node.remarks = remarks;
+        node.server = server;
+        node.port = stoi(port);
+        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
+        node.id = i;
+        nodes->push_back(node);
+        writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
+    }
+    return;
+}
+
+void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
+{
+    Document json;
+    nodeInfo node;
+    string ps, password, method, server, port, group = SS_DEFAULT_GROUP;
+    //first add some extra data before parsing
+    ss = "{\"nodes\":" + ss + "}";
+    json.Parse(ss.data());
+
+    for(unsigned int i = 0; i < json["nodes"].Size(); i++)
+    {
+        server = json["nodes"][i]["server"].GetString();
+        port = custom_port == "" ? to_string(json["nodes"][i]["server_port"].GetInt()) : custom_port;
+        password = json["nodes"][i]["password"].GetString();
+        method = json["nodes"][i]["method"].GetString();
+        ps = json["nodes"][i]["remarks"].GetString();
+
+        if(ps == "")
+            ps = server;
+
+        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+        node.group = group;
+        node.remarks = ps;
+        node.server = server;
+        node.port = stoi(port);
+        node.proxyStr = ssConstruct(server, port, password, method, "", "", ps, local_port, libev);
+        nodes->push_back(node);
+    }
+}
+
+void explodeSSConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
+{
+    nodeInfo node;
+    Document json;
+    string config, ps, password, method, server, port, plugin, pluginopts, group = SS_DEFAULT_GROUP;
+
+    json.Parse(content.data());
+    for(unsigned int i = 0; i < json["configs"].Size(); i++)
+    {
+        config = config_ss_libev;
+        ps = json["configs"][i]["remarks"].GetString();
+        password = json["configs"][i]["password"].GetString();
+        method = json["configs"][i]["method"].GetString();
+        server = json["configs"][i]["server"].GetString();
+        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
+        plugin = json["configs"][i]["plugin"].GetString();
+        pluginopts = json["configs"][i]["plugin_opts"].GetString();
+        if(ps == "")
+        {
+            ps = server;
+        }
+
+        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+        node.group = group;
+        node.remarks = ps;
+        node.server = server;
+        node.port = stoi(port);
+        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
+        nodes->push_back(node);
+    }
+    return;
+}
+
 void explodeSocks(string link, string custom_port, nodeInfo *node)
 {
     string remarks, server, port, username, password;
@@ -303,7 +526,7 @@ void explodeSocks(string link, string custom_port, nodeInfo *node)
     }
 
     node->linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-    node->group = "SocksProvider";
+    node->group = SOCKS_DEFAULT_GROUP;
     node->remarks = remarks;
     node->server = server;
     node->port = stoi(port);
@@ -318,7 +541,7 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
     configs = split(strTemp, ",");
     if(configs[1] == "vmess")
     {
-        string group, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
+        string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
         ps = trim(configs[0]);
         add = trim(configs[2]);
         port = trim(configs[3]);
@@ -370,10 +593,11 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
 
 bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
 {
-    string line, remarks, server, port, method, password;
+    string line, remarks, server, port, method, password, plugin, pluginopts, pluginopts_mode, pluginopts_host;
     stringstream data;
-    vector<string> configs;
+    vector<string> configs, vchild;
     nodeInfo node;
+    unsigned int i;
     bool isSurgeConfig = false, isProxySection = false;
 
     data<<surge;
@@ -387,23 +611,58 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
             {
                 line = regReplace(line, "(.*?) = (.*)", "$1,$2");
                 configs = split(line, ",");
-                if(configs[1] == "custom"/* && strFind(configs[6], "ss.module")*/)
+                remarks = configs[0];
+                server = trim(configs[2]);
+                port = custom_port == "" ? trim(configs[3]) : custom_port;
+                if(configs[1] == "custom"/* && strFind(configs[6], "ss.module")*/) //surge 2 style custom proxy
                 {
-                    remarks = configs[0];
-                    server = trim(configs[2]);
-                    port = custom_port == "" ? trim(configs[3]) : custom_port;
                     method = trim(configs[4]);
                     password = trim(configs[5]);
 
                     node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-                    node.group = "SSProvider";
-                    node.remarks = remarks;
-                    node.server = server;
-                    node.port = stoi(port);
+                    node.group = SS_DEFAULT_GROUP;
                     node.proxyStr = ssConstruct(server, port, password, method, "", "", remarks, local_port, libev);
-                    nodes->push_back(node);
-                    writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
                 }
+                else if(configs[1] == "ss") //surge 3 style ss proxy
+                {
+                    for(i = 3; i < configs.size(); i++)
+                    {
+                        vchild = split(trim(configs[i]), "=");
+                        if(vchild[0] == "encrypt-method")
+                            method = vchild[1];
+                        else if(vchild[0] == "password")
+                            password = vchild[1];
+                        else if(vchild[0] == "obfs")
+                        {
+                            plugin = "obfs-local";
+                            pluginopts_mode = vchild[1];
+                        }
+                        else if(vchild[0] == "obfs-host")
+                            pluginopts_host = vchild[1];
+                    }
+                    if(plugin != "")
+                    {
+                        pluginopts = "obfs=" + pluginopts_mode;
+                        pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
+                    }
+
+                    node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+                    node.group = SS_DEFAULT_GROUP;
+                    node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
+                }
+                else if(configs[1] == "socks5") //surge 3 style socks5 proxy
+                {
+                    node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+                    node.group = SOCKS_DEFAULT_GROUP;
+                    node.proxyStr = "user=" + trim(configs[3]) + "&pass=" + trim(configs[4]);
+                }
+                else
+                    continue;
+                node.remarks = remarks;
+                node.server = server;
+                node.port = stoi(port);
+                nodes->push_back(node);
+                writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
             }
             else
             {
@@ -433,7 +692,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
         if(proxytype == "vmess")
         {
             string type = "none", id, aid = "0", net = "tcp", path, host, tls;
-            group = "V2RayProvider";
+            group = V2RAY_DEFAULT_GROUP;
 
             yamlnode["Proxy"][i]["uuid"]>>id;
             yamlnode["Proxy"][i]["alterId"]>>aid;
@@ -454,7 +713,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
         {
             string password, method, plugin, pluginopts, addition;
             string pluginopts_mode, pluginopts_host;
-            group = "SSProvider";
+            group = SS_DEFAULT_GROUP;
 
             yamlnode["Proxy"][i]["cipher"]>>method;
             yamlnode["Proxy"][i]["password"]>>password;
@@ -496,19 +755,18 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
 {
     bool excluded = false, included = false;
     string remarks = UTF8ToGBK(node->remarks);
-    unsigned i;
     writeLog(LOG_TYPE_INFO, "Comparing exclude remarks...");
-    for(i = 0; i < exclude_remarks->size(); i++)
+    for(auto &x : *exclude_remarks)
     {
-        if(strFind(remarks, (*exclude_remarks)[i]))
+        if(strFind(remarks, x))
             excluded = true;
     }
     if(include_remarks->size() != 0)
     {
         writeLog(LOG_TYPE_INFO, "Comparing include remarks...");
-        for(i = 0; i < include_remarks->size(); i++)
+        for(auto &x : *include_remarks)
         {
-            if(strFind(remarks, (*include_remarks)[i]))
+            if(strFind(remarks, x))
                 included = true;
         }
     }
@@ -517,187 +775,7 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
         included = true;
     }
 
-    if(!excluded && included)
-        return false;
-    else
-        return true;
-}
-
-void explodeSSConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
-{
-    nodeInfo node;
-    Document json;
-    string config, ps, password, method, server, port, plugin, pluginopts, group = "SSProvider";
-
-    json.Parse(content.data());
-    for(unsigned int i = 0; i < json["configs"].Size(); i++)
-    {
-        config = config_ss_libev;
-        ps = json["configs"][i]["remarks"].GetString();
-        password = json["configs"][i]["password"].GetString();
-        method = json["configs"][i]["method"].GetString();
-        server = json["configs"][i]["server"].GetString();
-        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
-        plugin = json["configs"][i]["plugin"].GetString();
-        pluginopts = json["configs"][i]["plugin_opts"].GetString();
-        if(ps == "")
-        {
-            ps = server;
-        }
-
-        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-        node.group = group;
-        node.remarks = ps;
-        node.server = server;
-        node.port = stoi(port);
-        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
-        nodes->push_back(node);
-    }
-    return;
-}
-
-void explodeSSRConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
-{
-    nodeInfo node;
-    Document json;
-    string base, config, remarks, remarks_base64, group, server, port, method, password, protocol, protoparam, obfs, obfsparam;
-
-    json.Parse(content.data());
-    for(unsigned int i = 0; i < json["configs"].Size(); i++)
-    {
-        config = config_ssr_libev;
-        group = json["configs"][i]["group"].GetString();
-        if(group == "")
-            group = "SSRProvider";
-        remarks = json["configs"][i]["remarks"].GetString();
-        remarks_base64 = json["configs"][i]["remarks_base64"].GetString();
-        password = json["configs"][i]["password"].GetString();
-        method = json["configs"][i]["method"].GetString();
-        server = json["configs"][i]["server"].GetString();
-        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
-        protocol = json["configs"][i]["protocol"].GetString();
-        protoparam = json["configs"][i]["protocolparam"].GetString();
-        obfs = json["configs"][i]["obfs"].GetString();
-        obfsparam = json["configs"][i]["obfsparam"].GetString();
-
-        node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
-        node.group = group;
-        node.remarks = remarks;
-        node.server = server;
-        node.port = stoi(port);
-        node.proxyStr = ssrConstruct(group, remarks, remarks_base64, server, port, protocol, method, obfs, password, obfsparam, protoparam, local_port, libev);
-        nodes->push_back(node);
-    }
-    return;
-}
-
-void explodeVmessConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
-{
-    nodeInfo node;
-    Document json;
-    string group, ps, add, port, type, id, aid, net, path, host, tls, cipher, subid;
-    int configType;
-    map<string, string> subdata;
-    map<string, string>::iterator iter;
-
-    json.Parse(content.data());
-    //read all subscribe remark as group name
-    for(unsigned int i = 0; i < json["subItem"].Size(); i++)
-    {
-        subdata.insert(pair<string, string>(json["subItem"][i]["id"].GetString(), json["subItem"][i]["remarks"].GetString()));
-    }
-
-    for(unsigned int i = 0; i < json["vmess"].Size(); i++)
-    {
-        if(json["vmess"][i]["address"].IsNull() || json["vmess"][i]["port"].IsNull() || json["vmess"][i]["id"].IsNull())
-        {
-            continue;
-        }
-        //common info
-        ps = json["vmess"][i]["remarks"].GetString();
-        add = json["vmess"][i]["address"].GetString();
-        port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
-        subid = json["vmess"][i]["subid"].GetString();
-
-        configType = json["vmess"][i]["configType"].GetInt();
-        switch(configType)
-        {
-        case 1: //vmess config
-            type = json["vmess"][i]["headerType"].GetString();
-            id = json["vmess"][i]["id"].GetString();
-            aid = to_string(json["vmess"][i]["alterId"].GetInt());
-            net = json["vmess"][i]["network"].GetString();
-            path = json["vmess"][i]["path"].GetString();
-            host = json["vmess"][i]["requestHost"].GetString();
-            tls = json["vmess"][i]["streamSecurity"].GetString();
-            cipher = json["vmess"][i]["security"].GetString();
-            group = "V2rayProvider";
-            node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-            node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
-            break;
-        case 3: //ss config
-            id = json["vmess"][i]["id"].GetString();
-            cipher = json["vmess"][i]["security"].GetString();
-            group = "SSProvider";
-            node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-            node.proxyStr = ssConstruct(add, port, id, cipher, "", "", ps, local_port, true);
-            break;
-        case 4: //socks config
-            group = "SocksProvider";
-            node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-            node.proxyStr = "user=&pass=";
-        default:
-            continue;
-        }
-        if(subid != "")
-        {
-            iter = subdata.find(subid);
-            if(iter != subdata.end())
-            {
-                group = iter->second;
-            }
-        }
-        if(ps == "")
-        {
-            ps = add;
-        }
-        node.group = group;
-        node.remarks = ps;
-        node.server = add;
-        node.port = stoi(port);
-        nodes->push_back(node);
-    }
-    return;
-}
-
-void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
-{
-    Document json;
-    nodeInfo node;
-    string ps, password, method, server, port, group = "SSProvider";
-    //first add some extra data before parsing
-    ss = "{\"nodes\":" + ss + "}";
-    json.Parse(ss.data());
-
-    for(unsigned int i = 0; i < json["nodes"].Size(); i++)
-    {
-        server = json["nodes"][i]["server"].GetString();
-        port = custom_port == "" ? to_string(json["nodes"][i]["server_port"].GetInt()) : custom_port;
-        password = json["nodes"][i]["password"].GetString();
-        method = json["nodes"][i]["method"].GetString();
-        ps = json["nodes"][i]["remarks"].GetString();
-
-        if(ps == "")
-            ps = server;
-
-        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-        node.group = group;
-        node.remarks = ps;
-        node.server = server;
-        node.port = stoi(port);
-        node.proxyStr = ssConstruct(server, port, password, method, "", "", ps, local_port, libev);
-        nodes->push_back(node);
-    }
+    return excluded || !included;
 }
 
 int explodeConf(string filepath, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
@@ -781,52 +859,6 @@ void explode(string link, bool sslibev, bool ssrlibev, string custom_port, int l
         explodeSocks(link, custom_port, node);
 }
 
-void explodeSSD(string link, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
-{
-    Document jsondata;
-    nodeInfo node;
-    string group, port, method, password, server, remarks;
-    string plugin, pluginopts;
-    link = base64_decode(link.substr(6));
-    jsondata.Parse(link.c_str());
-    for(unsigned int i = 0; i < jsondata["servers"].Size(); i++)
-    {
-        group = jsondata["airport"].GetString();
-        port = to_string(jsondata["port"].GetInt());
-        method = jsondata["encryption"].GetString();
-        password = jsondata["password"].GetString();
-        remarks = jsondata["servers"][i]["remarks"].GetString();
-        server = jsondata["servers"][i]["server"].GetString();
-        if(jsondata["servers"][i].HasMember("plugin"))
-            plugin = jsondata["servers"][i]["plugin"].GetString();
-        else
-            plugin = "";
-        if(jsondata["servers"][i].HasMember("plugin_options"))
-            pluginopts = jsondata["servers"][i]["plugin_options"].GetString();
-        else
-            pluginopts = "";
-        if(jsondata["servers"][i].HasMember("encryption"))
-            method = jsondata["servers"][i]["encryption"].GetString();
-        if(jsondata["servers"][i].HasMember("port"))
-            port = to_string(jsondata["servers"][i]["port"].GetInt());
-        if(jsondata["servers"][i].HasMember("password"))
-            password = jsondata["password"][i]["password"].GetString();
-        if(custom_port != "")
-            port = custom_port;
-
-        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-        node.group = group;
-        node.remarks = remarks;
-        node.server = server;
-        node.port = stoi(port);
-        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
-        node.id = i;
-        nodes->push_back(node);
-        writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
-    }
-    return;
-}
-
 void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int local_port, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
 {
     stringstream strstream;
@@ -885,5 +917,4 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
         index++;
         //nodes->insert(nodes->end(), node);
     }
-
 }

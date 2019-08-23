@@ -78,7 +78,7 @@ void StringToWstring(wstring& szDst, string str)
 
 unsigned char FromHex(unsigned char x)
 {
-    unsigned char y;
+    unsigned char y = '\0';
     if (x >= 'A' && x <= 'Z')
         y = x - 'A' + 10;
     else if (x >= 'a' && x <= 'z')
@@ -103,7 +103,7 @@ string UrlDecode(const string& str)
             assert(i + 2 < length);
             unsigned char high = FromHex((unsigned char)str[++i]);
             unsigned char low = FromHex((unsigned char)str[++i]);
-            strTemp += high*16 + low;
+            strTemp += high * 16 + low;
         }
         else
             strTemp += str[i];

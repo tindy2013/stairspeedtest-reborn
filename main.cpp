@@ -401,9 +401,9 @@ int singleTest(nodeInfo *node)
             killClient(node->linkType);
             return SPEEDTEST_ERROR_NOCONNECTION;
         }
-        for(int i = 0; i < 6; i++)
+        for(auto &x : node->rawPing)
         {
-            logdata += to_string(node->rawPing[i]) + " ";
+            logdata += to_string(x) + " ";
         }
         writeLog(LOG_TYPE_RAW, logdata);
         writeLog(LOG_TYPE_INFO, "TCP Ping: " + node->avgPing + "  Packet Loss: " + node->pkLoss);
@@ -437,9 +437,9 @@ int singleTest(nodeInfo *node)
         writeLog(LOG_TYPE_INFO, "Now performing site ping...");
         websitePing(node, "https://www.google.com/", testserver, testport, username, password);
         logdata = "";
-        for(int i = 0; i < 6; i++)
+        for(auto &x : node->rawSitePing)
         {
-            logdata += to_string(node->rawSitePing[i]) + " ";
+            logdata += to_string(x) + " ";
         }
         writeLog(LOG_TYPE_RAW, logdata);
         writeLog(LOG_TYPE_INFO, "Site ping: " + node->sitePing);
@@ -453,9 +453,9 @@ int singleTest(nodeInfo *node)
         writeLog(LOG_TYPE_INFO, "Now performing file download speed test...");
         perform_test(node, testserver, testport, username, password, def_thread_count);
         logdata = "";
-        for(int i = 0; i < 20; i++)
+        for(auto &x : node->rawSpeed)
         {
-            logdata += to_string(node->rawSpeed[i]) + " ";
+            logdata += to_string(x) + " ";
         }
         writeLog(LOG_TYPE_RAW, logdata);
         if(node->totalRecvBytes == 0)
@@ -464,9 +464,9 @@ int singleTest(nodeInfo *node)
             printMsg(SPEEDTEST_ERROR_RETEST, node, rpcmode);
             perform_test(node, testserver, testport, username, password, def_thread_count);
             logdata = "";
-            for(int i = 0; i < 20; i++)
+            for(auto &x : node->rawSpeed)
             {
-                logdata += to_string(node->rawSpeed[i]) + " ";
+                logdata += to_string(x) + " ";
             }
             writeLog(LOG_TYPE_RAW, logdata);
             if(node->totalRecvBytes == 0)
@@ -490,7 +490,7 @@ int singleTest(nodeInfo *node)
 void batchTest(vector<nodeInfo> nodes)
 {
     nodeInfo node;
-    unsigned int onlines = 0, index = 0;
+    unsigned int onlines = 0;
     long long tottraffic = 0;
 
     node_count = nodes.size();
@@ -508,20 +508,20 @@ void batchTest(vector<nodeInfo> nodes)
         //first print out all nodes when in Web mode
         if(rpcmode)
         {
-            for(index = 0; index < node_count; index++)
+            for(auto &x : nodes)
             {
-                printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &nodes[index], rpcmode);
+                printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &x, rpcmode);
             }
         }
         //then we start testing nodes
-        for(index = 0; index < node_count; index++)
+        for(auto &x : nodes)
         {
             if(custom_group.size() != 0)
-                nodes[index].group = custom_group;
-            singleTest(&nodes[index]);
-            writeResult(&nodes[index], export_with_maxspeed);
-            tottraffic += nodes[index].totalRecvBytes;
-            if(nodes[index].online)
+                x.group = custom_group;
+            singleTest(&x);
+            writeResult(&x, export_with_maxspeed);
+            tottraffic += x.totalRecvBytes;
+            if(x.online)
                 onlines++;
         }
         resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes.size());
