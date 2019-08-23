@@ -49,6 +49,11 @@
 #define SPEEDTEST_MESSAGE_FOUNDSSCONF 26
 #define SPEEDTEST_MESSAGE_EOF 49
 
+#define SS_DEFAULT_GROUP "SSProvider"
+#define SSR_DEFAULT_GROUP "SSRProvider"
+#define V2RAY_DEFAULT_GROUP "V2RayProvider"
+#define SOCKS_DEFAULT_GROUP "SocksProvider"
+
 using namespace std;
 
 void printMsg(int index, nodeInfo *node, bool rpcmode);
