@@ -496,19 +496,18 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
 {
     bool excluded = false, included = false;
     string remarks = UTF8ToGBK(node->remarks);
-    unsigned i;
     writeLog(LOG_TYPE_INFO, "Comparing exclude remarks...");
-    for(i = 0; i < exclude_remarks->size(); i++)
+    for(auto &x : *exclude_remarks)
     {
-        if(strFind(remarks, (*exclude_remarks)[i]))
+        if(strFind(remarks, x))
             excluded = true;
     }
     if(include_remarks->size() != 0)
     {
         writeLog(LOG_TYPE_INFO, "Comparing include remarks...");
-        for(i = 0; i < include_remarks->size(); i++)
+        for(auto &x : *include_remarks)
         {
-            if(strFind(remarks, (*include_remarks)[i]))
+            if(strFind(remarks, x))
                 included = true;
         }
     }
@@ -517,10 +516,7 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
         included = true;
     }
 
-    if(!excluded && included)
-        return false;
-    else
-        return true;
+    return excluded || !included;
 }
 
 void explodeSSConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
