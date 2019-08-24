@@ -1,7 +1,11 @@
+#include <rapidjson/document.h>
+#include <fstream>
+
 #include "misc.h"
 #include "printout.h"
 #include "logger.h"
 #include "speedtestutil.h"
+#include "webget.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -17,9 +21,12 @@ string base_vmess = "{\"inbounds\":[{\"port\":?localport?,\"listen\":\"0.0.0.0\"
 string wsset_vmess = "{\"connectionReuse\":true,\"path\":\"?path?\",\"headers\":{\"Host\":\"?host?\"}}";
 string tcpset_vmess = "{\"connectionReuse\":true,\"header\":{\"type\":\"?type?\",\"request\":{\"version\":\"1.1\",\"method\":\"GET\",\"path\":[\"?path?\"],\"headers\":{\"Host\":[\"?host?\"],\"User-Agent\":[\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36\",\"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46\"],\"Accept-Encoding\":[\"gzip, deflate\"],\"Connection\":[\"keep-alive\"],\"Pragma\":\"no-cache\"}}}}";
 
+map<string, string> parsedMD5;
+string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
+
 //remake from speedtestutil
 
-template <typename T> void operator>>(const YAML::Node& node,  T& i)
+template <typename T> void operator >> (const YAML::Node& node,  T& i)
 {
     i = node.as<T>();
 };
@@ -593,17 +600,17 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
 
 bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
 {
-    string line, remarks, server, port, method, password, plugin, pluginopts, pluginopts_mode, pluginopts_host;
+    string line, remarks, server, port, method, username, password, plugin, pluginopts, pluginopts_mode, pluginopts_host = "cloudfront.net", mod_url, mod_md5;
     stringstream data;
     vector<string> configs, vchild;
     nodeInfo node;
-    unsigned int i;
+    unsigned int i, index = 0;
     bool isSurgeConfig = false, isProxySection = false;
 
-    data<<surge;
+    data << surge;
     while(getline(data, line))
     {
-        if(!line.size())
+        if(!line.size() || line.find("#") == 0)
             continue;
         else if(isProxySection)
         {
@@ -611,24 +618,64 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
             {
                 line = regReplace(line, "(.*?) = (.*)", "$1,$2");
                 configs = split(line, ",");
-                remarks = configs[0];
-                server = trim(configs[2]);
-                port = custom_port == "" ? trim(configs[3]) : custom_port;
-                if(configs[1] == "custom"/* && strFind(configs[6], "ss.module")*/) //surge 2 style custom proxy
+                if(configs[1] == "custom") //surge 2 style custom proxy
                 {
-                    method = trim(configs[4]);
-                    password = trim(configs[5]);
+                    mod_url = trim(configs[6]);
+                    if(parsedMD5.count(mod_url) > 0)
+                    {
+                        mod_md5 = parsedMD5[mod_url]; //read calculated MD5 from map
+                    }
+                    else
+                    {
+                        mod_md5 = getMD5(webGet(mod_url)); //retrieve module and calculate MD5
+                        parsedMD5.insert(pair<string, string>(mod_url, mod_md5)); //save unrecognized module MD5 to map
+                    }
 
-                    node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-                    node.group = SS_DEFAULT_GROUP;
-                    node.proxyStr = ssConstruct(server, port, password, method, "", "", remarks, local_port, libev);
+                    if(mod_md5 == modSSMD5) //is SSEncrypt module
+                    {
+                        remarks = configs[0];
+                        server = trim(configs[2]);
+                        port = custom_port == "" ? trim(configs[3]) : custom_port;
+                        method = trim(configs[4]);
+                        password = trim(configs[5]);
+
+                        for(i = 7; i < configs.size(); i++)
+                        {
+                            vchild = split(trim(configs[i]), "=");
+                            if(vchild.size() < 2)
+                                continue;
+                            else if(vchild[0] == "obfs")
+                            {
+                                plugin = "obfs-local";
+                                pluginopts_mode = vchild[1];
+                            }
+                            else if(vchild[0] == "obfs-host")
+                                pluginopts_host = vchild[1];
+                        }
+                        if(plugin != "")
+                        {
+                            pluginopts = "obfs=" + pluginopts_mode;
+                            pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
+                        }
+
+                        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+                        node.group = SS_DEFAULT_GROUP;
+                        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
+                    }
+                    else
+                        continue;
                 }
                 else if(configs[1] == "ss") //surge 3 style ss proxy
                 {
-                    for(i = 3; i < configs.size(); i++)
+                    remarks = configs[0];
+                    server = trim(configs[2]);
+                    port = custom_port == "" ? trim(configs[3]) : custom_port;
+                    for(i = 4; i < configs.size(); i++)
                     {
                         vchild = split(trim(configs[i]), "=");
-                        if(vchild[0] == "encrypt-method")
+                        if(vchild.size() < 2)
+                            continue;
+                        else if(vchild[0] == "encrypt-method")
                             method = vchild[1];
                         else if(vchild[0] == "password")
                             password = vchild[1];
@@ -654,15 +701,22 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                 {
                     node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
                     node.group = SOCKS_DEFAULT_GROUP;
-                    node.proxyStr = "user=" + trim(configs[3]) + "&pass=" + trim(configs[4]);
+                    if(configs.size() >= 6)
+                    {
+                        username = trim(configs[3]);
+                        password = trim(configs[4]);
+                    }
+                    node.proxyStr = "user=" + username + "&pass=" + password;
                 }
                 else
                     continue;
                 node.remarks = remarks;
                 node.server = server;
                 node.port = stoi(port);
+                node.id = index;
                 nodes->push_back(node);
                 writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
+                index++;
             }
             else
             {
@@ -685,18 +739,18 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
     string proxytype, strTemp, ps, server, port, cipher, group;
     for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
     {
-        yamlnode["Proxy"][i]["type"]>>proxytype;
-        yamlnode["Proxy"][i]["name"]>>ps;
-        yamlnode["Proxy"][i]["server"]>>server;
+        yamlnode["Proxy"][i]["type"] >> proxytype;
+        yamlnode["Proxy"][i]["name"] >> ps;
+        yamlnode["Proxy"][i]["server"] >> server;
         port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<string>() : custom_port;
         if(proxytype == "vmess")
         {
             string type = "none", id, aid = "0", net = "tcp", path, host, tls;
             group = V2RAY_DEFAULT_GROUP;
 
-            yamlnode["Proxy"][i]["uuid"]>>id;
-            yamlnode["Proxy"][i]["alterId"]>>aid;
-            yamlnode["Proxy"][i]["cipher"]>>cipher;
+            yamlnode["Proxy"][i]["uuid"] >> id;
+            yamlnode["Proxy"][i]["alterId"] >> aid;
+            yamlnode["Proxy"][i]["cipher"] >> cipher;
             net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<string>() : "tcp";
             path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<string>() : "/";
             if(yamlnode["Proxy"][i]["tls"].IsDefined())
@@ -704,7 +758,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                 tls = yamlnode["Proxy"][i]["tls"].as<string>() == "true" ? "tls" : "";
             }
             if(yamlnode["Proxy"][i]["ws-headers"].IsDefined())
-                yamlnode["Proxy"][i]["ws-headers"]["Host"]>>host;
+                yamlnode["Proxy"][i]["ws-headers"]["Host"] >> host;
 
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.proxyStr = vmessConstruct(server, port, type, id, aid, net, cipher, path, host, tls, local_port);
@@ -715,8 +769,8 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             string pluginopts_mode, pluginopts_host;
             group = SS_DEFAULT_GROUP;
 
-            yamlnode["Proxy"][i]["cipher"]>>method;
-            yamlnode["Proxy"][i]["password"]>>password;
+            yamlnode["Proxy"][i]["cipher"] >> method;
+            yamlnode["Proxy"][i]["password"] >> password;
             if(yamlnode["Proxy"][i]["plugin"].IsDefined())
             {
                 if(yamlnode["Proxy"][i]["plugin"].as<string>() == "obfs")
@@ -724,9 +778,9 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                     plugin = "obfs-local";
                     if(yamlnode["Proxy"][i]["plugin-opts"].IsDefined())
                     {
-                        yamlnode["Proxy"][i]["plugin-opts"]["mode"]>>pluginopts_mode;
+                        yamlnode["Proxy"][i]["plugin-opts"]["mode"] >> pluginopts_mode;
                         if(yamlnode["Proxy"][i]["plugin-opts"]["host"].IsDefined())
-                            yamlnode["Proxy"][i]["plugin-opts"]["host"]>>pluginopts_host;
+                            yamlnode["Proxy"][i]["plugin-opts"]["host"] >> pluginopts_host;
                     }
                 }
             }
@@ -739,6 +793,8 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
             node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
         }
+        else
+            continue;
         node.group = group;
         node.remarks = ps;
         node.server = server;
@@ -784,7 +840,7 @@ int explodeConf(string filepath, string custom_port, int local_port, bool sslibe
     stringstream contentstrm;
     infile.open(filepath);
 
-    contentstrm<<infile.rdbuf();
+    contentstrm << infile.rdbuf();
     infile.close();
 
     return explodeConfContent(contentstrm.str(), custom_port, local_port, sslibev, ssrlibev, nodes, exclude_remarks, include_remarks);
@@ -895,7 +951,7 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
 
     //try to parse as normal subscription
     sub = base64_decode(sub);
-    strstream<<sub;
+    strstream << sub;
     int index = 0;
     char delimiter = split(sub, "\n").size() <= 1 ? split(sub, "\r").size() <= 1 ? ' ' : '\r' : '\n';
     while(getline(strstream, strLink, delimiter))

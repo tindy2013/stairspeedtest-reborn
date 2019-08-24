@@ -1,3 +1,13 @@
+#include <iostream>
+#include <chrono>
+#include <memory>
+#include <assert.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #include "socket.h"
 #include "misc.h"
 
@@ -11,7 +21,6 @@ int def_timeout = 2000;
 #endif
 
 #ifdef _WIN32
-//#define EINPROGRESS 115 //extra errno
 #ifndef ECONNRESET
 #define ECONNRESET WSAECONNRESET
 #endif	/* not ECONNRESET */
@@ -138,7 +147,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
         FD_SET(sockfd, &set);
         if(select(sockfd+1, NULL, &set, NULL, &tm) > 0)
         {
-            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*)&error, /*(socklen_t *)*/&len);
+            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*)&error, (socklen_t *)&len);
             if(error == 0)
                 ret = 0;
             else
@@ -153,11 +162,13 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     ul = 0;
     ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
 #else
+
+//signal
     struct sigaction act, oldact;
     act.sa_handler = connect_sigalarm;
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGALRM);
-    act.sa_flags = SA_INTERRUPT;
+    //act.sa_flags = 0x20000000;
     sigaction(SIGALRM, &act, &oldact);
     if(alarm(def_timeout / 1000) != 0)
     {
@@ -165,7 +176,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     }
 
     ret = connect(sockfd, addr, addrsize);
-    if(ret<0)
+    if(ret < 0)
     {
         close(sockfd);
         if (errno == EINTR)
@@ -178,24 +189,65 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     }
     alarm(0);
 
-    /*
-    struct timeval timeo = {0, def_timeout*1000};
-    socklen_t len = sizeof(timeo);
 
-    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeo, len);
-    if(connect(sockfd, addr, addrsize) == -1) {
-        if (errno == EINPROGRESS) {
-            //fprintf(stderr, "timeout/n");
-            cerr<<"timeout"<<endl;
+//setsockopt
+/*
+    int flags = 0, error = 0;
+    fd_set  rset, wset;
+    socklen_t   len = sizeof(error);
+    struct timeval  ts;
+
+    ts.tv_sec = 0;
+    ts.tv_usec = def_timeout * 1000;
+
+    //clear out descriptor sets for select
+    //add socket to the descriptor sets
+    FD_ZERO(&rset);
+    FD_SET(sockfd, &rset);
+    wset = rset;    //structure assignment ok
+
+    //set socket nonblocking flag
+    if( (flags = fcntl(sockfd, F_GETFL, 0)) < 0)
+        return -1;
+
+    if(fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
+        return -1;
+
+    //initiate non-blocking connect
+    if( (ret = connect(sockfd, addr, addrsize)) < 0 )
+        if (errno != EINPROGRESS)
             return -1;
-        }
-        //perror("connect");
-        cerr<<"connect err"<<endl;
-        return 0;
+
+    if(ret == 0)    //then connect succeeded right away
+        goto done;
+
+    //we are waiting for connect to complete now
+    if( (ret = select(sockfd + 1, &rset, &wset, NULL, &ts)) < 0)
+        return -1;
+    if(ret == 0){   //we had a timeout
+        errno = ETIMEDOUT;
+        return -1;
     }
-    //setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, "", 0);
-    //printf("connected/n");
-    */
+
+    //we had a positivite return so a descriptor is ready
+    if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)){
+        if(getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+            return -1;
+    }else
+        return -1;
+
+    if(error){  //check if we had a socket error
+        errno = error;
+        return -1;
+    }
+
+done:
+    //put socket back in blocking mode
+    if(fcntl(sockfd, F_SETFL, flags) < 0)
+        return -1;
+
+    return 0;
+*/
 #endif // _WIN32
     return ret;
 }
@@ -249,10 +301,10 @@ char* hostnameToIPv4(string host)
     /*
     struct in_addr inaddr;
     //string retstr;
-    hostent *h=gethostbyname(host.data());
-    if(h==NULL) return const_cast<char* >("");
-    inaddr.s_addr=*(u_long*)h->h_addr_list[0];
-    //addr=inet_ntoa(inaddr);
+    hostent *h = gethostbyname(host.data());
+    if(h == NULL) return const_cast<char* >("");
+    inaddr.s_addr = *(u_long*)h->h_addr_list[0];
+    //addr = inet_ntoa(inaddr);
     return inet_ntoa(inaddr);
     */
     //new function
@@ -397,7 +449,7 @@ int checkPort(int startport)
         if(fd == INVALID_SOCKET)
             continue;
         servAddr.sin_port = htons(startport);
-        retVal = bind(fd, (struct sockaddr*)(&servAddr), sizeof(sockaddr_in));
+        retVal = ::bind(fd, (struct sockaddr*)(&servAddr), sizeof(sockaddr_in));
         if(retVal == SOCKET_ERROR)
         {
             closesocket(fd);

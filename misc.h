@@ -1,27 +1,16 @@
 #ifndef MISC_H_INCLUDED
 #define MISC_H_INCLUDED
 
-#include <bits/stdc++.h>
-#include <rapidjson/document.h>
-#include <unistd.h>
-
-#include "geoip.h"
+#include <string>
+#include <vector>
 
 #ifdef _WIN32
-//#include <io.h>
-#include <windows.h>
-#include <winreg.h>
 #define PATH_SLASH "\\"
 #else
-#ifndef __hpux
-#include <sys/select.h>
-#endif /* __hpux */
-#ifndef _access
-#define _access access
-#endif // _access
-#include <sys/socket.h>
 #define PATH_SLASH "//"
 #endif // _WIN32
+
+#include "geoip.h"
 
 using namespace std;
 
@@ -59,6 +48,7 @@ static const string base64_chars =
 string UrlDecode(const string& str);
 string base64_decode(string encoded_string);
 string base64_encode(string string_to_encode);
+
 vector<string> split(const string &s, const string &seperator);
 string getUrlArg(string url, string request);
 string replace_all_distinct(string str, string old_value, string new_value);
@@ -75,10 +65,13 @@ int regMatch(string src, string match);
 string speedCalc(double speed);
 bool strFind(string str, string target);
 string grabContent(string raw);
+string getMD5(string data);
+bool isIPv4(string address);
+
 bool fileExist(string path);
 bool fileCopy(string source,string dest);
 string fileToBase64(string filepath);
-bool isIPv4(string address);
+string fileGetMD5(string filepath);
 
 #ifdef _WIN32
 void StringToWstring(std::wstring& szDst, std::string str);

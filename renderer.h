@@ -1,11 +1,8 @@
 #ifndef RENDERER_H_INCLUDED
 #define RENDERER_H_INCLUDED
 
-#include <bits/stdc++.h>
-#include <pngwriter.h>
-#include <zlib.h>
-#include <zconf.h>
-#include <chrono>
+#include <string>
+#include <vector>
 
 #include "misc.h"
 #include "logger.h"

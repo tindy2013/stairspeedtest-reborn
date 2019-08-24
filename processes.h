@@ -1,7 +1,7 @@
 #ifndef PROCESSES_H_INCLUDED
 #define PROCESSES_H_INCLUDED
 
-#include <bits/stdc++.h>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

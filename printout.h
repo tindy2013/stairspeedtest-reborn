@@ -1,7 +1,8 @@
 #ifndef PRINTOUT_H_INCLUDED
 #define PRINTOUT_H_INCLUDED
 
-#include <bits/stdc++.h>
+#include <string>
+#include <vector>
 #include <unistd.h>
 #include "misc.h"
 

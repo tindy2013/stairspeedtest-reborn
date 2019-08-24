@@ -1,5 +1,11 @@
-#include <bits/stdc++.h>
+#include <string>
+#include <map>
+#include <vector>
 #include <chrono>
+#include <iostream>
+#include <regex>
+#include <fstream>
+#include <iomanip>
 
 #include "socket.h"
 #include "misc.h"
@@ -317,6 +323,19 @@ void readConf(string path)
     infile.close();
 }
 
+void signalHandler(int signum)
+{
+   cerr << "Interrupt signal (" << signum << ") received.\n";
+
+   killClient(SPEEDTEST_MESSAGE_FOUNDSS);
+   killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+   killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
+   writeLog(LOG_TYPE_INFO, "Received SIGINT. Exit right now.");
+   logEOF();
+
+   exit(signum);
+}
+
 void chkArg(int argc, char* argv[])
 {
     for(int i = 0; i<argc; i++)
@@ -552,8 +571,9 @@ int main(int argc, char* argv[])
     nodeInfo node;
     string link, strSub, strInput, fileContent, strProxy;
     int linkType = -1;
-    cout<<fixed;
-    cout<<setprecision(2);
+    cout << fixed;
+    cout << setprecision(2);
+    signal(SIGINT, signalHandler);
 
     logInit(rpcmode);
     //speedtest.bat :main

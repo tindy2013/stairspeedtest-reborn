@@ -1,4 +1,29 @@
+#include <chrono>
+#include <regex>
+#include <fstream>
+#include <thread>
+#include <sstream>
+#include <iosfwd>
+#include <unistd.h>
+
+#include <rapidjson/document.h>
+#include <openssl/md5.h>
+
 #include "misc.h"
+
+#ifdef _WIN32
+//#include <io.h>
+#include <windows.h>
+#include <winreg.h>
+#else
+#ifndef __hpux
+#include <sys/select.h>
+#endif /* __hpux */
+#ifndef _access
+#define _access access
+#endif // _access
+#include <sys/socket.h>
+#endif // _WIN32
 
 void sleep(int interval)
 {
@@ -417,6 +442,27 @@ string grabContent(string raw)
     //return raw;
 }
 
+string getMD5(string data)
+{
+    MD5_CTX ctx;
+    string result;
+	unsigned int i = 0;
+	unsigned char digest[16] = {};
+
+	MD5_Init(&ctx);
+    MD5_Update(&ctx, data.data(), data.size());
+    MD5_Final((unsigned char *)&digest, &ctx);
+
+    char tmp[3] = {};
+    for(i = 0; i < 16; i++)
+	{
+		snprintf(tmp, 3, "%02x", digest[i]);
+		result += tmp;
+    }
+
+    return result;
+}
+
 bool fileExist(string path)
 {
     return _access(path.data(), 4) != -1;
@@ -456,7 +502,23 @@ string fileToBase64(string filepath)
     strstrm<<infile.rdbuf();
     strdata = strstrm.str();
     infile.close();
+
     return base64_encode(strdata);
+}
+
+string fileGetMD5(string filepath)
+{
+    ifstream infile;
+    string strdata;
+    stringstream strstrm;
+    infile.open(filepath, ios::binary);
+    if(!infile)
+        return string();
+    strstrm<<infile.rdbuf();
+    strdata = strstrm.str();
+    infile.close();
+
+    return getMD5(strdata);
 }
 
 bool isIPv4(string address)
