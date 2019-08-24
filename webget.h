@@ -1,7 +1,7 @@
 #ifndef WEBGET_H_INCLUDED
 #define WEBGET_H_INCLUDED
 
-#include <bits/stdc++.h>
+#include <string>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 

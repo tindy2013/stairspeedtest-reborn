@@ -1,28 +1,16 @@
 #ifndef MISC_H_INCLUDED
 #define MISC_H_INCLUDED
 
-#include <bits/stdc++.h>
-#include <rapidjson/document.h>
-#include <unistd.h>
-#include <openssl/md5.h>
-
-#include "geoip.h"
+#include <string>
+#include <vector>
 
 #ifdef _WIN32
-//#include <io.h>
-#include <windows.h>
-#include <winreg.h>
 #define PATH_SLASH "\\"
 #else
-#ifndef __hpux
-#include <sys/select.h>
-#endif /* __hpux */
-#ifndef _access
-#define _access access
-#endif // _access
-#include <sys/socket.h>
 #define PATH_SLASH "//"
 #endif // _WIN32
+
+#include "geoip.h"
 
 using namespace std;
 
@@ -60,6 +48,7 @@ static const string base64_chars =
 string UrlDecode(const string& str);
 string base64_decode(string encoded_string);
 string base64_encode(string string_to_encode);
+
 vector<string> split(const string &s, const string &seperator);
 string getUrlArg(string url, string request);
 string replace_all_distinct(string str, string old_value, string new_value);

@@ -1,3 +1,10 @@
+#include <algorithm>
+#include <chrono>
+
+#include <pngwriter.h>
+#include <zlib.h>
+#include <zconf.h>
+
 #include "renderer.h"
 #include "version.h"
 
@@ -109,7 +116,7 @@ int calcLength(string data)
     int total = 0;
     for(unsigned int i = 0; i < data.size(); i++)
     {
-        if(data[i] > 255 || data[i] < 0)
+        if(int(data[i]) > 255 || int(data[i]) < 0)
             total += 2;
         else
             total++;

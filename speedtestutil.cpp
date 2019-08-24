@@ -1,3 +1,6 @@
+#include <rapidjson/document.h>
+#include <fstream>
+
 #include "misc.h"
 #include "printout.h"
 #include "logger.h"
@@ -23,7 +26,7 @@ string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
 
 //remake from speedtestutil
 
-template <typename T> void operator>>(const YAML::Node& node,  T& i)
+template <typename T> void operator >> (const YAML::Node& node,  T& i)
 {
     i = node.as<T>();
 };
@@ -601,10 +604,10 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
     stringstream data;
     vector<string> configs, vchild;
     nodeInfo node;
-    unsigned int i;
+    unsigned int i, index = 0;
     bool isSurgeConfig = false, isProxySection = false;
 
-    data<<surge;
+    data << surge;
     while(getline(data, line))
     {
         if(!line.size() || line.find("#") == 0)
@@ -710,8 +713,10 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                 node.remarks = remarks;
                 node.server = server;
                 node.port = stoi(port);
+                node.id = index;
                 nodes->push_back(node);
                 writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
+                index++;
             }
             else
             {
@@ -734,18 +739,18 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
     string proxytype, strTemp, ps, server, port, cipher, group;
     for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
     {
-        yamlnode["Proxy"][i]["type"]>>proxytype;
-        yamlnode["Proxy"][i]["name"]>>ps;
-        yamlnode["Proxy"][i]["server"]>>server;
+        yamlnode["Proxy"][i]["type"] >> proxytype;
+        yamlnode["Proxy"][i]["name"] >> ps;
+        yamlnode["Proxy"][i]["server"] >> server;
         port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<string>() : custom_port;
         if(proxytype == "vmess")
         {
             string type = "none", id, aid = "0", net = "tcp", path, host, tls;
             group = V2RAY_DEFAULT_GROUP;
 
-            yamlnode["Proxy"][i]["uuid"]>>id;
-            yamlnode["Proxy"][i]["alterId"]>>aid;
-            yamlnode["Proxy"][i]["cipher"]>>cipher;
+            yamlnode["Proxy"][i]["uuid"] >> id;
+            yamlnode["Proxy"][i]["alterId"] >> aid;
+            yamlnode["Proxy"][i]["cipher"] >> cipher;
             net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<string>() : "tcp";
             path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<string>() : "/";
             if(yamlnode["Proxy"][i]["tls"].IsDefined())
@@ -753,7 +758,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                 tls = yamlnode["Proxy"][i]["tls"].as<string>() == "true" ? "tls" : "";
             }
             if(yamlnode["Proxy"][i]["ws-headers"].IsDefined())
-                yamlnode["Proxy"][i]["ws-headers"]["Host"]>>host;
+                yamlnode["Proxy"][i]["ws-headers"]["Host"] >> host;
 
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.proxyStr = vmessConstruct(server, port, type, id, aid, net, cipher, path, host, tls, local_port);
@@ -764,8 +769,8 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             string pluginopts_mode, pluginopts_host;
             group = SS_DEFAULT_GROUP;
 
-            yamlnode["Proxy"][i]["cipher"]>>method;
-            yamlnode["Proxy"][i]["password"]>>password;
+            yamlnode["Proxy"][i]["cipher"] >> method;
+            yamlnode["Proxy"][i]["password"] >> password;
             if(yamlnode["Proxy"][i]["plugin"].IsDefined())
             {
                 if(yamlnode["Proxy"][i]["plugin"].as<string>() == "obfs")
@@ -773,9 +778,9 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                     plugin = "obfs-local";
                     if(yamlnode["Proxy"][i]["plugin-opts"].IsDefined())
                     {
-                        yamlnode["Proxy"][i]["plugin-opts"]["mode"]>>pluginopts_mode;
+                        yamlnode["Proxy"][i]["plugin-opts"]["mode"] >> pluginopts_mode;
                         if(yamlnode["Proxy"][i]["plugin-opts"]["host"].IsDefined())
-                            yamlnode["Proxy"][i]["plugin-opts"]["host"]>>pluginopts_host;
+                            yamlnode["Proxy"][i]["plugin-opts"]["host"] >> pluginopts_host;
                     }
                 }
             }
@@ -788,6 +793,8 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
             node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
         }
+        else
+            continue;
         node.group = group;
         node.remarks = ps;
         node.server = server;
@@ -833,7 +840,7 @@ int explodeConf(string filepath, string custom_port, int local_port, bool sslibe
     stringstream contentstrm;
     infile.open(filepath);
 
-    contentstrm<<infile.rdbuf();
+    contentstrm << infile.rdbuf();
     infile.close();
 
     return explodeConfContent(contentstrm.str(), custom_port, local_port, sslibev, ssrlibev, nodes, exclude_remarks, include_remarks);
@@ -944,7 +951,7 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
 
     //try to parse as normal subscription
     sub = base64_decode(sub);
-    strstream<<sub;
+    strstream << sub;
     int index = 0;
     char delimiter = split(sub, "\n").size() <= 1 ? split(sub, "\r").size() <= 1 ? ' ' : '\r' : '\n';
     while(getline(strstream, strLink, delimiter))

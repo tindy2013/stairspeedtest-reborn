@@ -1,8 +1,16 @@
-#include <bits/stdc++.h>
+#include <string>
 #include <chrono>
+#include <thread>
+#include <iostream>
+#include <mutex>
+#include <unistd.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #include "misc.h"
 #include "socket.h"
+#include "logger.h"
 
 using namespace std;
 using namespace chrono;
@@ -192,10 +200,13 @@ end:
 
 int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count)
 {
+    writeLog(LOG_TYPE_FILEDL, "Multi-thread download test started.");
     //prep up vars first
     string host, uri, testfile = node->testFile;
     int port;
     bool useTLS = false;
+
+    writeLog(LOG_TYPE_FILEDL, "Fetch target: " + testfile);
     if(regMatch(testfile, "^https://(.*)"))
         useTLS = true;
     testfile = regReplace(testfile, "^(http|https)://", "");
@@ -218,20 +229,27 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
 
     if(useTLS)
     {
+        writeLog(LOG_TYPE_FILEDL, "Found HTTPS URL. Initializing OpenSSL library.");
         SSL_load_error_strings();
         SSL_library_init();
         OpenSSL_add_all_algorithms();
+    }
+    else
+    {
+        writeLog(LOG_TYPE_FILEDL, "Found HTTP URL.");
     }
 
     int running;
     thread threads[thread_count];
     for(int i = 0; i != thread_count; i++)
     {
+        writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + to_string(i + 1) + ".");
         threads[i]=thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
     }
     while(!safe_read_launched())
         sleep(20); //wait until any one of the threads start up
 
+    writeLog(LOG_TYPE_FILEDL, "All threads launched. Start accumulating data.");
     auto start = steady_clock::now();
     long long transferred_bytes = 0, last_bytes = 0, this_bytes = 0, max_speed = 0;
     for(int i = 1; i < 21; i++)
@@ -253,6 +271,8 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
             last_bytes = this_bytes;
         }
         running = safe_read_running();
+        writeLog(LOG_TYPE_FILEDL, "Running threads: " + to_string(running) + ", total received bytes: " + to_string(transferred_bytes) \
+                 + ", current received bytes: " + to_string(this_bytes) + ".");
         if(!running)
             break;
         draw_progress(i, this_bytes);
@@ -261,6 +281,7 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     safe_set_exit_flag(); //terminate all threads right now
     received_mutex.lock(); //lock it to prevent any further data writing
     auto end = steady_clock::now();
+    writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     //cerr<<deltatime<<" "<<received_bytes<<endl;
@@ -269,11 +290,13 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     node->totalRecvBytes = received_bytes;
     node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
     node->maxSpeed = speedCalc(max_speed);
+    writeLog(LOG_TYPE_FILEDL, "Downloaded " + to_string(received_bytes) + " bytes in " + to_string(deltatime) + " milliseconds.");
     received_mutex.unlock(); //unlock to make threads continue running
     for(int i = 0; i < thread_count; i++)
     {
         if(threads[i].joinable())
             threads[i].join();//wait until all threads has exited
     }
+    writeLog(LOG_TYPE_FILEDL, "Multi-thread download test completed.");
     return 0;
 }

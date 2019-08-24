@@ -3,17 +3,20 @@
 #include "webget.h"
 #include "geoip.h"
 #include "misc.h"
+#include "logger.h"
 
 using namespace rapidjson;
 
 geoIPInfo getGeoIPInfo(string ip, string proxy)
 {
+    writeLog(LOG_TYPE_GEOIP, "GeoIP parse begin.");
     string strRet, address = ip;
     geoIPInfo info;
     Document json;
 
     if(address == "")
     {
+        writeLog(LOG_TYPE_GEOIP, "No address provided, getting GeoIP through proxy '" + proxy + "'.");
         strRet = webGet("https://api.ip.sb/geoip", proxy);
     }
     else
@@ -28,17 +31,23 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
                 address = ip;
             }
         }
+        writeLog(LOG_TYPE_GEOIP, "Getting GeoIP of '" + address + "' through proxy '" + proxy + "'.");
         strRet = webGet("https://api.ip.sb/geoip/" + address, proxy);
     }
     if(strRet == "")
+    {
+        writeLog(LOG_TYPE_GEOIP, "No GeoIP result. Leaving...");
         return info;
+    }
 
+    writeLog(LOG_TYPE_GEOIP, "Parsing GeoIP result...");
     json.Parse(strRet.data());
 
     if(json.HasMember("code"))
     {
         if(json["code"].GetInt() == 401)
         {
+            writeLog(LOG_TYPE_GEOIP, "Invalid address.");
             return info;
         }
     }
@@ -69,6 +78,7 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
     if(json.HasMember("timezone"))
         info.timezone = json["timezone"].GetString();
 
+    writeLog(LOG_TYPE_GEOIP, "Parse GeoIP complete. Leaving...");
     return info;
 }
 

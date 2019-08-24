@@ -1,25 +1,20 @@
 #ifndef LOGGER_H_INCLUDED
 #define LOGGER_H_INCLUDED
 
-#include "misc.h"
-#include "printout.h"
+#include <string>
 
-#include <bits/stdc++.h>
-#include <sys/time.h>
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif // _WIN32
+#include "misc.h"
 
 #define LOG_TYPE_INFO 1
 #define LOG_TYPE_ERROR 2
 #define LOG_TYPE_RAW 3
-
-extern string resultPath, logPath;
+#define LOG_TYPE_TCPING 4
+#define LOG_TYPE_FILEDL 5
+#define LOG_TYPE_GEOIP 6
 
 using namespace std;
+
+extern string resultPath, logPath;
 
 int makeDir(const char *path);
 string getTime(int type);

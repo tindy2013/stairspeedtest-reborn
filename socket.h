@@ -1,15 +1,7 @@
 #ifndef SOCKET_H_INCLUDED
 #define SOCKET_H_INCLUDED
 
-#include <bits/stdc++.h>
-#include <chrono>
-#include <memory>
-#include <assert.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
+#include <string>
 
 #ifdef _WIN32
 #ifndef WINVER
@@ -17,7 +9,6 @@
 #endif // WINVER
 #include <ws2tcpip.h>
 #include <winsock2.h>
-#include <windows.h>
 #else
 //translate windows functions to linux functions
 #define SOCKET int
@@ -29,7 +20,7 @@
 #define ZeroMemory(d,l) memset((d), 0, (l))
 #ifdef _MACOS
 #define SA_INTERRUPT SV_INTERRUPT
-#define MSG_NOSIGNAL 0 //ignore this signal
+#define MSG_NOSIGNAL 0 //ignore this setting
 #endif // _MACOS
 #ifndef __hpux
 #include <sys/select.h>

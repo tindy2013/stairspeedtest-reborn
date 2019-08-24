@@ -1,5 +1,19 @@
+#include <string>
+#include <fstream>
+#include <sstream>
+
 #include "logger.h"
 #include "version.h"
+#include "misc.h"
+#include "printout.h"
+
+#include <sys/time.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif // _WIN32
 
 using namespace std;
 
@@ -22,7 +36,7 @@ string getTime(int type)
     string format;
     timeval tv;
     gettimeofday(&tv, NULL);
-    snprintf(cMillis, 7, "%.6ld", tv.tv_usec);
+    snprintf(cMillis, 7, "%.6ld", (long)tv.tv_usec);
     lt = time(NULL);
     struct tm *local = localtime(&lt);
     switch(type)
@@ -68,7 +82,7 @@ void resultInit(bool export_with_maxspeed)
 
 void writeLog(int type, string content)
 {
-    string timestr = "[" + getTime(2) + "]",typestr;
+    string timestr = "[" + getTime(2) + "]", typestr = "[UNKNOWN]";
     switch(type)
     {
     case LOG_TYPE_ERROR:
@@ -79,6 +93,15 @@ void writeLog(int type, string content)
         break;
     case LOG_TYPE_RAW:
         typestr = "[RAW]";
+        break;
+    case LOG_TYPE_GEOIP:
+        typestr = "[GEOIP]";
+        break;
+    case LOG_TYPE_TCPING:
+        typestr = "[TCPING]";
+        break;
+    case LOG_TYPE_FILEDL:
+        typestr = "[FILEDL]";
         break;
     }
     content = timestr + typestr + content;

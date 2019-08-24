@@ -1,3 +1,6 @@
+#include <iostream>
+#include <unistd.h>
+
 #include <curl/curl.h>
 
 #include "webget.h"
