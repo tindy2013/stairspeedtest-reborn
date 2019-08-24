@@ -2,6 +2,7 @@
 #include "printout.h"
 #include "logger.h"
 #include "speedtestutil.h"
+#include "webget.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -16,6 +17,9 @@ string config_ssr_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"pro
 string base_vmess = "{\"inbounds\":[{\"port\":?localport?,\"listen\":\"0.0.0.0\",\"protocol\":\"socks\"}],\"outbounds\":[{\"tag\":\"proxy\",\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"?add?\",\"port\":?port?,\"users\":[{\"id\":\"?id?\",\"alterId\":?aid?,\"email\":\"t@t.tt\",\"security\":\"?cipher?\"}]}]},\"streamSettings\":{\"network\":\"?net?\",\"security\":\"?tls?\",\"tlsSettings\":null,\"tcpSettings\":?tcpset?,\"wsSettings\":?wsset?},\"mux\":{\"enabled\":true}}],\"routing\":{\"domainStrategy\":\"IPIfNonMatch\"}}";
 string wsset_vmess = "{\"connectionReuse\":true,\"path\":\"?path?\",\"headers\":{\"Host\":\"?host?\"}}";
 string tcpset_vmess = "{\"connectionReuse\":true,\"header\":{\"type\":\"?type?\",\"request\":{\"version\":\"1.1\",\"method\":\"GET\",\"path\":[\"?path?\"],\"headers\":{\"Host\":[\"?host?\"],\"User-Agent\":[\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36\",\"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46\"],\"Accept-Encoding\":[\"gzip, deflate\"],\"Connection\":[\"keep-alive\"],\"Pragma\":\"no-cache\"}}}}";
+
+map<string, string> parsedMD5;
+string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
 
 //remake from speedtestutil
 
@@ -593,7 +597,7 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
 
 bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
 {
-    string line, remarks, server, port, method, password, plugin, pluginopts, pluginopts_mode, pluginopts_host;
+    string line, remarks, server, port, method, username, password, plugin, pluginopts, pluginopts_mode, pluginopts_host = "cloudfront.net", mod_url, mod_md5;
     stringstream data;
     vector<string> configs, vchild;
     nodeInfo node;
@@ -603,7 +607,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
     data<<surge;
     while(getline(data, line))
     {
-        if(!line.size())
+        if(!line.size() || line.find("#") == 0)
             continue;
         else if(isProxySection)
         {
@@ -611,24 +615,64 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
             {
                 line = regReplace(line, "(.*?) = (.*)", "$1,$2");
                 configs = split(line, ",");
-                remarks = configs[0];
-                server = trim(configs[2]);
-                port = custom_port == "" ? trim(configs[3]) : custom_port;
-                if(configs[1] == "custom"/* && strFind(configs[6], "ss.module")*/) //surge 2 style custom proxy
+                if(configs[1] == "custom") //surge 2 style custom proxy
                 {
-                    method = trim(configs[4]);
-                    password = trim(configs[5]);
+                    mod_url = trim(configs[6]);
+                    if(parsedMD5.count(mod_url) > 0)
+                    {
+                        mod_md5 = parsedMD5[mod_url]; //read calculated MD5 from map
+                    }
+                    else
+                    {
+                        mod_md5 = getMD5(webGet(mod_url)); //retrieve module and calculate MD5
+                        parsedMD5.insert(pair<string, string>(mod_url, mod_md5)); //save unrecognized module MD5 to map
+                    }
 
-                    node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-                    node.group = SS_DEFAULT_GROUP;
-                    node.proxyStr = ssConstruct(server, port, password, method, "", "", remarks, local_port, libev);
+                    if(mod_md5 == modSSMD5) //is SSEncrypt module
+                    {
+                        remarks = configs[0];
+                        server = trim(configs[2]);
+                        port = custom_port == "" ? trim(configs[3]) : custom_port;
+                        method = trim(configs[4]);
+                        password = trim(configs[5]);
+
+                        for(i = 7; i < configs.size(); i++)
+                        {
+                            vchild = split(trim(configs[i]), "=");
+                            if(vchild.size() < 2)
+                                continue;
+                            else if(vchild[0] == "obfs")
+                            {
+                                plugin = "obfs-local";
+                                pluginopts_mode = vchild[1];
+                            }
+                            else if(vchild[0] == "obfs-host")
+                                pluginopts_host = vchild[1];
+                        }
+                        if(plugin != "")
+                        {
+                            pluginopts = "obfs=" + pluginopts_mode;
+                            pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
+                        }
+
+                        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+                        node.group = SS_DEFAULT_GROUP;
+                        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
+                    }
+                    else
+                        continue;
                 }
                 else if(configs[1] == "ss") //surge 3 style ss proxy
                 {
-                    for(i = 3; i < configs.size(); i++)
+                    remarks = configs[0];
+                    server = trim(configs[2]);
+                    port = custom_port == "" ? trim(configs[3]) : custom_port;
+                    for(i = 4; i < configs.size(); i++)
                     {
                         vchild = split(trim(configs[i]), "=");
-                        if(vchild[0] == "encrypt-method")
+                        if(vchild.size() < 2)
+                            continue;
+                        else if(vchild[0] == "encrypt-method")
                             method = vchild[1];
                         else if(vchild[0] == "password")
                             password = vchild[1];
@@ -654,7 +698,12 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                 {
                     node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
                     node.group = SOCKS_DEFAULT_GROUP;
-                    node.proxyStr = "user=" + trim(configs[3]) + "&pass=" + trim(configs[4]);
+                    if(configs.size() >= 6)
+                    {
+                        username = trim(configs[3]);
+                        password = trim(configs[4]);
+                    }
+                    node.proxyStr = "user=" + username + "&pass=" + password;
                 }
                 else
                     continue;

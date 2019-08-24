@@ -4,6 +4,7 @@
 #include <bits/stdc++.h>
 #include <rapidjson/document.h>
 #include <unistd.h>
+#include <openssl/md5.h>
 
 #include "geoip.h"
 
@@ -75,10 +76,13 @@ int regMatch(string src, string match);
 string speedCalc(double speed);
 bool strFind(string str, string target);
 string grabContent(string raw);
+string getMD5(string data);
+bool isIPv4(string address);
+
 bool fileExist(string path);
 bool fileCopy(string source,string dest);
 string fileToBase64(string filepath);
-bool isIPv4(string address);
+string fileGetMD5(string filepath);
 
 #ifdef _WIN32
 void StringToWstring(std::wstring& szDst, std::string str);
