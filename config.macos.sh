@@ -33,8 +33,7 @@ wget https://www.openssl.org/source/openssl-1.1.1c.tar.gz
 tar xvf openssl-1.1.1c.tar.gz
 cd openssl-1.1.1c
 #override compiler
-CC=gcc ./config --prefix=/usr/local
-make -j8
+CC=cc ./config --prefix=/usr/local
 #don't install docs since we don't need them
 sudo make install_sw -j8
 #fix install error
@@ -50,7 +49,6 @@ cd ..
 #tar xvf curl-7.65.1.tar.gz
 #cd curl-7.65.1
 #./configure --disable-shared --disable-ldap --disable-ldaps --disable-smtp --disable-pop3 --disable-rtmp --disable-imap --disable-gopher --disable-telnet --disable-tftp
-#make -j8
 #sudo make install -j8
 #cd ..
 
@@ -58,8 +56,7 @@ echo downloading and compiling libpng-1.6.37
 wget https://nchc.dl.sourceforge.net/project/libpng/libpng16/1.6.37/libpng-1.6.37.tar.gz
 tar xvf libpng-1.6.37.tar.gz
 cd libpng-1.6.37
-./configure
-make -j8
+CC=cc ./configure
 sudo make install -j8
 cd ..
 
@@ -67,8 +64,7 @@ echo downloading and compiling freetype-2.10.1
 wget https://nchc.dl.sourceforge.net/project/freetype/freetype2/2.10.1/freetype-2.10.1.tar.xz
 tar xvf freetype-2.10.1.tar.xz
 cd freetype-2.10.1
-./configure
-make -j8
+CC=cc ./configure
 sudo make install -j8
 #a fix for incorrect file path
 sudo mv /usr/local/include/freetype2/* /usr/local/include
@@ -78,8 +74,7 @@ cd ..
 echo downloading and compiling pngwriter
 git clone https://github.com/pngwriter/pngwriter
 cd pngwriter
-cmake .
-make -j8
+CC=cc cmake .
 sudo make install -j8
 #fix install error
 #sudo install libPNGwriter.a /usr/local/lib/
@@ -88,8 +83,7 @@ cd ..
 echo downloading and installing rapidjson
 git clone https://github.com/tencent/rapidjson
 cd rapidjson
-cmake .
-make -j8
+CC=cc cmake .
 sudo make install -j8
 cd ..
 
@@ -116,7 +110,7 @@ echo downloading and compiling shadowsocksr-libev
 git clone https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
 #override some warning settings
-CFLAGS+="-Wno-format-overflow -Wno-format-truncation -Wno-sizeof-pointer-memaccess" ./configure --with-openssl-lib=/usr/local/lib --with-openssl-include=/usr/local/include --disable-documentation
+CC="cc" CFLAGS+="-Wno-format-overflow -Wno-format-truncation -Wno-sizeof-pointer-memaccess" ./configure --with-openssl-lib=/usr/local/lib --with-openssl-include=/usr/local/include --disable-documentation
 make -j8
 #will not directly install this one, use another method
 sudo install src/ss-local /usr/local/bin/ssr-local
