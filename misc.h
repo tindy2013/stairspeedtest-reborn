@@ -67,6 +67,7 @@ bool strFind(string str, string target);
 string grabContent(string raw);
 string getMD5(string data);
 bool isIPv4(string address);
+bool isIPv6(string address);
 
 bool fileExist(string path);
 bool fileCopy(string source,string dest);

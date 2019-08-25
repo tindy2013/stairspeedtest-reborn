@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e
 mkdir obj
 mkdir bin
+set -e
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c geoip.cpp -o obj/geoip.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c logger.cpp -o obj/logger.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c main.cpp -o obj/main.o

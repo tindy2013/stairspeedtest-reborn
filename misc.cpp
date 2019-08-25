@@ -523,5 +523,18 @@ string fileGetMD5(string filepath)
 
 bool isIPv4(string address)
 {
-    return regMatch(address, "\\d+\\.\\d+\\.\\d+\\.\\d");
+    return regMatch(address, "^(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}$");
+}
+
+bool isIPv6(string address)
+{
+    int ret;
+    vector<string> regLists = {"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$", "^((?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::((?:([0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{1,4})?)$", "^(::(?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5})|((?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5}::)$"};
+    for(unsigned int i = 0; i < regLists.size(); i++)
+    {
+        ret = regMatch(address, regLists[i]);
+        if(ret)
+            return true;
+    }
+    return false;
 }

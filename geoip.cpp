@@ -23,31 +23,43 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
     {
         if(!isIPv4(address))
         {
-            //maybe it is a host name
-            address = hostnameToIPv4(ip);
-            if(address == "")
+            if(!isIPv6(address))
             {
-                //maybe it's an IPv6 address, restore it
-                address = ip;
+                writeLog(LOG_TYPE_GEOIP, "Found host name. Resolving into IP address.");
+                address = hostnameToIPAddr(ip);
+                if(address == "")
+                {
+                    writeLog(LOG_TYPE_GEOIP, "Host name resolve error. Leaving.");
+                    return info;
+                }
             }
+            else
+                writeLog(LOG_TYPE_GEOIP, "Found IPv6 address.");
         }
+        else
+            writeLog(LOG_TYPE_GEOIP, "Found IPv4 address.");
         writeLog(LOG_TYPE_GEOIP, "Getting GeoIP of '" + address + "' through proxy '" + proxy + "'.");
         strRet = webGet("https://api.ip.sb/geoip/" + address, proxy);
     }
     if(strRet == "")
     {
-        writeLog(LOG_TYPE_GEOIP, "No GeoIP result. Leaving...");
+        writeLog(LOG_TYPE_GEOIP, "No GeoIP result. Leaving.");
         return info;
     }
 
-    writeLog(LOG_TYPE_GEOIP, "Parsing GeoIP result...");
+    writeLog(LOG_TYPE_GEOIP, "Parsing GeoIP result.");
     json.Parse(strRet.data());
+    if(json.HasParseError())
+    {
+        writeLog(LOG_TYPE_GEOIP, "Parse GeoIP result error. Leaving.");
+        return info;
+    }
 
     if(json.HasMember("code"))
     {
         if(json["code"].GetInt() == 401)
         {
-            writeLog(LOG_TYPE_GEOIP, "Invalid address.");
+            writeLog(LOG_TYPE_GEOIP, "Invalid address. Leaving.");
             return info;
         }
     }
@@ -78,7 +90,7 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
     if(json.HasMember("timezone"))
         info.timezone = json["timezone"].GetString();
 
-    writeLog(LOG_TYPE_GEOIP, "Parse GeoIP complete. Leaving...");
+    writeLog(LOG_TYPE_GEOIP, "Parse GeoIP complete. Leaving.");
     return info;
 }
 
