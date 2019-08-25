@@ -55,7 +55,10 @@ Tested platforms:
   
 * Windows 10 1803 x64, Windows Server 2008 R2
 * Ubuntu 18.10
+* Debian 6.3
+* CentOS 7.6
 * MacOS 10.14.3 Mojave
+* Android 8.0 (Termux)
   
 Supported proxy types:  
 
