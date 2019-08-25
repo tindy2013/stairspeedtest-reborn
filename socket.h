@@ -11,15 +11,16 @@
 #include <winsock2.h>
 #else
 //translate windows functions to linux functions
+#include <string.h>
 #define SOCKET int
 #define INVALID_SOCKET (SOCKET)(~0)
 #define SOCKET_ERROR	(-1)
-#define ioctlsocket ioctl
 #define closesocket close
 #define SOCKADDR_IN sockaddr_in
 #define ZeroMemory(d,l) memset((d), 0, (l))
+#define ioctlsocket ioctl
 #ifdef _MACOS
-#define SA_INTERRUPT SV_INTERRUPT
+#define SA_INTERRUPT 0 //ignore this setting
 #define MSG_NOSIGNAL 0 //ignore this setting
 #endif // _MACOS
 #ifndef __hpux
@@ -47,7 +48,7 @@ int setTimeout(SOCKET s, int timeout);
 int startConnect(SOCKET sHost, string addr, int port);
 int simpleSend(string addr, int port, string data);
 int send_simple(SOCKET sHost, string data);
-char* hostnameToIPv4(string host);
+string hostnameToIPAddr(string host);
 int connectSocks5(SOCKET sHost, string username, string password);
 int connectThruSocks(SOCKET sHost, string host, string addr, int port);
 int checkPort(int startport);

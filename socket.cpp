@@ -91,6 +91,16 @@ int Recv(SOCKET sHost, char* data, int len, int flags)
 #endif // _WIN32
 }
 
+int getNetworkType(string addr)
+{
+    if(isIPv4(addr))
+        return AF_INET;
+    else if(isIPv6(addr))
+        return AF_INET6;
+    else
+        return AF_UNSPEC;
+}
+
 int socks5_do_auth_userpass(SOCKET sHost, string user, string pass)
 {
     char buf[1024], *ptr;
@@ -121,7 +131,7 @@ int setTimeout(SOCKET s, int timeout)
     ret = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(int));
     ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(int));
 #else
-    struct timeval timeo = {0, timeout*1000};
+    struct timeval timeo = {0, timeout * 1000};
     ret = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeo, sizeof(timeo));
     ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeo, sizeof(timeo));
 #endif
@@ -162,13 +172,16 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     ul = 0;
     ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
 #else
+//direct
+    //ret = connect(sockfd, addr, addrsize);
 
 //signal
+
     struct sigaction act, oldact;
     act.sa_handler = connect_sigalarm;
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGALRM);
-    //act.sa_flags = 0x20000000;
+    act.sa_flags = SA_INTERRUPT;
     sigaction(SIGALRM, &act, &oldact);
     if(alarm(def_timeout / 1000) != 0)
     {
@@ -256,7 +269,7 @@ int startConnect(SOCKET sHost, string addr, int port)
 {
     int retVal;
     SOCKADDR_IN servAddr;
-    servAddr.sin_family = AF_INET;
+    servAddr.sin_family = getNetworkType(addr);
     servAddr.sin_addr.s_addr = inet_addr(addr.data());
     servAddr.sin_port = htons((short)port);
     retVal = connect_adv(sHost, (LPSOCKADDR)&servAddr, sizeof(servAddr));
@@ -272,7 +285,7 @@ int send_simple(SOCKET sHost, string data)
 
 int simpleSend(string addr, int port, string data)
 {
-    SOCKET sHost = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP);
+    SOCKET sHost = socket(getNetworkType(addr), SOCK_STREAM, IPPROTO_TCP);
     setTimeout(sHost, 1000);
     if(sHost == INVALID_SOCKET)
         return INVALID_SOCKET;
@@ -295,37 +308,37 @@ int simpleSend(string addr, int port, string data)
     }
 }
 
-char* hostnameToIPv4(string host)
+string hostnameToIPAddr(string host)
 {
     //old function
-    /*
+/*
     struct in_addr inaddr;
-    //string retstr;
     hostent *h = gethostbyname(host.data());
-    if(h == NULL) return const_cast<char* >("");
+    if(h == NULL)
+        return string();
     inaddr.s_addr = *(u_long*)h->h_addr_list[0];
-    //addr = inet_ntoa(inaddr);
     return inet_ntoa(inaddr);
-    */
+*/
     //new function
     int retVal;
-    string portstr = to_string(80);
+    string retAddr;
     struct sockaddr_in *target;
     struct addrinfo hint = {}, *retAddrInfo, *cur;
-    retVal = getaddrinfo(host.data(), portstr.data(), &hint, &retAddrInfo);
+    retVal = getaddrinfo(host.data(), NULL, &hint, &retAddrInfo);
     if(retVal != 0)
-        return const_cast<char*>("");
+        return string();
 
     for(cur = retAddrInfo; cur != NULL; cur=cur->ai_next)
     {
-        if(cur->ai_family == AF_INET)
+        if(cur->ai_family == AF_INET || cur->ai_family == AF_INET6)
         {
             target = (struct sockaddr_in *)cur->ai_addr;
-            return inet_ntoa(target->sin_addr);
+            retAddr = inet_ntoa(target->sin_addr);
+            if(retAddr != "0.0.0.0" && retAddr != "")
+                return retAddr;
         }
     }
-    return const_cast<char*>("");
-
+    return string();
 }
 
 int connectSocks5(SOCKET sHost, string username, string password)
