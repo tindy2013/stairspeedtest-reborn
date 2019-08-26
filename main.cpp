@@ -884,6 +884,7 @@ int main(int argc, char* argv[])
     }
     else if(allNodes.size() == 1)
     {
+        printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &allNodes[0], rpcmode);
         singleTest(&allNodes[0]);
         if(single_test_force_export)
         {
