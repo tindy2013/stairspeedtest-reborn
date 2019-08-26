@@ -18,6 +18,7 @@ struct nodeInfo
 {
     int linkType = -1;
     int id = 0;
+    int groupID = 0;
     bool online = false;
     string group;
     string remarks;

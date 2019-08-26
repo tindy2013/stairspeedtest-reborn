@@ -364,7 +364,7 @@ string export_render(string resultpath, vector<nodeInfo> nodes, bool export_with
         if(nodes[i].online)
             onlines++;
     }
-    //store them all into arrays first
+    //calculate the width of the longest string
     group_width = getTextWidth(font, fontsize, longest_group) + center_align_offset;
     remarks_width = getTextWidth(font, fontsize, longest_remarks) + center_align_offset;
     pkLoss_width = getTextWidth(font, fontsize, longest_pkLoss) + center_align_offset;

@@ -36,27 +36,34 @@ bool runProgram(string command, string runpath, bool wait, HANDLE *hProc)
     BOOL retval = false;
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
+    char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
+    string path;
     ZeroMemory(&si, sizeof(si));
     ZeroMemory(&pi, sizeof(pi));
-    char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
+
+    if(strFind(runpath, ":")) //is an absolute path
+    {
+        path = runpath;
+    }
+    else //is a relative path
+    {
+        GetCurrentDirectory(512, curdir);
+        path = string(curdir) + "\\";
+        if(runpath != "")
+            path += runpath + "\\";
+    }
     cmdstr = const_cast<char*>(command.data());
-    GetCurrentDirectory(512, curdir);
-    string path = string(curdir) + "\\";
-    if(runpath != "")
-        path += runpath + "\\";
     pathstr = const_cast<char*>(path.data());
     string prgname = path + command.substr(0, command.find(" "));
     string prgargs = command.substr(command.find(" ") + 1);
     retval = CreateProcess(NULL, cmdstr, NULL, NULL, false, CREATE_NO_WINDOW, NULL, pathstr, &si, &pi);
 
-    /*
     hProc = &pi.hProcess;
     if(wait)
     {
-        WaitForSingleObject(hProc,  INFINITE);
+        WaitForSingleObject(hProc, INFINITE);
         CloseHandle(hProc);
     }
-    */
     return retval;
 }
 
@@ -66,7 +73,7 @@ void killByHandle(HANDLE hProc)
     CloseHandle(hProc);
 }
 #else
-bool runProgram(string command,string runpath,bool wait)
+bool runProgram(string command, string runpath, bool wait)
 {
     string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
     total_path += command + "&";
@@ -76,7 +83,7 @@ bool runProgram(string command,string runpath,bool wait)
 #endif // _WIN32
 
 /*
-void runprogram(string command,string runpath,bool wait)
+void runprogram(string command, string runpath, bool wait)
 {
 #ifdef _WIN32
     STARTUPINFO si;

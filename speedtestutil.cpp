@@ -395,6 +395,7 @@ void explodeSSD(string link, bool libev, string custom_port, int local_port, vec
 {
     Document jsondata;
     nodeInfo node;
+    unsigned int index = nodes->size();
     string group, port, method, password, server, remarks;
     string plugin, pluginopts;
     link = base64_decode(link.substr(6));
@@ -430,8 +431,9 @@ void explodeSSD(string link, bool libev, string custom_port, int local_port, vec
         node.server = server;
         node.port = stoi(port);
         node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
-        node.id = i;
+        node.id = index;
         nodes->push_back(node);
+        index++;
         writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
     }
     return;
@@ -604,7 +606,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
     stringstream data;
     vector<string> configs, vchild;
     nodeInfo node;
-    unsigned int i, index = 0;
+    unsigned int i, index = nodes->size();
     bool isSurgeConfig = false, isProxySection = false;
 
     data << surge;
@@ -735,7 +737,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
 void explodeClash(Node yamlnode, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
 {
     nodeInfo node;
-    int index = 0;
+    unsigned int index = nodes->size();
     string proxytype, strTemp, ps, server, port, cipher, group;
     for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
     {
@@ -848,7 +850,8 @@ int explodeConf(string filepath, string custom_port, int local_port, bool sslibe
 
 int explodeConfContent(string content, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
 {
-    int index = 0, filetype = -1;
+    unsigned int index = 0;
+    int filetype = -1;
     vector<nodeInfo>::iterator iter;
 
     if(strFind(content, "\"version\""))
@@ -952,7 +955,7 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
     //try to parse as normal subscription
     sub = base64_decode(sub);
     strstream << sub;
-    int index = 0;
+    unsigned int index = nodes->size();
     char delimiter = split(sub, "\n").size() <= 1 ? split(sub, "\r").size() <= 1 ? ' ' : '\r' : '\n';
     while(getline(strstream, strLink, delimiter))
     {

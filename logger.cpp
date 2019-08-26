@@ -70,6 +70,7 @@ void logInit(bool rpcmode)
 
 void resultInit(bool export_with_maxspeed)
 {
+    curtime = getTime(1);
     resultPath = "results" PATH_SLASH + curtime + ".log";
     makeDir("results");
     result_content = "group,remarks,loss,ping,avgspeed";
