@@ -836,7 +836,7 @@ int main(int argc, char* argv[])
                 pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method);
                 {
                     clearTrans();
-                    addTrans("?pngpath?", pngpath);
+                    addTrans("?picpath?", pngpath);
                     printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, dict, trans);
                 }
                 writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
@@ -870,7 +870,7 @@ int main(int argc, char* argv[])
                         {
                             clearTrans();
                             addTrans("?id?", to_string(i +1));
-                            addTrans("?pngpath?", pngpath);
+                            addTrans("?picpath?", pngpath);
                             printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVEDMULTI, rpcmode, dict, trans);
                         }
                         writeLog(LOG_TYPE_INFO, "Group " + to_string(i + 1) + " result saved to " + pngpath + " .");
@@ -893,7 +893,7 @@ int main(int argc, char* argv[])
             pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method);
             {
                 clearTrans();
-                addTrans("?pngpath?", pngpath);
+                addTrans("?picpath?", pngpath);
                 printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, dict, trans);
             }
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
