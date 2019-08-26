@@ -13,7 +13,8 @@ struct LOOKUP_ITEM
 
 LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
-    {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nLink: "},
+    {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nIf you want to test more than one link, separate them with '|'.\nLink: "},
+    {SPEEDTEST_MESSAGE_MULTILINK, "Multiple link provided, parsing all nodes.\n\n"},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "Found single V2Ray link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSS, "Found single Shadowsocks link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSSR, "Found single ShadowsocksR link.\n"},
@@ -29,7 +30,9 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_GOTRESULT, "Result: DL.Speed: ?speed? Max.Speed: ?maxspeed? Pk.Loss: ?pkloss? Avg.Ping: ?avgping? Google Ping: ?siteping?\n"},
     {SPEEDTEST_MESSAGE_TRAFFIC, "Traffic used: ?traffic?\n"},
     {SPEEDTEST_MESSAGE_PICSAVING, "Now exporting picture...\n"},
+    {SPEEDTEST_MESSAGE_PICSAVINGMULTI, "Now exporting picture for group ?id?...\n"},
     {SPEEDTEST_MESSAGE_PICSAVED, "Result picture saved to \"?picpath?\".\n"},
+    {SPEEDTEST_MESSAGE_PICSAVEDMULTI, "Group ?id? result picture saved to \"?picpath?\".\n"},
     {SPEEDTEST_MESSAGE_FETCHSUB, "Downloading subscription data...\n"},
     {SPEEDTEST_MESSAGE_PARSING, "Parsing configuration file...\n"},
     {SPEEDTEST_MESSAGE_BEGIN, "Speed Test will now begin.\n"},
@@ -72,6 +75,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {SPEEDTEST_MESSAGE_TRAFFIC, "(\"info\":\"traffic\",\"size\":\"?traffic?\"}\n"},
     {SPEEDTEST_MESSAGE_PICSAVING, "{\"info\":\"picsaving\"}\n"},
     {SPEEDTEST_MESSAGE_PICSAVED, "{\"info\":\"picsaved\",\"path\":\"?picpath?\"}\n"},
+    {SPEEDTEST_MESSAGE_PICSAVEDMULTI, "{\"info\":\"picsaved\",\"path\":\"?picpath?\"}\n"},
     {SPEEDTEST_MESSAGE_FETCHSUB, "{\"info\":\"fetchingsub\"}\n"},
     {SPEEDTEST_MESSAGE_PARSING, "{\"info\":\"parsing\"}\n"},
     {SPEEDTEST_MESSAGE_BEGIN, "{\"info\":\"begintest\"}\n"},
@@ -103,15 +107,20 @@ string lookUp(int index, LOOKUP_ITEM *items)
     return string("");
 }
 
+string lookUp(int index, bool rpcmode)
+{
+    if(rpcmode)
+    {
+        return lookUp(index, SPEEDTEST_MESSAGES_RPC);
+    } else {
+        return lookUp(index, SPEEDTEST_MESSAGES);
+    }
+}
+
 void printMsg(int index, nodeInfo *node, bool rpcmode)
 {
     string printout;
-    if(rpcmode)
-    {
-        printout = lookUp(index, SPEEDTEST_MESSAGES_RPC);
-    } else {
-        printout = lookUp(index, SPEEDTEST_MESSAGES);
-    }
+    printout = lookUp(index, rpcmode);
     if(printout.size() == 0)
     {
         return;
@@ -135,13 +144,7 @@ void printMsg(int index, nodeInfo *node, bool rpcmode)
 void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<string> trans)
 {
     string printout;
-    //map<string, string> dict;
-    if(rpcmode)
-    {
-        printout = lookUp(index, SPEEDTEST_MESSAGES_RPC);
-    } else {
-        printout = lookUp(index, SPEEDTEST_MESSAGES);
-    }
+    printout = lookUp(index, rpcmode);
     if(printout.size() == 0)
     {
         return;
@@ -153,6 +156,13 @@ void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<strin
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
     cout<<printout;
+    cout.clear();
+    cout.flush();
+}
+
+void printMsgDirect(int index, bool rpcmode)
+{
+    cout<<lookUp(index, rpcmode);
     cout.clear();
     cout.flush();
 }

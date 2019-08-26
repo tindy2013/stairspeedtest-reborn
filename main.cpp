@@ -26,6 +26,7 @@ using namespace chrono;
 
 //for use globally
 bool rpcmode = false;
+bool multilink = false;
 int socksport = 65432;
 string socksaddr = "127.0.0.1";
 string custom_group;
@@ -37,15 +38,19 @@ string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-7
 vector<downloadLink> downloadFiles;
 vector<linkMatchRule> matchRules;
 vector<string> exclude_remarks, include_remarks, dict, trans;
+vector<nodeInfo> allNodes;
 string speedtest_mode = "all";
 string override_conf_port = "";
 int def_thread_count = 4;
 bool export_with_maxspeed = false;
 bool test_site_ping = false;
+bool multilink_export_as_one_image = false;
+bool single_test_force_export = false;
 string export_sort_method = "none";
 
 int avail_status[3] = {1, 1, 1};
 unsigned int node_count = 0;
+int curGroupID = 0;
 
 #ifdef _WIN32
 HANDLE hProc = 0;
@@ -69,6 +74,23 @@ void addTrans(string dictval, string transval)
 {
     dict.push_back(dictval);
     trans.push_back(transval);
+}
+
+void copyNodes(vector<nodeInfo> *source, vector<nodeInfo> *dest)
+{
+    for(auto &x : *source)
+    {
+        dest->push_back(x);
+    }
+}
+
+void copyNodesWithGroupID(vector<nodeInfo> *source, vector<nodeInfo> *dest, int groupID)
+{
+    for(auto &x : *source)
+    {
+        if(x.groupID == groupID)
+            dest->push_back(x);
+    }
 }
 
 /*
@@ -98,7 +120,9 @@ int runClient(int client, string runpath)
 #ifdef _WIN32
     string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -config config.json";
     string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -c config.json";
-    string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe -c config.json";
+
+    string ss_libev_dir = "tools\\clients\\shadowsocks-libev\\";
+    string ss_libev_path = ss_libev_dir + "ss-libev.exe -c ..\\..\\..\\config.json";
 
     string ssr_win_dir = "tools\\clients\\shadowsocksr-win\\";
     string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
@@ -128,13 +152,13 @@ int runClient(int client, string runpath)
         if(ss_libev)
         {
             writeLog(LOG_TYPE_INFO, "Starting up shadowsocks-libev...");
-            runProgram(ss_libev_path, "", false, &hProc);
+            runProgram(ss_libev_path, ss_libev_dir, false, &hProc);
         }
         else
         {
             writeLog(LOG_TYPE_INFO, "Starting up shadowsocks-win...");
             fileCopy("config.json", ss_win_dir + "gui-config.json");
-            runProgram(ss_win_path, "", false, &hProc);
+            runProgram(ss_win_path, ss_win_dir, false, &hProc);
         }
         break;
     }
@@ -260,8 +284,8 @@ void readConf(string path)
             for(unsigned i = 1; i < vchild.size(); i++)
                 itemval += vchild[i];
             */
-            itemname = strTemp.substr(0, strTemp.find("="));
-            itemval = strTemp.substr(strTemp.find("=") + 1);
+            itemname = trim(strTemp.substr(0, strTemp.find("=")));
+            itemval = trim(strTemp.substr(strTemp.find("=") + 1));
 
             if(itemname == "speedtest_mode")
                 speedtest_mode = itemval;
@@ -308,6 +332,10 @@ void readConf(string path)
             }
             else if(itemname == "thread_count")
                 def_thread_count = stoi(itemval);
+            else if(itemname == "multilink_export_as_one_image")
+                multilink_export_as_one_image = itemval == "true";
+            else if(itemname == "single_test_force_export")
+                single_test_force_export = itemval == "true";
             /*
             else if(itemname == "speetest_with_tls")
                 useTLS = itemval == "true";
@@ -445,9 +473,7 @@ int singleTest(nodeInfo *node)
     }
     else
     {
-        clearTrans();
-        addTrans("?id?", to_string(node->id));
-        printMsgWithDict(SPEEDTEST_ERROR_GEOIPERR, rpcmode, dict, trans);
+        printMsg(SPEEDTEST_ERROR_GEOIPERR, node, rpcmode);
     }
 
     if(test_site_ping)
@@ -506,34 +532,34 @@ int singleTest(nodeInfo *node)
     return SPEEDTEST_ERROR_NONE;
 }
 
-void batchTest(vector<nodeInfo> nodes)
+void batchTest(vector<nodeInfo> *nodes)
 {
     nodeInfo node;
     unsigned int onlines = 0;
     long long tottraffic = 0;
 
-    node_count = nodes.size();
+    node_count = nodes->size();
     writeLog(LOG_TYPE_INFO, "Total node(s) found: " + to_string(node_count));
     if(node_count == 0)
     {
         writeLog(LOG_TYPE_ERROR, "No nodes are found in this subscription.");
-        printMsg(SPEEDTEST_ERROR_NONODES, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_ERROR_NONODES, rpcmode);
     }
     else
     {
         resultInit(export_with_maxspeed);
         writeLog(LOG_TYPE_INFO, "Speedtest will now begin.");
-        printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
         //first print out all nodes when in Web mode
         if(rpcmode)
         {
-            for(auto &x : nodes)
+            for(auto &x : *nodes)
             {
                 printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &x, rpcmode);
             }
         }
         //then we start testing nodes
-        for(auto &x : nodes)
+        for(auto &x : *nodes)
         {
             if(custom_group.size() != 0)
                 x.group = custom_group;
@@ -543,24 +569,182 @@ void batchTest(vector<nodeInfo> nodes)
             if(x.online)
                 onlines++;
         }
-        resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes.size());
+        resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
         writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + to_string(node_count) + "/" + to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
-        printMsg(SPEEDTEST_MESSAGE_PICSAVING, &node, rpcmode);
-        writeLog(LOG_TYPE_INFO, "Now exporting result...");
         exportHTML();
-        pngpath = exportRender(resultPath, nodes, export_with_maxspeed, export_sort_method);
-        writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
-        //printMsg(SPEEDTEST_MESSAGE_PICSAVED, &node, rpcmode);
+        if(!multilink && !multilink_export_as_one_image)
         {
-            clearTrans();
-            addTrans("?picpath?", pngpath);
-            printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, dict, trans);
+            printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
+            writeLog(LOG_TYPE_INFO, "Now exporting result...");
+            pngpath = exportRender(resultPath, *nodes, export_with_maxspeed, export_sort_method);
+            writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
+            {
+                clearTrans();
+                addTrans("?picpath?", pngpath);
+                printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, dict, trans);
+            }
+            if(rpcmode)
+            {
+                clearTrans();
+                addTrans("?data?", "data:image/png;base64," + fileToBase64(pngpath));
+                printMsgWithDict(SPEEDTEST_MESSAGE_PICDATA, rpcmode, dict, trans);
+            }
         }
-        if(rpcmode)
+    }
+}
+
+void rewriteNodeID(vector<nodeInfo> *nodes)
+{
+    int index = 0;
+    for(auto &x : *nodes)
+    {
+        x.id = index;
+        index++;
+    }
+}
+
+void rewriteNodeGroupID(vector<nodeInfo> *nodes, int groupID)
+{
+    for(auto &x : *nodes)
+    {
+        x.groupID = groupID;
+    }
+}
+
+void addNodes(string link, bool multilink)
+{
+    int linkType = -1;
+    vector<nodeInfo> nodes;
+    nodeInfo node;
+    string strSub, strInput, fileContent, strProxy;
+
+    writeLog(LOG_TYPE_INFO, "Received Link.");
+    if(strFind(link, "vmess://"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+    else if(strFind(link, "ss://"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+    else if(strFind(link, "ssr://"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
+    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+    else if(strFind(link, "http://") || strFind(link, "https://") || strFind(link, "surge:///install-config"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDSUB;
+    else if(link == "data:upload")
+        linkType = SPEEDTEST_MESSAGE_FOUNDUPD;
+    else if(fileExist(link))
+        linkType = SPEEDTEST_MESSAGE_FOUNDLOCAL;
+
+    switch(linkType)
+    {
+    case SPEEDTEST_MESSAGE_FOUNDSUB:
+        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDSUB, rpcmode);
+        if(!rpcmode && !multilink)
         {
-            clearTrans();
-            addTrans("?data?", "data:image/png;base64," + fileToBase64(pngpath));
-            printMsgWithDict(SPEEDTEST_MESSAGE_PICDATA, rpcmode, dict, trans);
+            printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
+            getline(cin, strInput);
+            if(strInput.size())
+            {
+                custom_group = GBKToUTF8(strInput);
+                writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
+            }
+        }
+        switchCodepage();
+        writeLog(LOG_TYPE_INFO, "Downloading subscription data...");
+        printMsgDirect(SPEEDTEST_MESSAGE_FETCHSUB, rpcmode);
+        if(strFind(link, "surge:///install-config")) //surge config link
+            link = UrlDecode(getUrlArg(link, "url"));
+        strSub = webGet(link);
+        if(strSub.size() == 0)
+        {
+            //try to get it again with system proxy
+            strProxy = getSystemProxy();
+            if(strProxy != "")
+                strSub = webGet(link, strProxy);
+        }
+        writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
+        if(strSub.size())
+        {
+            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks);
+            rewriteNodeGroupID(&nodes, curGroupID);
+            copyNodes(&nodes, &allNodes);
+        }
+        else
+        {
+            writeLog(LOG_TYPE_ERROR, "Cannot download subscription data.");
+            printMsgDirect(SPEEDTEST_ERROR_INVALIDSUB, rpcmode);
+        }
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDLOCAL:
+        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDLOCAL, rpcmode);
+        if(!rpcmode && !multilink)
+        {
+            printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
+            getline(cin, strInput);
+            if(strInput.size())
+            {
+                custom_group = GBKToUTF8(strInput);
+                writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
+            }
+        }
+        switchCodepage();
+        writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
+        printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
+        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        {
+            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
+            writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
+        }
+        else
+        {
+            rewriteNodeGroupID(&nodes, curGroupID);
+            copyNodes(&nodes, &allNodes);
+        }
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDUPD:
+        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDUPD, rpcmode);
+        cin.clear();
+        //now we should ready to receive a large amount of data from stdin
+        getline(cin, fileContent);
+        //writeLog(LOG_TYPE_RAW, fileContent);
+        fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
+        writeLog(LOG_TYPE_RAW, fileContent);
+        writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
+        printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
+        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        {
+            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
+            writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
+        }
+        else
+        {
+            rewriteNodeGroupID(&nodes, curGroupID);
+            copyNodes(&nodes, &allNodes);
+        }
+        break;
+    default:
+        if(linkType > 0)
+        {
+            node_count = 1;
+            switchCodepage();
+            printMsg(linkType, &node, rpcmode);
+            explode(link, ss_libev, ssr_libev, override_conf_port, socksport, &node);
+            if(custom_group.size() != 0)
+                node.group = custom_group;
+            if(node.server == "")
+            {
+                writeLog(LOG_TYPE_ERROR, "No valid link found.");
+                printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
+            }
+            else
+            {
+                node.groupID = curGroupID;
+                allNodes.push_back(node);
+            }
+        }
+        else
+        {
+            writeLog(LOG_TYPE_ERROR, "No valid link found.");
+            printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
         }
     }
 }
@@ -570,7 +754,8 @@ int main(int argc, char* argv[])
     vector<nodeInfo> nodes;
     nodeInfo node;
     string link, strSub, strInput, fileContent, strProxy;
-    int linkType = -1;
+    string curPNGPath, curPNGPathPrefix;
+    //int linkType = -1;
     cout << fixed;
     cout << setprecision(2);
     signal(SIGINT, signalHandler);
@@ -584,7 +769,7 @@ int main(int argc, char* argv[])
     WSADATA wsd;
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
     {
-        printMsg(SPEEDTEST_ERROR_WSAERR, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_ERROR_WSAERR, rpcmode);
         return -1;
     }
     //along with some console window info
@@ -601,7 +786,7 @@ int main(int argc, char* argv[])
     writeLog(LOG_TYPE_INFO, "Using local port: " + to_string(socksport));
     writeLog(LOG_TYPE_INFO, "Init completed.");
     //intro message
-    printMsg(SPEEDTEST_MESSAGE_WELCOME, &node, rpcmode);
+    printMsgDirect(SPEEDTEST_MESSAGE_WELCOME, rpcmode);
     getline(cin, link);
     writeLog(LOG_TYPE_INFO, "Input data: " + link);
     if(rpcmode)
@@ -621,6 +806,112 @@ int main(int argc, char* argv[])
             link = "?empty?";
         }
     }
+    if(strFind(link, "|"))
+    {
+        multilink = true;
+        switchCodepage();
+        printMsgDirect(SPEEDTEST_MESSAGE_MULTILINK, rpcmode);
+        vector<string> linkList = split(link, "|");
+        for(auto &x : linkList)
+        {
+            addNodes(x, multilink);
+            curGroupID++;
+        }
+    }
+    else
+    {
+        addNodes(link, multilink);
+    }
+    rewriteNodeID(&allNodes); //reset all index
+    if(allNodes.size() > 1) //group or multi-link
+    {
+        batchTest(&allNodes);
+        if(multilink)
+        {
+            if(multilink_export_as_one_image)
+            {
+                printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
+                writeLog(LOG_TYPE_INFO, "Now exporting result...");
+                curPNGPath = "results" PATH_SLASH "multilink-" + getTime(1) + ".png";
+                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method);
+                {
+                    clearTrans();
+                    addTrans("?pngpath?", pngpath);
+                    printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, dict, trans);
+                }
+                writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
+                if(rpcmode)
+                {
+                    clearTrans();
+                    addTrans("?data?", "data:image/png;base64," + fileToBase64(pngpath));
+                    printMsgWithDict(SPEEDTEST_MESSAGE_PICDATA, rpcmode, dict, trans);
+                }
+            }
+            else
+            {
+                printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
+                for(int i = 0; i < curGroupID; i++)
+                {
+                    vector<nodeInfo>().swap(nodes);
+                    copyNodesWithGroupID(&allNodes, &nodes, i);
+                    if(!nodes.size())
+                        break;
+                    if((nodes.size() == 1 && single_test_force_export) || nodes.size() > 1)
+                    {
+                        {
+                            clearTrans();
+                            addTrans("?id?", to_string(i +1));
+                            printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVINGMULTI, rpcmode, dict, trans);
+                        }
+                        writeLog(LOG_TYPE_INFO, "Now exporting result for group " + to_string(i + 1) + "...");
+                        curPNGPathPrefix = replace_all_distinct(resultPath, ".log", "");
+                        curPNGPath = curPNGPathPrefix + "-multilink-group" + to_string(i + 1) + ".png";
+                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method);
+                        {
+                            clearTrans();
+                            addTrans("?id?", to_string(i +1));
+                            addTrans("?pngpath?", pngpath);
+                            printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVEDMULTI, rpcmode, dict, trans);
+                        }
+                        writeLog(LOG_TYPE_INFO, "Group " + to_string(i + 1) + " result saved to " + pngpath + " .");
+                    }
+                    else
+                        writeLog(LOG_TYPE_INFO, "Group " + to_string(i + 1) + " result export skipped.");
+                }
+            }
+        }
+        writeLog(LOG_TYPE_INFO, "Multi-link test completed.");
+    }
+    else if(allNodes.size() == 1)
+    {
+        singleTest(&allNodes[0]);
+        if(single_test_force_export)
+        {
+            printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
+            writeLog(LOG_TYPE_INFO, "Now exporting result...");
+            curPNGPath = "results" PATH_SLASH + getTime(1) + ".png";
+            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method);
+            {
+                clearTrans();
+                addTrans("?pngpath?", pngpath);
+                printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, dict, trans);
+            }
+            writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
+            if(rpcmode)
+            {
+                clearTrans();
+                addTrans("?data?", "data:image/png;base64," + fileToBase64(pngpath));
+                printMsgWithDict(SPEEDTEST_MESSAGE_PICDATA, rpcmode, dict, trans);
+            }
+        }
+        writeLog(LOG_TYPE_INFO, "Single node test completed.");
+    }
+    else
+    {
+        writeLog(LOG_TYPE_ERROR, "No valid link found.");
+        printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
+    }
+    /*
     writeLog(LOG_TYPE_INFO, "Received Link.");
     if(strFind(link, "vmess://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
@@ -641,10 +932,10 @@ int main(int argc, char* argv[])
     switch(linkType)
     {
     case SPEEDTEST_MESSAGE_FOUNDSUB:
-        printMsg(SPEEDTEST_MESSAGE_FOUNDSUB, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDSUB, rpcmode);
         if(!rpcmode)
         {
-            printMsg(SPEEDTEST_MESSAGE_GROUP, &node, rpcmode);
+            printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(cin, strInput);
             if(strInput.size())
             {
@@ -654,7 +945,7 @@ int main(int argc, char* argv[])
         }
         switchCodepage();
         writeLog(LOG_TYPE_INFO, "Downloading subscription data...");
-        printMsg(SPEEDTEST_MESSAGE_FETCHSUB, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_FETCHSUB, rpcmode);
         if(strFind(link, "surge:///install-config")) //surge config link
             link = UrlDecode(getUrlArg(link, "url"));
         strSub = webGet(link);
@@ -675,14 +966,14 @@ int main(int argc, char* argv[])
         else
         {
             writeLog(LOG_TYPE_ERROR, "Cannot download subscription data.");
-            printMsg(SPEEDTEST_ERROR_INVALIDSUB, &node, rpcmode);
+            printMsgDirect(SPEEDTEST_ERROR_INVALIDSUB, rpcmode);
         }
         break;
     case SPEEDTEST_MESSAGE_FOUNDLOCAL:
-        printMsg(SPEEDTEST_MESSAGE_FOUNDLOCAL, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDLOCAL, rpcmode);
         if(!rpcmode)
         {
-            printMsg(SPEEDTEST_MESSAGE_GROUP, &node, rpcmode);
+            printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(cin, strInput);
             if(strInput.size())
             {
@@ -692,10 +983,10 @@ int main(int argc, char* argv[])
         }
         switchCodepage();
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
-        printMsg(SPEEDTEST_MESSAGE_PARSING, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
         if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
-            printMsg(SPEEDTEST_ERROR_UNRECOGFILE, &node, rpcmode);
+            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
         }
         else
@@ -705,7 +996,7 @@ int main(int argc, char* argv[])
         writeLog(LOG_TYPE_INFO, "Configuration test completed.");
         break;
     case SPEEDTEST_MESSAGE_FOUNDUPD:
-        printMsg(SPEEDTEST_MESSAGE_FOUNDUPD, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDUPD, rpcmode);
         cin.clear();
         //now we should ready to receive a large amount of data from stdin
         getline(cin, fileContent);
@@ -713,10 +1004,10 @@ int main(int argc, char* argv[])
         fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
         writeLog(LOG_TYPE_RAW, fileContent);
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
-        printMsg(SPEEDTEST_MESSAGE_PARSING, &node, rpcmode);
+        printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
         if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
-            printMsg(SPEEDTEST_ERROR_UNRECOGFILE, &node, rpcmode);
+            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
         }
         else
@@ -737,19 +1028,12 @@ int main(int argc, char* argv[])
             if(node.server == "")
             {
                 writeLog(LOG_TYPE_ERROR, "No valid link found.");
-                printMsg(SPEEDTEST_ERROR_NORECOGLINK, &node, rpcmode);
+                printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
             }
             else
             {
-                printMsg(SPEEDTEST_MESSAGE_BEGIN, &node, rpcmode);
-                if(rpcmode)
-                {
-                    clearTrans();
-                    addTrans("?id?", to_string(node.id));
-                    addTrans("?group?", node.group);
-                    addTrans("?remarks?", node.remarks);
-                    printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
-                }
+                printMsgDirect(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
+                printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &node, rpcmode);
                 singleTest(&node);
             }
             writeLog(LOG_TYPE_INFO, "Single node test completed.");
@@ -757,13 +1041,12 @@ int main(int argc, char* argv[])
         else
         {
             writeLog(LOG_TYPE_ERROR, "No valid link found.");
-            printMsg(SPEEDTEST_ERROR_NORECOGLINK, &node, rpcmode);
+            printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
         }
     }
+    */
     logEOF();
-    clearTrans();
-    //printMsg(SPEEDTEST_MESSAGE_EOF, &node, rpcmode);
-    printMsgWithDict(SPEEDTEST_MESSAGE_EOF, rpcmode, dict, trans);
+    printMsgDirect(SPEEDTEST_MESSAGE_EOF, rpcmode);
     sleep(1);
 #ifdef _WIN32
     if(!rpcmode)

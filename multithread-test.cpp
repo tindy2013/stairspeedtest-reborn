@@ -203,7 +203,7 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test started.");
     //prep up vars first
     string host, uri, testfile = node->testFile;
-    int port;
+    int port, i;
     bool useTLS = false;
 
     writeLog(LOG_TYPE_FILEDL, "Fetch target: " + testfile);
@@ -241,7 +241,7 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
 
     int running;
     thread threads[thread_count];
-    for(int i = 0; i != thread_count; i++)
+    for(i = 0; i != thread_count; i++)
     {
         writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + to_string(i + 1) + ".");
         threads[i]=thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
@@ -252,7 +252,7 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     writeLog(LOG_TYPE_FILEDL, "All threads launched. Start accumulating data.");
     auto start = steady_clock::now();
     long long transferred_bytes = 0, last_bytes = 0, this_bytes = 0, max_speed = 0;
-    for(int i = 1; i < 21; i++)
+    for(i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
         received_mutex.lock(); //stop the receive
@@ -278,10 +278,10 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
         draw_progress(i, this_bytes);
     }
     cerr<<endl;
+    writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
     safe_set_exit_flag(); //terminate all threads right now
     received_mutex.lock(); //lock it to prevent any further data writing
     auto end = steady_clock::now();
-    writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     //cerr<<deltatime<<" "<<received_bytes<<endl;
