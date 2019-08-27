@@ -170,9 +170,7 @@ void printMsgDirect(int index, bool rpcmode)
 int writeToFile(string path, string content, bool overwrite)
 {
     fstream outfile;
-    ios::openmode mode = ios::out;
-    if(!overwrite)
-        mode = ios::app;
+    ios::openmode mode = overwrite ? ios::out : ios::app;
     outfile.open(path, mode);
     outfile<<content<<endl;
     outfile.close();
