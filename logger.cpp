@@ -48,7 +48,7 @@ string getTime(int type)
         format = "%Y/%m/%d %a %H:%M:%S." + string(cMillis);
         break;
     case 3:
-        format = "%Y-%m-%d %H:%M:%S." + string(cMillis);
+        format = "%Y-%m-%d %H:%M:%S." + string(cMillis).substr(0, 3);
         break;
     }
     strftime(tmpbuf, 32, format.data(), local);

@@ -6,6 +6,12 @@
   
 ## Intro
 This is a C++ remake version of the original [Stair Speedtest](https://github.com/tindy2013/stairspeedtest) script. Despite its similarity to the script verion, this remake version works much more effectively, with faster node parsing, result picture rendering and even cross-platform support.  
+
+## Special Thanks
+* [@NyanChanMeow](https://github.com/nyanchanmeow) for the original script [SSRSpeed](https://github.com/nyanchanmeow/ssrspeed)
+* [@CareyWong](https://github.com/careywang) for Web GUI design
+* [@ang830715](https://github.com/ang830715)  for MacOS support
+* ...and a lot of people who have helped me during the testing phase!
   
 ## Installation  
 ### Prebuilt release  
@@ -53,11 +59,11 @@ build.bat
 ## Compatibility
 Tested platforms: 
   
-* Windows 10 1803 x64, Windows Server 2008 R2
+* Windows 10 1803 x64, Windows Server 2008 R2 x64, Windows 7 SP1 x64
 * Ubuntu 18.10
 * Debian 6.3
 * CentOS 7.6
-* MacOS 10.14.3 Mojave
+* MacOS 10.14.6 Mojave
 * Android 8.0 (Termux)
   
 Supported proxy types:  

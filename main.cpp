@@ -572,7 +572,7 @@ void batchTest(vector<nodeInfo> *nodes)
         resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
         writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + to_string(node_count) + "/" + to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
         exportHTML();
-        if(!multilink && !multilink_export_as_one_image)
+        if(!multilink || (multilink && !multilink_export_as_one_image))
         {
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
@@ -788,7 +788,7 @@ int main(int argc, char* argv[])
     //intro message
     printMsgDirect(SPEEDTEST_MESSAGE_WELCOME, rpcmode);
     getline(cin, link);
-    writeLog(LOG_TYPE_INFO, "Input data: " + link);
+    writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));
     if(rpcmode)
     {
         vector<string> webargs = split(link, "^");
@@ -850,6 +850,7 @@ int main(int argc, char* argv[])
             else
             {
                 printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
+                curPNGPathPrefix = replace_all_distinct(resultPath, ".log", "");
                 for(int i = 0; i < curGroupID; i++)
                 {
                     vector<nodeInfo>().swap(nodes);
@@ -864,7 +865,6 @@ int main(int argc, char* argv[])
                             printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVINGMULTI, rpcmode, dict, trans);
                         }
                         writeLog(LOG_TYPE_INFO, "Now exporting result for group " + to_string(i + 1) + "...");
-                        curPNGPathPrefix = replace_all_distinct(resultPath, ".log", "");
                         curPNGPath = curPNGPathPrefix + "-multilink-group" + to_string(i + 1) + ".png";
                         pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method);
                         {
@@ -884,7 +884,10 @@ int main(int argc, char* argv[])
     }
     else if(allNodes.size() == 1)
     {
-        printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &allNodes[0], rpcmode);
+        if(rpcmode)
+        {
+            printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &allNodes[0], rpcmode);
+        }
         singleTest(&allNodes[0]);
         if(single_test_force_export)
         {

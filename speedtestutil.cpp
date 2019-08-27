@@ -786,6 +786,16 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                     }
                 }
             }
+            else if(yamlnode["Proxy"][i]["obfs"].IsDefined())
+            {
+                plugin = "obfs-local";
+                yamlnode["Proxy"][i]["obfs"] >> pluginopts_mode;
+                if(yamlnode["Proxy"][i]["obfs-host"].IsDefined())
+                {
+                    yamlnode["Proxy"][i]["obfs-host"] >> pluginopts_host;
+                }
+            }
+
             if(plugin != "")
             {
                 pluginopts = "obfs=" + pluginopts_mode;
