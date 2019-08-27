@@ -788,7 +788,7 @@ int main(int argc, char* argv[])
     //intro message
     printMsgDirect(SPEEDTEST_MESSAGE_WELCOME, rpcmode);
     getline(cin, link);
-    writeLog(LOG_TYPE_INFO, "Input data: " + link);
+    writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));
     if(rpcmode)
     {
         vector<string> webargs = split(link, "^");
