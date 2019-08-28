@@ -5,9 +5,9 @@ void operator >> (const rapidjson::Value& value, std::string& i)
     if(value.IsNull())
         i = std::string();
     else if(value.IsInt64())
-        i = to_string(value.GetInt64());
+        i = std::to_string(value.GetInt64());
     else if(value.IsDouble())
-        i = to_string(value.GetDouble());
+        i = std::to_string(value.GetDouble());
     else if(value.IsString())
         i = std::string(value.GetString());
     else
@@ -21,7 +21,7 @@ void operator >> (const rapidjson::Value& value, int& i)
     else if(value.IsInt())
         i = value.GetInt();
     else if(value.IsString())
-        i = stoi(value.GetString());
+        i = std::stoi(value.GetString());
     else
         i = 0;
 }
