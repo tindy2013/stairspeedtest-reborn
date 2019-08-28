@@ -6,6 +6,7 @@
 #include "logger.h"
 #include "speedtestutil.h"
 #include "webget.h"
+#include "rapidjson_extra.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -126,40 +127,38 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
         return;
     }
     jsondata.Parse(vmess.data());
-    if(!jsondata.HasMember("v"))
-        version = "1"; //link without version will treat as version 1
-    else if(jsondata["v"].IsInt())
-        version = to_string(jsondata["v"].GetInt());
-    else if(jsondata["v"].IsString())
-        version = jsondata["v"].GetString();
-    ps = jsondata["ps"].GetString();
-    add = jsondata["add"].GetString();
-    port = custom_port == "" ? jsondata["port"].GetString() : custom_port;
-    if(!jsondata["type"].IsNull())
-        type = jsondata["type"].GetString();
-    if(!jsondata["id"].IsNull())
-        id = jsondata["id"].GetString();
-    if(jsondata["aid"].IsInt())
-        aid = to_string(jsondata["aid"].GetInt());
+
+    version = "1"; //link without version will treat as version 1
+    GetMember(jsondata, "v", &version); //try to get version
+
+    jsondata["ps"] >> ps;
+    jsondata["add"] >> add;
+    jsondata["type"] >> type;
+    jsondata["id"] >> id;
+    jsondata["aid"] >> aid;
+    jsondata["net"] >> net;
+    jsondata["tls"] >> tls;
+    if(custom_port != "")
+        port = custom_port;
     else
-        aid = jsondata["aid"].GetString();
-    if(!jsondata["net"].IsNull())
-        net = jsondata["net"].GetString();
-    if(!jsondata["tls"].IsNull())
-        tls = jsondata["tls"].GetString();
+        jsondata["port"] >> port;
+
+    jsondata["host"] >> host;
     if(version == "1")
     {
-        vchild = split(jsondata["host"].GetString(), ";");
-        if(vchild.size() == 2)
+        if(host != "")
         {
-            host = vchild[0];
-            path = vchild[1];
+            vchild = split(host, ";");
+            if(vchild.size() == 2)
+            {
+                host = vchild[0];
+                path = vchild[1];
+            }
         }
     }
     else if(version == "2")
     {
-        host = jsondata["host"].GetString();
-        path = jsondata["path"].GetString();
+        jsondata["path"] >> path;
     }
 
     node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
@@ -193,30 +192,33 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
             continue;
         }
         //common info
-        ps = json["vmess"][i]["remarks"].GetString();
-        add = json["vmess"][i]["address"].GetString();
-        port = custom_port == "" ? to_string(json["vmess"][i]["port"].GetInt()) : custom_port;
-        subid = json["vmess"][i]["subid"].GetString();
+        json["vmess"][i]["remarks"] >> ps;
+        json["vmess"][i]["address"] >> add;
+        if(custom_port != "")
+            port = custom_port;
+        else
+            json["vmess"][i]["port"] >>port;
+        json["vmess"][i]["subid"] >> subid;
 
-        configType = json["vmess"][i]["configType"].GetInt();
+        json["vmess"][i]["configType"] >> configType;
         switch(configType)
         {
         case 1: //vmess config
-            type = json["vmess"][i]["headerType"].GetString();
-            id = json["vmess"][i]["id"].GetString();
-            aid = to_string(json["vmess"][i]["alterId"].GetInt());
-            net = json["vmess"][i]["network"].GetString();
-            path = json["vmess"][i]["path"].GetString();
-            host = json["vmess"][i]["requestHost"].GetString();
-            tls = json["vmess"][i]["streamSecurity"].GetString();
-            cipher = json["vmess"][i]["security"].GetString();
+            json["vmess"][i]["headerType"] >> type;
+            json["vmess"][i]["id"] >> id;
+            json["vmess"][i]["alterId"] >> aid;
+            json["vmess"][i]["network"] >> net;
+            json["vmess"][i]["path"] >> path;
+            json["vmess"][i]["requestHost"] >> host;
+            json["vmess"][i]["streamSecurity"] >> tls;
+            json["vmess"][i]["security"] >> cipher;
             group = V2RAY_DEFAULT_GROUP;
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
             break;
         case 3: //ss config
-            id = json["vmess"][i]["id"].GetString();
-            cipher = json["vmess"][i]["security"].GetString();
+            json["vmess"][i]["id"] >> id;
+            json["vmess"][i]["security"] >> cipher;
             group = SS_DEFAULT_GROUP;
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
             node.proxyStr = ssConstruct(add, port, id, cipher, "", "", ps, local_port, true);
@@ -306,19 +308,22 @@ void explodeSSRConf(string content, string custom_port, int local_port, bool lib
     for(unsigned int i = 0; i < json["configs"].Size(); i++)
     {
         config = config_ssr_libev;
-        group = json["configs"][i]["group"].GetString();
+        json["configs"][i]["group"] >> group;
         if(group == "")
             group = SSR_DEFAULT_GROUP;
-        remarks = json["configs"][i]["remarks"].GetString();
-        remarks_base64 = json["configs"][i]["remarks_base64"].GetString();
-        password = json["configs"][i]["password"].GetString();
-        method = json["configs"][i]["method"].GetString();
-        server = json["configs"][i]["server"].GetString();
-        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
-        protocol = json["configs"][i]["protocol"].GetString();
-        protoparam = json["configs"][i]["protocolparam"].GetString();
-        obfs = json["configs"][i]["obfs"].GetString();
-        obfsparam = json["configs"][i]["obfsparam"].GetString();
+        json["configs"][i]["remarks"] >> remarks;
+        json["configs"][i]["remarks_base64"] >> remarks_base64;
+        json["configs"][i]["password"] >> password;
+        json["configs"][i]["method"] >> method;
+        json["configs"][i]["server"] >> server;
+        if(custom_port != "")
+            port = custom_port;
+        else
+            json["configs"][i]["server_port"] >> port;
+        json["configs"][i]["protocol"] >> protocol;
+        json["configs"][i]["protocolparam"] >> protoparam;
+        json["configs"][i]["obfs"] >> obfs;
+        json["configs"][i]["obfsparam"] >> obfsparam;
 
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
         node.group = group;
@@ -402,26 +407,18 @@ void explodeSSD(string link, bool libev, string custom_port, int local_port, vec
     jsondata.Parse(link.c_str());
     for(unsigned int i = 0; i < jsondata["servers"].Size(); i++)
     {
-        group = jsondata["airport"].GetString();
-        port = to_string(jsondata["port"].GetInt());
-        method = jsondata["encryption"].GetString();
-        password = jsondata["password"].GetString();
-        remarks = jsondata["servers"][i]["remarks"].GetString();
-        server = jsondata["servers"][i]["server"].GetString();
-        if(jsondata["servers"][i].HasMember("plugin"))
-            plugin = jsondata["servers"][i]["plugin"].GetString();
-        else
-            plugin = "";
-        if(jsondata["servers"][i].HasMember("plugin_options"))
-            pluginopts = jsondata["servers"][i]["plugin_options"].GetString();
-        else
-            pluginopts = "";
-        if(jsondata["servers"][i].HasMember("encryption"))
-            method = jsondata["servers"][i]["encryption"].GetString();
-        if(jsondata["servers"][i].HasMember("port"))
-            port = to_string(jsondata["servers"][i]["port"].GetInt());
-        if(jsondata["servers"][i].HasMember("password"))
-            password = jsondata["password"][i]["password"].GetString();
+        jsondata["airport"] >> group;
+        jsondata["port"] >> port;
+        jsondata["encryption"] >> method;
+        jsondata["password"] >> password;
+        jsondata["servers"][i]["remarks"] >> remarks;
+        jsondata["servers"][i]["server"] >> server;
+        GetMember(jsondata["servers"][i], "plugin", &plugin);
+        GetMember(jsondata["servers"][i], "plugin_options", &pluginopts);
+        GetMember(jsondata["servers"][i], "encryption", &method);
+        GetMember(jsondata["servers"][i], "port", &port);
+        GetMember(jsondata["servers"][i], "password", &password);
+
         if(custom_port != "")
             port = custom_port;
 
@@ -450,11 +447,14 @@ void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port,
 
     for(unsigned int i = 0; i < json["nodes"].Size(); i++)
     {
-        server = json["nodes"][i]["server"].GetString();
-        port = custom_port == "" ? to_string(json["nodes"][i]["server_port"].GetInt()) : custom_port;
-        password = json["nodes"][i]["password"].GetString();
-        method = json["nodes"][i]["method"].GetString();
-        ps = json["nodes"][i]["remarks"].GetString();
+        json["nodes"][i]["server"] >> server;
+        if(custom_port != "")
+            port = custom_port;
+        else
+            json["nodes"][i]["server_port"] >> port;
+        json["nodes"][i]["password"] >> password;
+        json["nodes"][i]["method"] >> method;
+        json["nodes"][i]["remarks"] >> ps;
 
         if(ps == "")
             ps = server;
@@ -479,13 +479,16 @@ void explodeSSConf(string content, string custom_port, int local_port, bool libe
     for(unsigned int i = 0; i < json["configs"].Size(); i++)
     {
         config = config_ss_libev;
-        ps = json["configs"][i]["remarks"].GetString();
-        password = json["configs"][i]["password"].GetString();
-        method = json["configs"][i]["method"].GetString();
-        server = json["configs"][i]["server"].GetString();
-        port = custom_port == "" ? to_string(json["configs"][i]["server_port"].GetInt()) : custom_port;
-        plugin = json["configs"][i]["plugin"].GetString();
-        pluginopts = json["configs"][i]["plugin_opts"].GetString();
+        json["configs"][i]["remarks"] >> ps;
+        json["configs"][i]["password"] >> password;
+        json["configs"][i]["method"] >> method;
+        json["configs"][i]["server"] >> server;
+        if(custom_port != "")
+            port = custom_port;
+        else
+            json["configs"][i]["server_port"] >> port;
+        json["configs"][i]["plugin"] >> plugin;
+        json["configs"][i]["plugin_opts"] >> pluginopts;
         if(ps == "")
         {
             ps = server;
@@ -540,6 +543,91 @@ void explodeSocks(string link, string custom_port, nodeInfo *node)
     node->server = server;
     node->port = stoi(port);
     node->proxyStr = "user=" + username + "&pass=" + password;
+}
+
+void explodeClash(Node yamlnode, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
+{
+    nodeInfo node;
+    unsigned int index = nodes->size();
+    string proxytype, strTemp, ps, server, port, cipher, group;
+    for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
+    {
+        yamlnode["Proxy"][i]["type"] >> proxytype;
+        yamlnode["Proxy"][i]["name"] >> ps;
+        yamlnode["Proxy"][i]["server"] >> server;
+        port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<string>() : custom_port;
+        if(proxytype == "vmess")
+        {
+            string type = "none", id, aid = "0", net = "tcp", path, host, tls;
+            group = V2RAY_DEFAULT_GROUP;
+
+            yamlnode["Proxy"][i]["uuid"] >> id;
+            yamlnode["Proxy"][i]["alterId"] >> aid;
+            yamlnode["Proxy"][i]["cipher"] >> cipher;
+            net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<string>() : "tcp";
+            path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<string>() : "/";
+            if(yamlnode["Proxy"][i]["tls"].IsDefined())
+            {
+                tls = yamlnode["Proxy"][i]["tls"].as<string>() == "true" ? "tls" : "";
+            }
+            if(yamlnode["Proxy"][i]["ws-headers"].IsDefined())
+                yamlnode["Proxy"][i]["ws-headers"]["Host"] >> host;
+
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+            node.proxyStr = vmessConstruct(server, port, type, id, aid, net, cipher, path, host, tls, local_port);
+        }
+        else if(proxytype == "ss")
+        {
+            string password, method, plugin, pluginopts, addition;
+            string pluginopts_mode, pluginopts_host;
+            group = SS_DEFAULT_GROUP;
+
+            yamlnode["Proxy"][i]["cipher"] >> method;
+            yamlnode["Proxy"][i]["password"] >> password;
+            if(yamlnode["Proxy"][i]["plugin"].IsDefined())
+            {
+                if(yamlnode["Proxy"][i]["plugin"].as<string>() == "obfs")
+                {
+                    plugin = "obfs-local";
+                    if(yamlnode["Proxy"][i]["plugin-opts"].IsDefined())
+                    {
+                        yamlnode["Proxy"][i]["plugin-opts"]["mode"] >> pluginopts_mode;
+                        if(yamlnode["Proxy"][i]["plugin-opts"]["host"].IsDefined())
+                            yamlnode["Proxy"][i]["plugin-opts"]["host"] >> pluginopts_host;
+                    }
+                }
+            }
+            else if(yamlnode["Proxy"][i]["obfs"].IsDefined())
+            {
+                plugin = "obfs-local";
+                yamlnode["Proxy"][i]["obfs"] >> pluginopts_mode;
+                if(yamlnode["Proxy"][i]["obfs-host"].IsDefined())
+                {
+                    yamlnode["Proxy"][i]["obfs-host"] >> pluginopts_host;
+                }
+            }
+
+            if(plugin != "")
+            {
+                pluginopts = "obfs=" + pluginopts_mode;
+                pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
+            }
+
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+            node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
+        }
+        else
+            continue;
+        node.group = group;
+        node.remarks = ps;
+        node.server = server;
+        node.port = stoi(port);
+        node.id = index;
+        nodes->push_back(node);
+        writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
+        index++;
+    }
+    return;
 }
 
 void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node)
@@ -732,91 +820,6 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
         }
     }
     return isSurgeConfig;
-}
-
-void explodeClash(Node yamlnode, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
-{
-    nodeInfo node;
-    unsigned int index = nodes->size();
-    string proxytype, strTemp, ps, server, port, cipher, group;
-    for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
-    {
-        yamlnode["Proxy"][i]["type"] >> proxytype;
-        yamlnode["Proxy"][i]["name"] >> ps;
-        yamlnode["Proxy"][i]["server"] >> server;
-        port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<string>() : custom_port;
-        if(proxytype == "vmess")
-        {
-            string type = "none", id, aid = "0", net = "tcp", path, host, tls;
-            group = V2RAY_DEFAULT_GROUP;
-
-            yamlnode["Proxy"][i]["uuid"] >> id;
-            yamlnode["Proxy"][i]["alterId"] >> aid;
-            yamlnode["Proxy"][i]["cipher"] >> cipher;
-            net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<string>() : "tcp";
-            path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<string>() : "/";
-            if(yamlnode["Proxy"][i]["tls"].IsDefined())
-            {
-                tls = yamlnode["Proxy"][i]["tls"].as<string>() == "true" ? "tls" : "";
-            }
-            if(yamlnode["Proxy"][i]["ws-headers"].IsDefined())
-                yamlnode["Proxy"][i]["ws-headers"]["Host"] >> host;
-
-            node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-            node.proxyStr = vmessConstruct(server, port, type, id, aid, net, cipher, path, host, tls, local_port);
-        }
-        else if(proxytype == "ss")
-        {
-            string password, method, plugin, pluginopts, addition;
-            string pluginopts_mode, pluginopts_host;
-            group = SS_DEFAULT_GROUP;
-
-            yamlnode["Proxy"][i]["cipher"] >> method;
-            yamlnode["Proxy"][i]["password"] >> password;
-            if(yamlnode["Proxy"][i]["plugin"].IsDefined())
-            {
-                if(yamlnode["Proxy"][i]["plugin"].as<string>() == "obfs")
-                {
-                    plugin = "obfs-local";
-                    if(yamlnode["Proxy"][i]["plugin-opts"].IsDefined())
-                    {
-                        yamlnode["Proxy"][i]["plugin-opts"]["mode"] >> pluginopts_mode;
-                        if(yamlnode["Proxy"][i]["plugin-opts"]["host"].IsDefined())
-                            yamlnode["Proxy"][i]["plugin-opts"]["host"] >> pluginopts_host;
-                    }
-                }
-            }
-            else if(yamlnode["Proxy"][i]["obfs"].IsDefined())
-            {
-                plugin = "obfs-local";
-                yamlnode["Proxy"][i]["obfs"] >> pluginopts_mode;
-                if(yamlnode["Proxy"][i]["obfs-host"].IsDefined())
-                {
-                    yamlnode["Proxy"][i]["obfs-host"] >> pluginopts_host;
-                }
-            }
-
-            if(plugin != "")
-            {
-                pluginopts = "obfs=" + pluginopts_mode;
-                pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
-            }
-
-            node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-            node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
-        }
-        else
-            continue;
-        node.group = group;
-        node.remarks = ps;
-        node.server = server;
-        node.port = stoi(port);
-        node.id = index;
-        nodes->push_back(node);
-        writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
-        index++;
-    }
-    return;
 }
 
 bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *include_remarks)
