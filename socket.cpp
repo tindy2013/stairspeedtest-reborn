@@ -63,16 +63,6 @@ int def_timeout = 2000;
 /* packet operation macro */
 #define PUT_BYTE(ptr, data) (*(unsigned char* )(ptr) = (unsigned char)(data))
 
-//int WSAAPI getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
-
-#ifndef _WIN32
-void connect_sigalarm(int signo)
-{
-    //cerr<<"connect alarm"<<endl;
-    return;
-}
-#endif // _WIN32
-
 int Send(SOCKET sHost, const char* data, int len, int flags)
 {
 #ifdef _WIN32
@@ -172,13 +162,8 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     ul = 0;
     ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
 #else
-//direct
-    //ret = connect(sockfd, addr, addrsize);
-
-//signal
-
     struct sigaction act, oldact;
-    act.sa_handler = connect_sigalarm;
+    act.sa_handler = [](int signo){return;};
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGALRM);
     act.sa_flags = SA_INTERRUPT;
@@ -201,66 +186,6 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
         }
     }
     alarm(0);
-
-
-//setsockopt
-/*
-    int flags = 0, error = 0;
-    fd_set  rset, wset;
-    socklen_t   len = sizeof(error);
-    struct timeval  ts;
-
-    ts.tv_sec = 0;
-    ts.tv_usec = def_timeout * 1000;
-
-    //clear out descriptor sets for select
-    //add socket to the descriptor sets
-    FD_ZERO(&rset);
-    FD_SET(sockfd, &rset);
-    wset = rset;    //structure assignment ok
-
-    //set socket nonblocking flag
-    if( (flags = fcntl(sockfd, F_GETFL, 0)) < 0)
-        return -1;
-
-    if(fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
-        return -1;
-
-    //initiate non-blocking connect
-    if( (ret = connect(sockfd, addr, addrsize)) < 0 )
-        if (errno != EINPROGRESS)
-            return -1;
-
-    if(ret == 0)    //then connect succeeded right away
-        goto done;
-
-    //we are waiting for connect to complete now
-    if( (ret = select(sockfd + 1, &rset, &wset, NULL, &ts)) < 0)
-        return -1;
-    if(ret == 0){   //we had a timeout
-        errno = ETIMEDOUT;
-        return -1;
-    }
-
-    //we had a positivite return so a descriptor is ready
-    if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)){
-        if(getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-            return -1;
-    }else
-        return -1;
-
-    if(error){  //check if we had a socket error
-        errno = error;
-        return -1;
-    }
-
-done:
-    //put socket back in blocking mode
-    if(fcntl(sockfd, F_SETFL, flags) < 0)
-        return -1;
-
-    return 0;
-*/
 #endif // _WIN32
     return ret;
 }

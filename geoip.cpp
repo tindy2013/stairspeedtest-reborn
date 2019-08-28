@@ -4,6 +4,7 @@
 #include "geoip.h"
 #include "misc.h"
 #include "logger.h"
+#include "rapidjson_extra.h"
 
 using namespace rapidjson;
 
@@ -63,32 +64,19 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
             return info;
         }
     }
-    if(json.HasMember("ip"))
-        info.ip = json["ip"].GetString();
-    if(json.HasMember("country_code"))
-        info.country_code = json["country_code"].GetString();
-    if(json.HasMember("country"))
-        info.country = json["country"].GetString();
-    if(json.HasMember("region_code"))
-        info.region_code = json["region_code"].GetString();
-    if(json.HasMember("region"))
-        info.region = json["region"].GetString();
-    if(json.HasMember("city"))
-        info.city = json["city"].GetString();
-    if(json.HasMember("postal_code"))
-        info.postal_code = json["postal_code"].GetString();
-    if(json.HasMember("continent_code"))
-        info.continent_code = json["continent_code"].GetString();
-    if(json.HasMember("latitude"))
-        info.latitude = to_string(json["latitude"].GetFloat());
-    if(json.HasMember("longitude"))
-        info.longitude = to_string(json["longitude"].GetFloat());
-    if(json.HasMember("organization"))
-        info.organization = json["organization"].GetString();
-    if(json.HasMember("asn"))
-        info.asn = to_string(json["asn"].GetInt());
-    if(json.HasMember("timezone"))
-        info.timezone = json["timezone"].GetString();
+    info.ip = GetMember(json, "ip");
+    info.country_code = GetMember(json, "country_code");
+    info.country = GetMember(json, "country");
+    info.region_code = GetMember(json, "region_code");
+    info.region = GetMember(json, "region");
+    info.city = GetMember(json, "city");
+    info.postal_code = GetMember(json, "postal_code");
+    info.continent_code = GetMember(json, "continent_code");
+    info.latitude = GetMember(json, "latitude");
+    info.longitude = GetMember(json, "longitude");
+    info.organization = GetMember(json, "organization");
+    info.asn = GetMember(json, "asn");
+    info.timezone = GetMember(json, "timezone");
 
     writeLog(LOG_TYPE_GEOIP, "Parse GeoIP complete. Leaving.");
     return info;

@@ -753,9 +753,8 @@ int main(int argc, char* argv[])
 {
     vector<nodeInfo> nodes;
     nodeInfo node;
-    string link, strSub, strInput, fileContent, strProxy;
+    string link;
     string curPNGPath, curPNGPathPrefix;
-    //int linkType = -1;
     cout << fixed;
     cout << setprecision(2);
     signal(SIGINT, signalHandler);
@@ -915,140 +914,6 @@ int main(int argc, char* argv[])
         writeLog(LOG_TYPE_ERROR, "No valid link found.");
         printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
     }
-    /*
-    writeLog(LOG_TYPE_INFO, "Received Link.");
-    if(strFind(link, "vmess://"))
-        linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-    else if(strFind(link, "ss://"))
-        linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-    else if(strFind(link, "ssr://"))
-        linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
-    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
-        linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-    else if(strFind(link, "http://") || strFind(link, "https://") || strFind(link, "surge:///install-config"))
-        linkType = SPEEDTEST_MESSAGE_FOUNDSUB;
-    else if(link == "data:upload")
-        linkType = SPEEDTEST_MESSAGE_FOUNDUPD;
-    else if(fileExist(link))
-        linkType = SPEEDTEST_MESSAGE_FOUNDLOCAL;
-
-
-    switch(linkType)
-    {
-    case SPEEDTEST_MESSAGE_FOUNDSUB:
-        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDSUB, rpcmode);
-        if(!rpcmode)
-        {
-            printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
-            getline(cin, strInput);
-            if(strInput.size())
-            {
-                custom_group = GBKToUTF8(strInput);
-                writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
-            }
-        }
-        switchCodepage();
-        writeLog(LOG_TYPE_INFO, "Downloading subscription data...");
-        printMsgDirect(SPEEDTEST_MESSAGE_FETCHSUB, rpcmode);
-        if(strFind(link, "surge:///install-config")) //surge config link
-            link = UrlDecode(getUrlArg(link, "url"));
-        strSub = webGet(link);
-        if(strSub.size() == 0)
-        {
-            //try to get it again with system proxy
-            strProxy = getSystemProxy();
-            if(strProxy != "")
-                strSub = webGet(link, strProxy);
-        }
-        writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
-        if(strSub.size())
-        {
-            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks);
-            batchTest(nodes);
-            writeLog(LOG_TYPE_INFO, "Subscription test completed.");
-        }
-        else
-        {
-            writeLog(LOG_TYPE_ERROR, "Cannot download subscription data.");
-            printMsgDirect(SPEEDTEST_ERROR_INVALIDSUB, rpcmode);
-        }
-        break;
-    case SPEEDTEST_MESSAGE_FOUNDLOCAL:
-        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDLOCAL, rpcmode);
-        if(!rpcmode)
-        {
-            printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
-            getline(cin, strInput);
-            if(strInput.size())
-            {
-                custom_group = GBKToUTF8(strInput);
-                writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
-            }
-        }
-        switchCodepage();
-        writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
-        printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
-        {
-            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
-            writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
-        }
-        else
-        {
-            batchTest(nodes);
-        }
-        writeLog(LOG_TYPE_INFO, "Configuration test completed.");
-        break;
-    case SPEEDTEST_MESSAGE_FOUNDUPD:
-        printMsgDirect(SPEEDTEST_MESSAGE_FOUNDUPD, rpcmode);
-        cin.clear();
-        //now we should ready to receive a large amount of data from stdin
-        getline(cin, fileContent);
-        //writeLog(LOG_TYPE_RAW, fileContent);
-        fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
-        writeLog(LOG_TYPE_RAW, fileContent);
-        writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
-        printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
-        {
-            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
-            writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
-        }
-        else
-        {
-            batchTest(nodes);
-        }
-        writeLog(LOG_TYPE_INFO, "Configuration test completed.");
-        break;
-    default:
-        if(linkType > 0)
-        {
-            node_count = 1;
-            switchCodepage();
-            printMsg(linkType, &node, rpcmode);
-            explode(link, ss_libev, ssr_libev, override_conf_port, socksport, &node);
-            if(custom_group.size() != 0)
-                node.group = custom_group;
-            if(node.server == "")
-            {
-                writeLog(LOG_TYPE_ERROR, "No valid link found.");
-                printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
-            }
-            else
-            {
-                printMsgDirect(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
-                printMsg(SPEEDTEST_MESSAGE_GOTSERVER, &node, rpcmode);
-                singleTest(&node);
-            }
-            writeLog(LOG_TYPE_INFO, "Single node test completed.");
-        }
-        else
-        {
-            writeLog(LOG_TYPE_ERROR, "No valid link found.");
-            printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
-        }
-    }
-    */
     logEOF();
     printMsgDirect(SPEEDTEST_MESSAGE_EOF, rpcmode);
     sleep(1);
