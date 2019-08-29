@@ -81,7 +81,13 @@ int tcping(nodeInfo *node)
         draw_progress(loopcounter, node->rawPing);
         loopcounter++;
         if(loopcounter < times_to_ping)
-            sleep(1000);
+        {
+            if(retVal != 1)
+                sleep(1000); //passed, sleep longer
+            else
+                sleep(200); //not passed, sleep shorter
+        }
+
     }
     cerr<<endl;
     float pingval = 0.0;
