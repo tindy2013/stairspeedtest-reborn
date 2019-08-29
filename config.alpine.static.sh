@@ -1,4 +1,7 @@
-apk add git gcc g++ cmake make autoconf
+#!/bin/bash
+set -e
+
+apk add gcc g++ cmake make autoconf automake libtool
 
 apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev
 
