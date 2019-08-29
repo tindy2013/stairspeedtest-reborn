@@ -19,10 +19,12 @@
 #define SOCKADDR_IN sockaddr_in
 #define ZeroMemory(d,l) memset((d), 0, (l))
 #define ioctlsocket ioctl
-#ifdef _MACOS
+#ifndef SA_INTERRUPT
 #define SA_INTERRUPT 0 //ignore this setting
+#endif
+#ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0 //ignore this setting
-#endif // _MACOS
+#endif
 #ifndef __hpux
 #include <sys/select.h>
 #endif /* __hpux */
