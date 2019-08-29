@@ -1,6 +1,13 @@
 apk add git gcc g++ cmake make autoconf
 
-apk add libpng-dev curl-dev freetype-static zlib-dev openssl rapidjson-dev
+apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev
+
+git clone https://github.com/curl/curl
+cd curl
+./buildconf
+./configure
+make install -j4
+cd ..
 
 git clone https://github.com/jbeder/yaml-cpp
 cd yaml-cpp
