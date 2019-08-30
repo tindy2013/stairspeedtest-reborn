@@ -96,6 +96,8 @@ string ssConstruct(string server, string port, string password, string method, s
     string base = base_ss_win;
     string config = config_ss_win;
     string config_libev = config_ss_libev;
+    if(plugin == "obfs-local")
+        plugin = "simple-obfs";
     if(libev == true)
         config = config_libev;
     config = replace_all_distinct(config, "?server?", server);
