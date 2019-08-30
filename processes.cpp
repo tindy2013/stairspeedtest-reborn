@@ -75,9 +75,16 @@ void killByHandle(HANDLE hProc)
 #else
 bool runProgram(string command, string runpath, bool wait)
 {
+    /*
     string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
-    total_path += command + "&";
+    total_path += command;
     pPipe = popen(total_path.data(), "r");
+    */
+    char curdir[1024] = {};
+    getcwd(curdir, 1024);
+    chdir(runpath.data());
+    pPipe = popen(command.data(), "r");
+    chdir(curdir);
     return true;
 }
 #endif // _WIN32

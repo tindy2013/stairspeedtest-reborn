@@ -163,9 +163,11 @@ int runClient(int client, string runpath)
         break;
     }
 #else
-    string v2core_path = "v2ray -config config.json";
-    string ssr_libev_path = "ssr-local -c config.json";
-    string ss_libev_path = "ss-local -c config.json";
+    string v2core_path = "tools/clients/v2ray -config config.json";
+    string ssr_libev_path = "tools/clients/ssr-local -c config.json";
+
+    string ss_libev_dir = "tools/clients/";
+    string ss_libev_path = "ss-local -c ../../config.json";
 
     switch(client)
     {
@@ -179,7 +181,7 @@ int runClient(int client, string runpath)
         break;
     case SPEEDTEST_MESSAGE_FOUNDSS:
         writeLog(LOG_TYPE_INFO, "Starting up shadowsocks-libev...");
-        runProgram(ss_libev_path, "", false);
+        runProgram(ss_libev_path, ss_libev_dir, false);
         break;
     }
 #endif // _WIN32
