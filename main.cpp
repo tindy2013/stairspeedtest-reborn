@@ -167,7 +167,7 @@ int runClient(int client, string runpath)
     string ssr_libev_path = "tools/clients/ssr-local -c config.json";
 
     string ss_libev_dir = "tools/clients/";
-    string ss_libev_path = ss_libev_dir + "ss-local -c config.json";
+    string ss_libev_path = "ss-local -c config.json";
 
     switch(client)
     {
