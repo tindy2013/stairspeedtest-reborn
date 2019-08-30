@@ -2,10 +2,11 @@
 mkdir obj
 mkdir bin
 mkdir tools/clients
+rm -rf tools/clients/*
 set -e
 
 apk add gcc g++ cmake make autoconf automake libtool build-base linux-headers
-apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev mbedtls-dev mbedtls-static libev-dev pcre-dev libsodium-dev c-ares-dev
+apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev rapidjson-dev mbedtls-dev mbedtls-static libev-dev pcre-dev libsodium-dev c-ares-dev
 
 git clone https://github.com/curl/curl
 cd curl
@@ -33,6 +34,7 @@ git submodule update
 ./autogen.sh
 ./configure --disable-documentation
 make -j4
+cd src
 gcc obfs_local*.o ../libcork/.libs/libcork.a -o simple-obfs -lev -static
 mv simple-obfs ../../tools/clients/
 cd ../..
@@ -58,9 +60,22 @@ gcc ss_local*.o .libs/libshadowsocks-libev.a -o ssr-local -lpcre -lssl -lcrypto 
 mv ssr-local ../../tools/clients/
 cd ../..
 
+git clone git://sourceware.org/git/bzip2.git
+cd bzip2
+make install -j4
+cd ..
+
+apk del wget
+apk add wget
+
 wget https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip
 unzip websocketd-0.3.0-linux_amd64.zip websocketd
 mv websocketd tools/gui/
+
+wget https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
+unzip v2ray-linux-64.zip v2ray v2ctl
+mv v2ray tools/clients/
+mv v2ctl tools/clients/
 
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c geoip.cpp -o obj/geoip.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c logger.cpp -o obj/logger.o
@@ -76,7 +91,7 @@ gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c socket.cpp -o obj/so
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c speedtestutil.cpp -o obj/speedtestutil.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c tcping.cpp -o obj/tcping.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -g -std=c++11   -c webget.cpp -o obj/webget.o
-g++ -g -o stairspeedtest obj/geoip.o obj/logger.o obj/main.o obj/misc.o obj/multithread-test.o obj/printout.o obj/processes.o obj/rapidjson_extra.o obj/renderer.o obj/rulematch.o obj/socket.o obj/speedtestutil.o obj/tcping.o obj/webget.o -lcurl -lPNGwriter -lpng16 -lfreetype -lz -lssl -lcrypto -ldl -lpthread -lyaml-cpp -s -static
+g++ -g -o stairspeedtest obj/geoip.o obj/logger.o obj/main.o obj/misc.o obj/multithread-test.o obj/printout.o obj/processes.o obj/rapidjson_extra.o obj/renderer.o obj/rulematch.o obj/socket.o obj/speedtestutil.o obj/tcping.o obj/webget.o -lcurl -lPNGwriter -lpng16 -lfreetype -lz -lssl -lcrypto -ldl -lpthread -lyaml-cpp -lbz2 -s -static
 
 chmod +rx stairspeedtest pref.ini webgui.sh tools/clients/* tools/gui/* tools/misc/*
 tar czf stairspeedtest_reborn_linux64.tar.gz stairspeedtest pref.ini webgui.sh tools/
