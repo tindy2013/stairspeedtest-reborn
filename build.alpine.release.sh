@@ -4,8 +4,8 @@ mkdir bin
 mkdir tools/clients
 set -e
 
-apk add gcc g++ cmake make autoconf automake libtool
-apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev mbedtls-dev mbedtls-static libev-dev pcre libsodium-dev
+apk add gcc g++ cmake make autoconf automake libtool build-base linux-headers
+apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev mbedtls-dev mbedtls-static libev-dev pcre-dev libsodium-dev c-ares-dev
 
 git clone https://github.com/curl/curl
 cd curl
