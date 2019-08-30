@@ -382,8 +382,8 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
         port = custom_port == "" ? args[2] : custom_port;
         addition = args[3];
         plugins = UrlDecode(getUrlArg(addition, "plugin"));
-        plugin = plugins.substr(0, plugin.find(";"));
-        pluginopts = plugins.substr(plugin.find(";") + 1);
+        plugin = plugins.substr(0, plugins.find(";"));
+        pluginopts = plugins.substr(plugins.find(";") + 1);
         if(getUrlArg(addition, "group") != "")
             group = base64_decode(getUrlArg(addition, "group"));
     }
