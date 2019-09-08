@@ -9,12 +9,16 @@
 
 using namespace std;
 
-#define MAX_COLOR_COUNT 16
+struct color
+{
+    int red = 0;
+    int green = 0;
+    int blue = 0;
+};
 
-extern int colorgroup[MAX_COLOR_COUNT][3];
-extern int bounds[MAX_COLOR_COUNT];
-extern int color_count;
+extern vector<color> colorgroup;
+extern vector<int> bounds;
 
-string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method);
+string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method, string export_color_style, bool export_as_new_style, int test_duration);
 
 #endif // RENDERER_H_INCLUDED

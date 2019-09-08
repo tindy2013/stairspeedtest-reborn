@@ -11,6 +11,8 @@
 #define LOG_TYPE_TCPING 4
 #define LOG_TYPE_FILEDL 5
 #define LOG_TYPE_GEOIP 6
+#define LOG_TYPE_RULES 7
+#define LOG_TYPE_GPING 8
 
 using namespace std;
 

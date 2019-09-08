@@ -4,8 +4,11 @@
 #include <curl/curl.h>
 
 #include "webget.h"
+#include "logger.h"
 
 using namespace std;
+
+void draw_progress(int progress, int values[6]); //use a function from tcping
 
 string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
 
@@ -219,7 +222,7 @@ double getLoadPageTime(string url, long timeout, string proxy)
             time_total = val;
     }
     else
-        cerr<<"Error while fetching '"<<url<<"' : "<<curl_easy_strerror(res)<<endl;
+        writeLog(LOG_TYPE_GPING, "Error while fetching '" + url + "' : " + string(curl_easy_strerror(res)));
     curl_easy_cleanup(curl_handle);
     curl_global_cleanup();
     return time_total;
@@ -229,6 +232,7 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
 {
     double time_total = 0.0, retval = 0.0;
     string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
+    writeLog(LOG_TYPE_GPING, "Website ping started. Test with proxy '" + proxystr + "'.");
     int loop_times = 0, times_to_ping = 6, succeedcounter = 0, failcounter = 0;
     while(loop_times < times_to_ping)
     {
@@ -238,21 +242,25 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
             succeedcounter++;
             time_total += retval * 1000.0;
             node->rawSitePing[loop_times] = retval * 1000.0;
+            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Success - interval=" + to_string(node->rawSitePing[loop_times]) + "ms");
         }
         else
         {
             failcounter++;
             node->rawSitePing[loop_times] = 0;
+            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Fail - interval=" + to_string(retval * 1000.0) + "ms");
         }
         loop_times++;
+        draw_progress(loop_times - 1, node->rawSitePing);
         sleep(200);
     }
-
+    cerr<<endl;
     if(succeedcounter)
     {
         char strtmp[16] = {};
         snprintf(strtmp, sizeof(strtmp), "%0.2f", time_total / succeedcounter * 1.0);
         node->sitePing = strtmp;
     }
+    writeLog(LOG_TYPE_GPING, "Website ping completed. Leaving.");
     return 0;
 }
