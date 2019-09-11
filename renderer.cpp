@@ -12,6 +12,7 @@ using namespace std;
 using namespace std::chrono;
 
 string export_sort_method_render = "none";
+bool export_as_ssrspeed = false;
 
 vector<color> colorgroup;
 vector<int> bounds;
@@ -62,9 +63,9 @@ string secondToString(int duration)
     int intHrs = duration / 3600;
     int intMin = (duration % 3600) / 60;
     int intSec = duration % 60;
-    string strHrs = intHrs > 10 ? to_string(intHrs) : "0" + to_string(intHrs);
-    string strMin = intMin > 10 ? to_string(intMin) : "0" + to_string(intMin);
-    string strSec = intSec > 10 ? to_string(intSec) : "0" + to_string(intSec);
+    string strHrs = intHrs > 9 ? to_string(intHrs) : "0" + to_string(intHrs);
+    string strMin = intMin > 9 ? to_string(intMin) : "0" + to_string(intMin);
+    string strSec = intSec > 9 ? to_string(intSec) : "0" + to_string(intSec);
     return strHrs + ":" + strMin + ":" + strSec;
 }
 
@@ -116,7 +117,7 @@ void getSpeedColor(string speed, color *finalcolor)
 {
     int speedval = getSpeed(speed);
     unsigned int color_count = colorgroup.size();
-    for(unsigned int i = 0; i < color_count; i++)
+    for(unsigned int i = 0; i < color_count - 1; i++)
     {
         if(speedval >= bounds[i] && speedval <= bounds[i + 1])
         {
@@ -164,21 +165,34 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     loadDefaultColor(export_color_style);
 
     //predefined values
-    const string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
-    const int fontsize = 12, text_x_offset = 5;
-    int height_line = 24, text_y_offset = 7;
+    string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
+
+    int fontsize = 12, text_x_offset = 5, height_line = 24, text_y_offset = 7;
+    double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
     if(export_as_new_style)
     {
         height_line = 30;
         text_y_offset = 10;
     }
     const int center_align_offset = 8, vertical_delim_align_offset = 2;
-    const double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;
     //extra value for aligning to the center
     const int enableCenterAlign = export_as_new_style ? 1 : 0;
     const int center_align_offset_side = center_align_offset / 2;
     #define calcCenterOffset(item, total) ((((total - item) / 2) - center_align_offset_side) * enableCenterAlign)
+
+    //SSRSpeed style
+    if(export_as_ssrspeed)
+    {
+        export_as_new_style = true;
+        font = "tools" PATH_SLASH "misc" PATH_SLASH "SourceHanSansCN-Medium.otf";
+        fontsize = 10;
+        height_line = 24;
+        text_y_offset = 6;
+        border_red = 0.5;
+        border_green = 0.5;
+        border_blue = 0.5;
+    }
 
     //initialize all values
     export_sort_method_render = export_sort_method;
@@ -191,10 +205,10 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     //add title line into the list
     if(export_as_new_style)
     {
-        node.group = "  Group  ";
+        node.group = "Group";
         node.remarks = "  Remarks  ";
-        node.pkLoss = "    Loss    ";
-        node.avgPing = "    Ping    ";
+        node.pkLoss = "     Loss     ";
+        node.avgPing = "     Ping     ";
         node.sitePing = "  Google Ping  ";
         node.avgSpeed = "  AvgSpeed  ";
         node.maxSpeed = "  MaxSpeed  ";
@@ -213,10 +227,10 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
 
     //calculate the width of all columns
     int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0,  sitePing_width = 0, maxSpeed_width = 0, onlines = 0, final_width = 0;
-    int group_widths[node_count], remarks_widths[node_count], pkLoss_widths[node_count], avgPing_widths[node_count], avgSpeed_widths[node_count], sitePing_widths[node_count], maxSpeed_widths[node_count];
+    int group_widths[MAX_NODES_COUNT], remarks_widths[MAX_NODES_COUNT], pkLoss_widths[MAX_NODES_COUNT], avgPing_widths[MAX_NODES_COUNT], avgSpeed_widths[MAX_NODES_COUNT], sitePing_widths[MAX_NODES_COUNT], maxSpeed_widths[MAX_NODES_COUNT];
     long long total_traffic = 0;
     string longest_group, longest_remarks;
-    int longest_group_len, longest_remarks_len;
+    int longest_group_len = 0, longest_remarks_len = 0;
 
     for(int i = 0; i <= node_count; i++)
     {
@@ -272,11 +286,20 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     //generating information
     string gentime = "Generated at " + getTime(3);
     string traffic = "Traffic used : " + speedCalc((double)total_traffic) + ". ";
-    if(export_as_new_style)
-        traffic += "Time used : " + secondToString(test_duration) + ". ";
-    traffic += "Working Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
     string about = "By Stair Speedtest Reborn " VERSION ".";
-    string title = "  Stair Speedtest Reborn Result Table (" VERSION ")  ";
+    string title = "  Stair Speedtest Reborn Result Table ( " VERSION " )  ";
+    //SSRSpeed style
+    if(export_as_ssrspeed)
+    {
+        traffic += "Time used : " + secondToString(test_duration) + ". Online Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
+        title = "  SSRSpeed Result Table ( v2.6.2 )  ";
+    }
+    else
+    {
+        if(export_as_new_style)
+            traffic += "Time used: " + secondToString(test_duration) + ". ";
+        traffic += "Working Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
+    }
 
     final_width = total_width;
     final_width = max(getTextWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
