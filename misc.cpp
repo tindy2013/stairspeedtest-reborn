@@ -335,7 +335,11 @@ string getSystemProxy()
 	//return 0;
 	return string();
 #else
-	return string(getenv("ALL_PROXY"));
+    char* proxy = getenv("ALL_PROXY");
+    if(proxy != NULL)
+        return string(proxy);
+    else
+        return string();
 #endif // _WIN32
 }
 

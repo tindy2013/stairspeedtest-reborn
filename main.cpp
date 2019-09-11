@@ -52,7 +52,7 @@ bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
 string export_sort_method = "none";
 
-int avail_status[3] = {1, 1, 1};
+int avail_status[4] = {0, 0, 0, 0};
 unsigned int node_count = 0;
 int curGroupID = 0;
 
@@ -97,27 +97,49 @@ void copyNodesWithGroupID(vector<nodeInfo> *source, vector<nodeInfo> *dest, int 
     }
 }
 
-/*
-void clientcheck()
+void clientCheck()
 {
     #ifdef _WIN32
-    string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -version";
-    string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -h";
-    string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe -h";
+    string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
+    string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
+    string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
     #else
-    string v2core_path = "//usr//bin//v2ray//v2ray -version";
-    string ssr_libev_path = "ssr-local -h";
-    string ss_libev_path = "ss-local -h";
+    string v2core_path = "tools/clients/v2ray";
+    string ssr_libev_path = "tools/clients/ssr-local";
+    string ss_libev_path = "tools/clients/ss-local";
     #endif // _WIN32
 
-    if(ChkProgram(v2core_path) != 0)
-        avail_status[0] = 0;
-    if(ChkProgram(ssr_libev_path) != 0)
-        avail_status[1] = 0;
-    if(ChkProgram(ss_libev_path) != 0)
-        avail_status[2] = 0;
+    if(fileExist(v2core_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDVMESS] = 1;
+        writeLog(LOG_TYPE_INFO, "Found V2Ray core at path " + v2core_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDVMESS] = 0;
+        writeLog(LOG_TYPE_WARN, "V2Ray core not found at path " + v2core_path);
+    }
+    if(fileExist(ss_libev_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSS] = 1;
+        writeLog(LOG_TYPE_INFO, "Found Shadowsocks-libev at path " + ss_libev_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSS] = 0;
+        writeLog(LOG_TYPE_WARN, "Shadowsocks-libev not found at path " + ss_libev_path);
+    }
+    if(fileExist(ssr_libev_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSSR] = 1;
+        writeLog(LOG_TYPE_INFO, "Found ShadowsocksR-libev at path " + ssr_libev_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSSR] = 0;
+        writeLog(LOG_TYPE_WARN, "ShadowsocksR-libev not found at path " + ssr_libev_path);
+    }
 }
-*/
 
 int runClient(int client, string runpath)
 {
@@ -378,6 +400,8 @@ void readConf(string path)
             }
             else if(itemname == "test_site_ping")
                 test_site_ping = itemval == "true";
+            else if(itemname == "export_as_ssrspeed")
+                export_as_ssrspeed = itemval == "true";
         }
     }
     if(export_color_style == "custom")
@@ -449,7 +473,8 @@ int singleTest(nodeInfo *node)
         testport = socksport;
         writeLog(LOG_TYPE_INFO, "Writing config file...");
         writeToFile("config.json", node->proxyStr, true);
-        runClient(node->linkType, "");
+        if(node->linkType != -1 && avail_status[node->linkType] == 1)
+            runClient(node->linkType, "");
     }
     proxy.address = testserver;
     proxy.port = testport;
@@ -698,13 +723,16 @@ void addNodes(string link, bool multilink)
         if(strSub.size() == 0)
         {
             //try to get it again with system proxy
+            writeLog(LOG_TYPE_WARN, "Cannot download subscription directly. Using system proxy.");
             strProxy = getSystemProxy();
             if(strProxy != "")
                 strSub = webGet(link, strProxy);
+            else
+                writeLog(LOG_TYPE_WARN, "No system proxy is set. Skipping.");
         }
-        writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
         if(strSub.size())
         {
+            writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
             explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks);
             rewriteNodeGroupID(&nodes, curGroupID);
             copyNodes(&nodes, &allNodes);
@@ -821,6 +849,7 @@ int main(int argc, char* argv[])
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+    clientCheck();
     socksport = checkPort(socksport);
     writeLog(LOG_TYPE_INFO, "Using local port: " + to_string(socksport));
     writeLog(LOG_TYPE_INFO, "Init completed.");

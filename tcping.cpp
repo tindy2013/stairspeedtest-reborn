@@ -35,6 +35,7 @@ int tcping(nodeInfo *node)
 
     host = node->server;
     port = node->port;
+    writeLog(LOG_TYPE_TCPING, "Ping target: " + host + ":" + to_string(port) + ".");
 
     bool IPv6 = isIPv6(host);
 
