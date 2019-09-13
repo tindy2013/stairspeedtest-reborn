@@ -39,16 +39,20 @@ vector<downloadLink> downloadFiles;
 vector<linkMatchRule> matchRules;
 vector<string> exclude_remarks, include_remarks, dict, trans;
 vector<nodeInfo> allNodes;
+vector<color> custom_color_groups;
+vector<int> custom_color_bounds;
 string speedtest_mode = "all";
 string override_conf_port = "";
+string export_color_style = "rainbow";
 int def_thread_count = 4;
 bool export_with_maxspeed = false;
-bool test_site_ping = false;
+bool export_as_new_style = true;
+bool test_site_ping = true;
 bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
 string export_sort_method = "none";
 
-int avail_status[3] = {1, 1, 1};
+int avail_status[4] = {0, 0, 0, 0};
 unsigned int node_count = 0;
 int curGroupID = 0;
 
@@ -93,27 +97,49 @@ void copyNodesWithGroupID(vector<nodeInfo> *source, vector<nodeInfo> *dest, int 
     }
 }
 
-/*
-void clientcheck()
+void clientCheck()
 {
     #ifdef _WIN32
-    string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -version";
-    string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -h";
-    string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe -h";
+    string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
+    string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
+    string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
     #else
-    string v2core_path = "//usr//bin//v2ray//v2ray -version";
-    string ssr_libev_path = "ssr-local -h";
-    string ss_libev_path = "ss-local -h";
+    string v2core_path = "tools/clients/v2ray";
+    string ssr_libev_path = "tools/clients/ssr-local";
+    string ss_libev_path = "tools/clients/ss-local";
     #endif // _WIN32
 
-    if(ChkProgram(v2core_path) != 0)
-        avail_status[0] = 0;
-    if(ChkProgram(ssr_libev_path) != 0)
-        avail_status[1] = 0;
-    if(ChkProgram(ss_libev_path) != 0)
-        avail_status[2] = 0;
+    if(fileExist(v2core_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDVMESS] = 1;
+        writeLog(LOG_TYPE_INFO, "Found V2Ray core at path " + v2core_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDVMESS] = 0;
+        writeLog(LOG_TYPE_WARN, "V2Ray core not found at path " + v2core_path);
+    }
+    if(fileExist(ss_libev_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSS] = 1;
+        writeLog(LOG_TYPE_INFO, "Found Shadowsocks-libev at path " + ss_libev_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSS] = 0;
+        writeLog(LOG_TYPE_WARN, "Shadowsocks-libev not found at path " + ss_libev_path);
+    }
+    if(fileExist(ssr_libev_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSSR] = 1;
+        writeLog(LOG_TYPE_INFO, "Found ShadowsocksR-libev at path " + ssr_libev_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDSSR] = 0;
+        writeLog(LOG_TYPE_WARN, "ShadowsocksR-libev not found at path " + ssr_libev_path);
+    }
 }
-*/
 
 int runClient(int client, string runpath)
 {
@@ -258,11 +284,12 @@ void readConf(string path)
 {
     string strTemp, itemname, itemval;
     string parent = "^\\[(.*?)\\]$", child = "^(.*?)=(.*?)$";
-    vector<string> vchild;
+    vector<string> vchild, varray;
     ifstream infile;
     smatch result;
     downloadLink link;
     linkMatchRule rule;
+    color tmpColor;
     unsigned int i;
 
     infile.open(path, ios::in);
@@ -338,17 +365,49 @@ void readConf(string path)
                 multilink_export_as_one_image = itemval == "true";
             else if(itemname == "single_test_force_export")
                 single_test_force_export = itemval == "true";
-            /*
-            else if(itemname == "speetest_with_tls")
-                useTLS = itemval == "true";
-            else if(itemname == "colorset")
-                colorgroup = vchild[1];
-            else if(itemname == "bounds")
-                bounds = vchild[1];
-            else if(itemname == "colorcount")
-                color_count = stoi(vchild[1]);
-            */
+            else if(itemname == "export_as_new_style")
+                export_as_new_style = itemval == "true";
+            else if(itemname == "export_color_style")
+                export_color_style = itemval;
+            else if(itemname == "custom_color_groups")
+            {
+                vchild = split(itemval, "|");
+                if(vchild.size() >= 2)
+                {
+                    for(i = 0; i < vchild.size() - 1; i++)
+                    {
+                        varray = split(vchild[i], ",");
+                        if(varray.size() == 3)
+                        {
+                            tmpColor.red = stoi(trim(varray[0]));
+                            tmpColor.green = stoi(trim(varray[1]));
+                            tmpColor.blue = stoi(trim(varray[2]));
+                            custom_color_groups.push_back(tmpColor);
+                        }
+                    }
+                }
+            }
+            else if(itemname == "custom_color_bounds")
+            {
+                vchild = split(itemval, "|");
+                if(vchild.size() >= 2)
+                {
+                    for(i = 0; i < vchild.size() - 1; i++)
+                    {
+                        custom_color_bounds.push_back(stoi(vchild[i]));
+                    }
+                }
+            }
+            else if(itemname == "test_site_ping")
+                test_site_ping = itemval == "true";
+            else if(itemname == "export_as_ssrspeed")
+                export_as_ssrspeed = itemval == "true";
         }
+    }
+    if(export_color_style == "custom")
+    {
+        colorgroup.swap(custom_color_groups);
+        bounds.swap(custom_color_bounds);
     }
     infile.close();
 }
@@ -414,7 +473,8 @@ int singleTest(nodeInfo *node)
         testport = socksport;
         writeLog(LOG_TYPE_INFO, "Writing config file...");
         writeToFile("config.json", node->proxyStr, true);
-        runClient(node->linkType, "");
+        if(node->linkType != -1 && avail_status[node->linkType] == 1)
+            runClient(node->linkType, "");
     }
     proxy.address = testserver;
     proxy.port = testport;
@@ -539,6 +599,7 @@ void batchTest(vector<nodeInfo> *nodes)
     nodeInfo node;
     unsigned int onlines = 0;
     long long tottraffic = 0;
+    auto start_time = steady_clock::now();
 
     node_count = nodes->size();
     writeLog(LOG_TYPE_INFO, "Total node(s) found: " + to_string(node_count));
@@ -578,7 +639,10 @@ void batchTest(vector<nodeInfo> *nodes)
         {
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
-            pngpath = exportRender(resultPath, *nodes, export_with_maxspeed, export_sort_method);
+            auto end_time = steady_clock::now();
+            auto duration = duration_cast<seconds>(end_time - start_time);
+            int deltatime = duration.count();
+            pngpath = exportRender(resultPath, *nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
             {
                 clearTrans();
@@ -659,13 +723,16 @@ void addNodes(string link, bool multilink)
         if(strSub.size() == 0)
         {
             //try to get it again with system proxy
+            writeLog(LOG_TYPE_WARN, "Cannot download subscription directly. Using system proxy.");
             strProxy = getSystemProxy();
             if(strProxy != "")
                 strSub = webGet(link, strProxy);
+            else
+                writeLog(LOG_TYPE_WARN, "No system proxy is set. Skipping.");
         }
-        writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
         if(strSub.size())
         {
+            writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
             explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks);
             rewriteNodeGroupID(&nodes, curGroupID);
             copyNodes(&nodes, &allNodes);
@@ -762,13 +829,12 @@ int main(int argc, char* argv[])
     signal(SIGINT, signalHandler);
 
     logInit(rpcmode);
-    //speedtest.bat :main
     readConf("pref.ini");
     chkArg(argc, argv);
 #ifdef _WIN32
     //start up windows socket library first
     WSADATA wsd;
-    if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
+    if(WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
     {
         printMsgDirect(SPEEDTEST_ERROR_WSAERR, rpcmode);
         return -1;
@@ -783,6 +849,7 @@ int main(int argc, char* argv[])
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+    clientCheck();
     socksport = checkPort(socksport);
     writeLog(LOG_TYPE_INFO, "Using local port: " + to_string(socksport));
     writeLog(LOG_TYPE_INFO, "Init completed.");
@@ -824,6 +891,8 @@ int main(int argc, char* argv[])
         addNodes(link, multilink);
     }
     rewriteNodeID(&allNodes); //reset all index
+    //set a timer for new style export image
+    auto start_time = steady_clock::now();
     if(allNodes.size() > 1) //group or multi-link
     {
         batchTest(&allNodes);
@@ -833,8 +902,11 @@ int main(int argc, char* argv[])
             {
                 printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
                 writeLog(LOG_TYPE_INFO, "Now exporting result...");
-                curPNGPath = "results" PATH_SLASH "multilink-" + getTime(1) + ".png";
-                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method);
+                curPNGPath = replace_all_distinct(resultPath, ".log", "") + "-multilink-all.png";
+                auto end_time = chrono::steady_clock::now();
+                auto duration = duration_cast<seconds>(end_time - start_time);
+                int deltatime = duration.count();
+                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
                 {
                     clearTrans();
                     addTrans("?picpath?", pngpath);
@@ -850,6 +922,9 @@ int main(int argc, char* argv[])
             }
             else
             {
+                auto end_time = chrono::steady_clock::now();
+                auto duration = duration_cast<seconds>(end_time - start_time);
+                int deltatime = duration.count();
                 printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
                 curPNGPathPrefix = replace_all_distinct(resultPath, ".log", "");
                 for(int i = 0; i < curGroupID; i++)
@@ -867,10 +942,10 @@ int main(int argc, char* argv[])
                         }
                         writeLog(LOG_TYPE_INFO, "Now exporting result for group " + to_string(i + 1) + "...");
                         curPNGPath = curPNGPathPrefix + "-multilink-group" + to_string(i + 1) + ".png";
-                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method);
+                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
                         {
                             clearTrans();
-                            addTrans("?id?", to_string(i +1));
+                            addTrans("?id?", to_string(i + 1));
                             addTrans("?picpath?", pngpath);
                             printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVEDMULTI, rpcmode, dict, trans);
                         }
@@ -895,7 +970,10 @@ int main(int argc, char* argv[])
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
             curPNGPath = "results" PATH_SLASH + getTime(1) + ".png";
-            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method);
+            auto end_time = chrono::steady_clock::now();
+            auto duration = duration_cast<seconds>(end_time - start_time);
+            int deltatime = duration.count();
+            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
             {
                 clearTrans();
                 addTrans("?picpath?", pngpath);

@@ -48,7 +48,7 @@ string getTime(int type)
         format = "%Y/%m/%d %a %H:%M:%S." + string(cMillis);
         break;
     case 3:
-        format = "%Y-%m-%d %H:%M:%S." + string(cMillis).substr(0, 3);
+        format = "%Y-%m-%d %H:%M:%S";
         break;
     }
     strftime(tmpbuf, 32, format.data(), local);
@@ -95,6 +95,9 @@ void writeLog(int type, string content)
     case LOG_TYPE_RAW:
         typestr = "[RAW]";
         break;
+    case LOG_TYPE_WARN:
+        typestr = "[WARNING]";
+        break;
     case LOG_TYPE_GEOIP:
         typestr = "[GEOIP]";
         break;
@@ -103,6 +106,12 @@ void writeLog(int type, string content)
         break;
     case LOG_TYPE_FILEDL:
         typestr = "[FILEDL]";
+        break;
+    case LOG_TYPE_RULES:
+        typestr = "[RULES]";
+        break;
+    case LOG_TYPE_GPING:
+        typestr = "[GPING]";
         break;
     }
     content = timestr + typestr + content;

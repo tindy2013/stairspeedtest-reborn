@@ -213,7 +213,7 @@ int simpleSend(string addr, int port, string data)
     SOCKET sHost = socket(getNetworkType(addr), SOCK_STREAM, IPPROTO_TCP);
     setTimeout(sHost, 1000);
     if(sHost == INVALID_SOCKET)
-        return INVALID_SOCKET;
+        return SOCKET_ERROR;
     if(startConnect(sHost, addr, port) == SOCKET_ERROR)
         return SOCKET_ERROR;
     unsigned int retVal = send_simple(sHost, data);

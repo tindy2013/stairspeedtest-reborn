@@ -8,9 +8,12 @@
 #define LOG_TYPE_INFO 1
 #define LOG_TYPE_ERROR 2
 #define LOG_TYPE_RAW 3
-#define LOG_TYPE_TCPING 4
-#define LOG_TYPE_FILEDL 5
-#define LOG_TYPE_GEOIP 6
+#define LOG_TYPE_WARN 4
+#define LOG_TYPE_TCPING 5
+#define LOG_TYPE_FILEDL 6
+#define LOG_TYPE_GEOIP 7
+#define LOG_TYPE_RULES 8
+#define LOG_TYPE_GPING 9
 
 using namespace std;
 

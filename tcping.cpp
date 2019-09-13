@@ -35,6 +35,7 @@ int tcping(nodeInfo *node)
 
     host = node->server;
     port = node->port;
+    writeLog(LOG_TYPE_TCPING, "Ping target: " + host + ":" + to_string(port) + ".");
 
     bool IPv6 = isIPv6(host);
 
@@ -61,11 +62,11 @@ int tcping(nodeInfo *node)
         auto start = steady_clock::now();
         retVal = simpleSend(addr, port, ".");
         auto end = steady_clock::now();
+        auto duration = duration_cast<milliseconds>(end - start);
+        int deltatime = duration.count();
         if(retVal != 1)
         {
             succeedcounter++;
-            auto duration = duration_cast<milliseconds>(end - start);
-            int deltatime = duration.count();
             node->rawPing[loopcounter] = deltatime;
             totduration += deltatime;
             writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + to_string(port) + "/tcp - Port is open - time=" + to_string(deltatime) + "ms");
@@ -73,8 +74,6 @@ int tcping(nodeInfo *node)
         else
         {
             failcounter++;
-            auto duration = duration_cast<milliseconds>(end - start);
-            int deltatime = duration.count();
             node->rawPing[loopcounter] = 0;
             writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + to_string(port) + "/tcp - No response - time=" + to_string(deltatime) + "ms");
         }

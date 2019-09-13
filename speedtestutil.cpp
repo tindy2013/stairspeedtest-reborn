@@ -590,7 +590,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             {
                 if(yamlnode["Proxy"][i]["plugin"].as<string>() == "obfs")
                 {
-                    plugin = "obfs-local";
+                    plugin = "simple-obfs";
                     if(yamlnode["Proxy"][i]["plugin-opts"].IsDefined())
                     {
                         yamlnode["Proxy"][i]["plugin-opts"]["mode"] >> pluginopts_mode;
@@ -601,7 +601,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             }
             else if(yamlnode["Proxy"][i]["obfs"].IsDefined())
             {
-                plugin = "obfs-local";
+                plugin = "simple-obfs";
                 yamlnode["Proxy"][i]["obfs"] >> pluginopts_mode;
                 if(yamlnode["Proxy"][i]["obfs-host"].IsDefined())
                 {
@@ -730,6 +730,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                         port = custom_port == "" ? trim(configs[3]) : custom_port;
                         method = trim(configs[4]);
                         password = trim(configs[5]);
+                        plugin = "";
 
                         for(i = 7; i < configs.size(); i++)
                         {
@@ -738,7 +739,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                                 continue;
                             else if(vchild[0] == "obfs")
                             {
-                                plugin = "obfs-local";
+                                plugin = "simple-obfs";
                                 pluginopts_mode = vchild[1];
                             }
                             else if(vchild[0] == "obfs-host")
@@ -762,6 +763,8 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                     remarks = configs[0];
                     server = trim(configs[2]);
                     port = custom_port == "" ? trim(configs[3]) : custom_port;
+                    plugin = "";
+
                     for(i = 4; i < configs.size(); i++)
                     {
                         vchild = split(trim(configs[i]), "=");
@@ -773,7 +776,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                             password = vchild[1];
                         else if(vchild[0] == "obfs")
                         {
-                            plugin = "obfs-local";
+                            plugin = "simple-obfs";
                             pluginopts_mode = vchild[1];
                         }
                         else if(vchild[0] == "obfs-host")
