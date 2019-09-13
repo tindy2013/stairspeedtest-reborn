@@ -248,7 +248,7 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
         {
             failcounter++;
             node->rawSitePing[loop_times] = 0;
-            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Fail - interval=" + to_string(retval * 1000.0) + "ms");
+            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Fail - interval=0ms");
         }
         loop_times++;
         draw_progress(loop_times - 1, node->rawSitePing);

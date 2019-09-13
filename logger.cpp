@@ -95,6 +95,9 @@ void writeLog(int type, string content)
     case LOG_TYPE_RAW:
         typestr = "[RAW]";
         break;
+    case LOG_TYPE_WARN:
+        typestr = "[WARNING]";
+        break;
     case LOG_TYPE_GEOIP:
         typestr = "[GEOIP]";
         break;

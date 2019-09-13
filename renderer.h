@@ -7,6 +7,8 @@
 #include "misc.h"
 #include "logger.h"
 
+#define MAX_NODES_COUNT 1024
+
 using namespace std;
 
 struct color
@@ -18,6 +20,7 @@ struct color
 
 extern vector<color> colorgroup;
 extern vector<int> bounds;
+extern bool export_as_ssrspeed;
 
 string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxspeed, string export_sort_method, string export_color_style, bool export_as_new_style, int test_duration);
 
