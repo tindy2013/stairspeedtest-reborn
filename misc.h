@@ -64,7 +64,6 @@ void sleep(int interval);
 string regReplace(string src, string match, string rep);
 int regMatch(string src, string match);
 string speedCalc(double speed);
-bool strFind(string str, string target);
 string grabContent(string raw);
 string getMD5(string data);
 bool isIPv4(string address);
@@ -74,6 +73,11 @@ bool fileExist(string path);
 bool fileCopy(string source,string dest);
 string fileToBase64(string filepath);
 string fileGetMD5(string filepath);
+
+static inline bool strFind(string str, string target)
+{
+    return str.find(target) != str.npos;
+}
 
 #ifdef _WIN32
 void StringToWstring(std::wstring& szDst, std::string str);

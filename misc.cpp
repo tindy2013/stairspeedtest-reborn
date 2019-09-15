@@ -429,11 +429,6 @@ string urlsafe_base64_decode(string encoded_string)
     return base64_decode(urlsafe_base64_reverse(encoded_string));
 }
 
-bool strFind(string str,string target)
-{
-    return str.find(target) != str.npos;
-}
-
 string grabContent(string raw)
 {
     /*

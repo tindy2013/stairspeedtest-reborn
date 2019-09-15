@@ -14,6 +14,7 @@
 #define LOG_TYPE_GEOIP 7
 #define LOG_TYPE_RULES 8
 #define LOG_TYPE_GPING 9
+#define LOG_TYPE_RENDER 10
 
 using namespace std;
 

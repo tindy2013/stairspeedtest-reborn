@@ -113,6 +113,9 @@ void writeLog(int type, string content)
     case LOG_TYPE_GPING:
         typestr = "[GPING]";
         break;
+    case LOG_TYPE_RENDER:
+        typestr = "[RENDER]";
+        break;
     }
     content = timestr + typestr + content;
     writeToFile(logPath, content, false);

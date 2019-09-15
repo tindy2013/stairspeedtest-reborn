@@ -217,7 +217,7 @@ double getLoadPageTime(string url, long timeout, string proxy)
     res = curl_easy_perform(curl_handle);
     if(CURLE_OK == res) {
         double val;
-        res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME, &val);
+        res = curl_easy_getinfo(curl_handle, CURLINFO_CONNECT_TIME, &val);
         if(val > 0.0)
             time_total = val;
     }

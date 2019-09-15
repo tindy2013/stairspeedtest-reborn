@@ -17,6 +17,9 @@ bool export_as_ssrspeed = false;
 vector<color> colorgroup;
 vector<int> bounds;
 
+//renderer values
+int widNumber = 0, widNA = 0, widKB = 0, widMB = 0, widGB = 0, widPercent = 0, widDot = 0;
+
 //original color
 const int def_colorgroup[5][3] = {{255 * 256, 255 * 256, 255 * 256}, {128 * 256, 255 * 256, 0}, {255 * 256, 255 * 256, 0}, {255 * 256, 128 * 256, 192 * 256}, {255 * 256, 0, 0}};
 const int def_bounds[5] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 * 1024};
@@ -43,14 +46,104 @@ int getTextLength(string str)
     return ((calcLength(str) - str.size()) / 3) * 2 + (str.size() * 2 - calcLength(str)) - count(str.begin(), str.end(), ' ') / 2;
 }
 
+static inline int calcCharCount(string data, int type)
+{
+    int uBound, lBound, total = 0;
+    switch(type)
+    {
+    case 0: //number
+        uBound = 57;
+        lBound = 48;
+        break;
+    case 3: //percent
+        uBound = 37;
+        lBound = 37;
+        break;
+    case 4: //dot
+        uBound = 56;
+        lBound = 56;
+        break;
+    default: //all basic chars
+        uBound = 255;
+        lBound = 0;
+        break;
+    }
+
+    for(unsigned int i = 0; i < data.size(); i++)
+    {
+        if(int(data[i]) >= lBound && int(data[i]) <= uBound)
+            total++;
+    }
+    return total;
+}
+
+
+static inline int getWidth(pngwriter *png, string font, int fontsize, string text)
+{
+    return png->get_text_width_utf8(const_cast<char *>(font.data()), fontsize, const_cast<char *>(text.data()));
+    //const int widChnChar = 17, widEngChar = 9;
+    //return ((calcLength(text) - text.size()) / 3) * widChnChar + ((text.size() * 2 - calcLength(text)) - count(text.begin(), text.end(), ' ') / 2) * widEngChar;
+}
+
+void rendererInit(string font, int fontsize)
+{
+    pngwriter png;
+    writeLog(LOG_TYPE_RENDER, "Start calculating basic string widths for font '" + font + "' at size " + to_string(fontsize) + ".");
+    widNumber = getWidth(&png, font, fontsize, "1");
+    widNA = getWidth(&png, font, fontsize, "N/A");
+    widKB = getWidth(&png, font, fontsize, "KB");
+    widMB = getWidth(&png, font, fontsize, "MB");
+    widGB = getWidth(&png, font, fontsize, "GB");
+    widPercent = getWidth(&png, font, fontsize, "%");
+    widDot = getWidth(&png, font, fontsize, ".");
+    writeLog(LOG_TYPE_RENDER, "Calculated basic string widths: Number=" + to_string(widNumber) + " N/A=" + to_string(widNA) + " KB=" + to_string(widKB) \
+             + " MB=" + to_string(widMB) + " GB=" + to_string(widGB) + " Percent=" + to_string(widPercent) + " Dot=" + to_string(widDot));
+}
+
+static inline int getTextWidth(pngwriter *png, string font, int fontsize, string text)
+{
+    int cntNumber = 0, total_width = 0;
+
+    if(text == "N/A")
+        return widNA;
+
+    for(unsigned int i = 0; i < text.size(); i++)
+    {
+        if(int(text[i]) >= 48 && int(text[i]) <= 57)
+            cntNumber++;
+    }
+    total_width = cntNumber * widNumber + widDot;
+    //if(strFind(text, "."))
+        //total_width += widDot;
+
+    if(strFind(text, "%"))
+        total_width += widPercent;
+    else
+    {
+        if(strFind(text, "MB"))
+            total_width += widMB;
+        else if(strFind(text, "KB"))
+            total_width += widKB;
+        else if(strFind(text, "GB"))
+            total_width += widGB;
+    }
+
+    return total_width;
+}
+
+/*
 static inline int getTextWidth(pngwriter *png, string font, int fontsize, string text)
 {
     return png->get_text_width_utf8(const_cast<char *>(font.data()), fontsize, const_cast<char *>(text.data()));
-    /*
-    const int widChnChar = 17, widEngChar = 9;
-    return ((calcLength(text) - text.size()) / 3) * widChnChar + ((text.size() * 2 - calcLength(text)) - count(text.begin(), text.end(), ' ') / 2) * widEngChar;
-    */
 }
+*/
+/*
+static inline int getTextWidth(pngwriter *png, string font, int fontsize, string text)
+{
+    return calcCharCount(text, 0) * widNumber + calcCharCount(text, 1) * widUpperLetter + calcCharCount(text, 2) * widLowerLetter + calcCharCount(text, 3) * widPercent \
+    + calcCharCount(text, 4) * widDot + calcCharCount(text, 5) * widSpace;
+}
+*/
 
 static inline void plot_text_utf8(pngwriter *png, string face_path, int fontsize, int x_start, int y_start, double angle, string text, double red, double green, double blue)
 {
@@ -153,6 +246,14 @@ void loadDefaultColor(string type)
     }
 }
 
+/*
+void test()
+{
+    pngwriter png;
+    rendererInit("tools\\misc\\WenQuanYiMicroHei-01.ttf", 12);
+    cout<<getWidth(&png, "tools\\misc\\WenQuanYiMicroHei-01.ttf", 12, "KB")<<" "<<getTextWidth(&png, "tools\\misc\\WenQuanYiMicroHei-01.ttf", 12, "KB")<<endl;
+}
+*/
 #ifndef _FAST_RENDER
 
 string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, string export_sort_method, string export_color_style, bool export_as_new_style, int test_duration)
@@ -195,6 +296,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     }
 
     //initialize all values
+    rendererInit(font, fontsize);
     export_sort_method_render = export_sort_method;
     node_count = nodes.size();
     total_line = node_count + 4;
@@ -206,7 +308,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     if(export_as_new_style)
     {
         node.group = "Group";
-        node.remarks = "  Remarks  ";
+        node.remarks = "Remarks";
         node.pkLoss = "     Loss     ";
         node.avgPing = "     Ping     ";
         node.sitePing = "  Google Ping  ";
@@ -249,12 +351,26 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
             longest_remarks = nodes[i].remarks;
             longest_remarks_len = getTextLength(longest_remarks);
         }
-        pkLoss_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].pkLoss);
-        avgPing_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].avgPing);
-        avgSpeed_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].avgSpeed);
-        if(export_as_new_style)
-            sitePing_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].sitePing);
-
+        if(i == 0)
+        {
+            pkLoss_widths[i] = getWidth(&png, font, fontsize, nodes[i].pkLoss);
+            avgPing_widths[i] = getWidth(&png, font, fontsize, nodes[i].avgPing);
+            avgSpeed_widths[i] = getWidth(&png, font, fontsize, nodes[i].avgSpeed);
+            if(export_as_new_style)
+                sitePing_widths[i] = getWidth(&png, font, fontsize, nodes[i].sitePing);
+            if(export_with_maxSpeed)
+                maxSpeed_widths[i] = getWidth(&png, font, fontsize, nodes[i].maxSpeed);
+        }
+        else
+        {
+            pkLoss_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].pkLoss);
+            avgPing_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].avgPing);
+            avgSpeed_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].avgSpeed);
+            if(export_as_new_style)
+                sitePing_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].sitePing);
+            if(export_with_maxSpeed)
+                maxSpeed_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].maxSpeed);
+        }
         //group_width = max(group_widths[i] + center_align_offset, group_width);
         //remarks_width = max(remarks_widths[i] + center_align_offset, remarks_width);
         pkLoss_width = max(pkLoss_widths[i] + center_align_offset, pkLoss_width);
@@ -263,19 +379,17 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
             sitePing_width = max(sitePing_widths[i] + center_align_offset, sitePing_width);
         avgSpeed_width = max(avgSpeed_widths[i] + center_align_offset, avgSpeed_width);
         if(export_with_maxSpeed)
-        {
-            maxSpeed_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].maxSpeed);
             maxSpeed_width = max(maxSpeed_widths[i] + center_align_offset, maxSpeed_width);
-        }
+
         total_traffic += nodes[i].totalRecvBytes;
         if(nodes[i].online)
             onlines++;
     }
     //only calculate the width of the group/remark title line
-    remarks_widths[0] = getTextWidth(&png, font, fontsize, node.remarks);
-    remarks_width = max(getTextWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset);
-    group_widths[0] = getTextWidth(&png, font, fontsize, node.group);
-    group_width = max(getTextWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset);
+    remarks_widths[0] = getWidth(&png, font, fontsize, node.remarks);
+    remarks_width = max(getWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset) + 4;
+    group_widths[0] = getWidth(&png, font, fontsize, node.group);
+    group_width = max(getWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset) + 4;
 
     int width_all[8] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
     //int width_all[7] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
@@ -291,21 +405,21 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     //SSRSpeed style
     if(export_as_ssrspeed)
     {
-        traffic += "Time used : " + secondToString(test_duration) + ". Online Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
+        traffic += "Time used: " + secondToString(test_duration) + ". Online Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
         title = "  SSRSpeed Result Table ( v2.6.2 )  ";
     }
     else
     {
         if(export_as_new_style)
-            traffic += "Time used: " + secondToString(test_duration) + ". ";
+            traffic += "Time used : " + secondToString(test_duration) + ". ";
         traffic += "Working Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
     }
 
     final_width = total_width;
-    final_width = max(getTextWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
-    final_width = max(getTextWidth(&png, font, fontsize, traffic) + center_align_offset, final_width);
+    final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
+    final_width = max(getWidth(&png, font, fontsize, traffic) + center_align_offset, final_width);
     if(export_as_new_style)
-        final_width = max(getTextWidth(&png, font, fontsize, title) + center_align_offset, final_width);
+        final_width = max(getWidth(&png, font, fontsize, title) + center_align_offset, final_width);
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
@@ -412,7 +526,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     if(export_as_new_style)
     {
         //title
-        plot_text_utf8(&png, font, fontsize, text_x_offset + calcCenterOffset(getTextWidth(&png, font, fontsize, title), total_width), text_y_offset + line_index * height_line, 0.0, title, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, text_x_offset + calcCenterOffset(getWidth(&png, font, fontsize, title), total_width), text_y_offset + line_index * height_line, 0.0, title, text_red, text_green, text_blue);
     }
     //basic border
     png.line(1, 1, total_width, 1, border_red, border_green, border_blue);//bottom
@@ -487,13 +601,13 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
             onlines++;
     }
     //calculate the width of the longest string
-    group_width = getTextWidth(&png, font, fontsize, longest_group) + center_align_offset;
-    remarks_width = getTextWidth(&png, font, fontsize, longest_remarks) + center_align_offset;
-    pkLoss_width = getTextWidth(&png, font, fontsize, longest_pkLoss) + center_align_offset;
-    avgPing_width = getTextWidth(&png, font, fontsize, longest_avgPing) + center_align_offset;
-    avgSpeed_width = getTextWidth(&png, font, fontsize, longest_avgSpeed) + center_align_offset;
+    group_width = getWidth(&png, font, fontsize, longest_group) + center_align_offset;
+    remarks_width = getWidth(&png, font, fontsize, longest_remarks) + center_align_offset;
+    pkLoss_width = getWidth(&png, font, fontsize, longest_pkLoss) + center_align_offset;
+    avgPing_width = getWidth(&png, font, fontsize, longest_avgPing) + center_align_offset;
+    avgSpeed_width = getWidth(&png, font, fontsize, longest_avgSpeed) + center_align_offset;
     if(export_with_maxSpeed)
-        maxSpeed_width = getTextWidth(&png, font, fontsize, longest_maxSpeed) + center_align_offset;
+        maxSpeed_width = getWidth(&png, font, fontsize, longest_maxSpeed) + center_align_offset;
 
     //int width_all[8] =  {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
     int width_all[7] =  {0, group_width, remarks_width, pkLoss_width, avgPing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
@@ -506,8 +620,8 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+to_string(onlines)+"/"+to_string(node_count)+"]";
     string about = "By Stair Speedtest Reborn " VERSION ".";
 
-    final_width = max(getTextWidth(&png, font, fontsize, gentime) + center_align_offset, total_width);
-    final_width = max(getTextWidth(&png, font, fontsize, traffic) + center_align_offset, total_width);
+    final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, total_width);
+    final_width = max(getWidth(&png, font, fontsize, traffic) + center_align_offset, total_width);
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
