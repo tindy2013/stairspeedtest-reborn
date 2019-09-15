@@ -18,7 +18,7 @@ vector<color> colorgroup;
 vector<int> bounds;
 
 //renderer values
-int widNumber = 0, widNA = 0, widKB = 0, widMB = 0, widGB = 0, widPercent = 0, widDot = 0;
+int widNumber = 0, widNA = 0, widB = 0, widKB = 0, widMB = 0, widGB = 0, widPercent = 0, widDot = 0;
 
 //original color
 const int def_colorgroup[5][3] = {{255 * 256, 255 * 256, 255 * 256}, {128 * 256, 255 * 256, 0}, {255 * 256, 255 * 256, 0}, {255 * 256, 128 * 256, 192 * 256}, {255 * 256, 0, 0}};
@@ -91,6 +91,7 @@ void rendererInit(string font, int fontsize)
     writeLog(LOG_TYPE_RENDER, "Start calculating basic string widths for font '" + font + "' at size " + to_string(fontsize) + ".");
     widNumber = getWidth(&png, font, fontsize, "1");
     widNA = getWidth(&png, font, fontsize, "N/A");
+    widB = getWidth(&png, font, fontsize, "B");
     widKB = getWidth(&png, font, fontsize, "KB");
     widMB = getWidth(&png, font, fontsize, "MB");
     widGB = getWidth(&png, font, fontsize, "GB");
@@ -126,6 +127,8 @@ static inline int getTextWidth(pngwriter *png, string font, int fontsize, string
             total_width += widKB;
         else if(strFind(text, "GB"))
             total_width += widGB;
+        else if(strFind(text, "B"))
+            total_width += widB;
     }
 
     return total_width;

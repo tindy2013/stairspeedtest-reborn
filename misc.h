@@ -28,8 +28,8 @@ struct nodeInfo
     long long rawSpeed[20] = {};
     long long totalRecvBytes = 0;
     int duration = 0;
-    string avgSpeed = "0.00B";
-    string maxSpeed = "0.00B";
+    string avgSpeed = "N/A";
+    string maxSpeed = "N/A";
     string pkLoss = "100.00%";
     int rawPing[6] = {};
     string avgPing = "0.00";
