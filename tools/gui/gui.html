@@ -19,42 +19,53 @@
 							<el-row>
 								<el-form-item label="模式设置：">
 									<el-radio-group v-model="option" :disabled="loading">
-									<el-radio :label="0">基础模式</el-radio>
-									<el-radio :label="1">进阶模式</el-radio>
+										<el-radio :label="0">基础模式</el-radio>
+										<el-radio :label="1">进阶模式</el-radio>
 									</el-radio-group>
 								</el-form-item>
 
 								<el-form-item label="订阅链接：">
-									<el-input v-model="subscription" style="width: 800px" size="small" @keyup.enter.native="submit" placeholder="支持 SSR/SSD/V2Ray 订阅链接及节点链接单独测速" :disabled="loading||upload"></el-input>
-									<el-upload :drag="checkUploadStatus('drag')" :v-if="checkUploadStatus('if')" action="" :show-file-list="false" ref="upload" :http-request="handleFileChange" :auto-upload="true" :before-upload="beforeUpload">
+									<el-input v-model="subscription" style="width: 800px" size="small"
+										@keyup.enter.native="submit" placeholder="支持 SSR/SSD/V2Ray 订阅链接及节点链接单独测速"
+										:disabled="loading||upload"></el-input>
+									<el-upload :drag="checkUploadStatus('drag')" :v-if="checkUploadStatus('if')"
+										action="" :show-file-list="false" ref="upload" :http-request="handleFileChange"
+										:auto-upload="true" :before-upload="beforeUpload">
 										<i class="el-icon-upload" v-if="!subscription.length"></i>
 										<!--<el-button slot="trigger" type="primary" icon="el-icon-files" :disabled="loading" v-if="!upload">选择配置文件</el-button>-->
-										<el-button slot="tip" type="danger" icon="el-icon-close" :disabled="loading" v-if="upload" @click="cancelFileUpload">取消文件选择</el-button>
-										<div class="el-upload__text" v-if="!subscription.length">还可以将配置文件拖到此处，或<em>点击上传</em></div>
+										<el-button slot="tip" type="danger" icon="el-icon-close" :disabled="loading"
+											v-if="upload" @click="cancelFileUpload">取消文件选择</el-button>
+										<div class="el-upload__text" v-if="!subscription.length">
+											还可以将配置文件拖到此处，或<em>点击上传</em></div>
 									</el-upload>
 								</el-form-item>
 								<el-form-item label="自定义组名：">
-									<el-input v-model="groupname" style="width: 215px" size="small" @keyup.enter.native="submit" :disabled="loading"></el-input>
-									<el-button type="primary" @click="submit" style="margin-left: 20px" v-if="!option" icon="el-icon-check" :disabled="loading" :loading="loading">提 交</el-button>
-									<el-button type="danger" @click="terminate" icon="el-icon-close" v-if="!option" :disabled="!loading">终 止</el-button>
+									<el-input v-model="groupname" style="width: 215px" size="small"
+										@keyup.enter.native="submit" :disabled="loading"></el-input>
+									<el-button type="primary" @click="submit" style="margin-left: 20px" v-if="!option"
+										icon="el-icon-check" :disabled="loading" :loading="loading">提 交</el-button>
+									<el-button type="danger" @click="terminate" icon="el-icon-close" v-if="!option"
+										:disabled="!loading">终 止</el-button>
 								</el-form-item>
 
 								<el-form-item label="测试项：" v-if="option" :disabled="loading">
 									<el-select v-model="speedtestMode" size="small">
-										<el-option v-for="(item, key, index) in init.speedtestModes" :key="index" :label="item"
-											:value="key">
+										<el-option v-for="(item, key, index) in init.speedtestModes" :key="index"
+											:label="item" :value="key">
 										</el-option>
 									</el-select>
 								</el-form-item>
 								<el-form-item label="Ping方式：" v-if="option" :disabled="loading">
 									<el-select v-model="pingMethod" size="small">
-										<el-option v-for="(item, key, index) in init.pingMethods" :key="index" :label="item" :value="key">
+										<el-option v-for="(item, key, index) in init.pingMethods" :key="index"
+											:label="item" :value="key">
 										</el-option>
 									</el-select>
 								</el-form-item>
 								<el-form-item label="排序方式：" v-if="option" :disabled="loading">
 									<el-select v-model="sortMethod" size="small">
-										<el-option v-for="(item, key, index) in init.sortMethods" :key="index" :label="item" :value="key">
+										<el-option v-for="(item, key, index) in init.sortMethods" :key="index"
+											:label="item" :value="key">
 										</el-option>
 									</el-select>
 								</el-form-item>
@@ -63,8 +74,10 @@
 										<el-option key="0" label="否" :value="false"></el-option>
 										<el-option key="1" label="是" :value="true"></el-option>
 									</el-select>
-									<el-button type="primary" @click="submit" style="margin-left: 20px" v-if="option" icon="el-icon-check" :disabled="loading" :loading="loading">提 交</el-button>
-									<el-button type="danger" @click="dialogFormVisible = false" icon="el-icon-close" :disabled="!loading">终 止</el-button>
+									<el-button type="primary" @click="submit" style="margin-left: 20px" v-if="option"
+										icon="el-icon-check" :disabled="loading" :loading="loading">提 交</el-button>
+									<el-button type="danger" @click="dialogFormVisible = false" icon="el-icon-close"
+										:disabled="!loading">终 止</el-button>
 								</el-form-item>
 							</el-row>
 						</el-form>
@@ -72,7 +85,7 @@
 				</el-card>
 
 				<br>
-		<!--
+				<!--
 				<el-card>
 					<div slot="header">操作</div>
 					<el-container>
@@ -99,20 +112,21 @@
 							</el-table-column>
 							<el-table-column label="Loss" align="center" prop="loss" width="100" sortable>
 							</el-table-column>
-							<el-table-column label="Ping" align="center" prop="ping" width="100" sortable :sort-method="floatSort">
+							<el-table-column label="Ping" align="center" prop="ping" width="100" sortable
+								:sort-method="floatSort">
 							</el-table-column>
 							<el-table-column label="AvgSpeed" align="center" prop="speed" width="150" sortable
-							:sort-method="speedSort">
+								:sort-method="speedSort">
 							</el-table-column>
 							<el-table-column label="MaxSpeed" align="center" prop="maxspeed" width="150" sortable
-							:sort-method="speedSort">
+								:sort-method="speedSort">
 							</el-table-column>
 						</el-table>
 					</el-container>
 				</el-card>
-				
+
 				<br>
-				
+
 				<el-card v-if="picdata.length">
 					<div slot="header">导出图片</div>
 					<el-container>
@@ -139,44 +153,44 @@
 		let app = new Vue({
 			el: "#app",
 			data() {
-			return {
-				title: "Stair Speedtest Web GUI",
-				upload: false,
-				filecontent: "",
-				loading: false,
-				subscription: "",
-				groupname: "",
-				loadingContent: "",
-				speedtestMode: "all",
-				pingMethod: "tcping",
-				sortMethod: "none",
-				exportMaxSpeed: false,
-				method: "SOCKET",
-				picdata: "",
-				option: 0,
+				return {
+					title: "Stair Speedtest Web GUI",
+					upload: false,
+					filecontent: "",
+					loading: false,
+					subscription: "",
+					groupname: "",
+					loadingContent: "",
+					speedtestMode: "all",
+					pingMethod: "tcping",
+					sortMethod: "none",
+					exportMaxSpeed: false,
+					method: "SOCKET",
+					picdata: "",
+					option: 0,
 
-				init: {
-					speedtestModes: {
-						all: "全部",
-						speedonly: "Speed only",
-						pingonly: "Ping only"
+					init: {
+						speedtestModes: {
+							all: "全部",
+							speedonly: "Speed only",
+							pingonly: "Ping only"
+						},
+						pingMethods: {
+							tcping: "TCP",
+							googleping: "Google",
+							gstaticping: "Gstatic",
+							bingping: "Bing"
+						},
+						sortMethods: {
+							none: "订阅列表",
+							speed: "speed 顺序",
+							rspeed: "speed 倒序",
+							ping: "ping 顺序",
+							rping: "ping 倒序"
+						}
 					},
-					pingMethods: {
-						tcping: "TCP",
-						googleping: "Google",
-						gstaticping: "Gstatic",
-						bingping: "Bing"
-					},
-					sortMethods: {
-						none: "订阅列表",
-						speed: "speed 顺序",
-						rspeed: "speed 倒序",
-						ping: "ping 顺序",
-						rping: "ping 倒序"
-					}
-				},
-				result: []
-			}
+					result: []
+				}
 			},
 			created() {
 				document.title = this.title;
@@ -189,12 +203,12 @@
 					this.subscription = '';
 					self.upload = false;
 				},
-				handleFileChange (e) {
+				handleFileChange(e) {
 					let self = this;
 					this.file = e.file;
 					this.errText = '';
 					if (!this.file || !window.FileReader) return;
-					let reader=new FileReader();
+					let reader = new FileReader();
 					reader.readAsDataURL(this.file);
 					reader.onloadend = function () {
 						self.filecontent = this.result;
@@ -214,35 +228,32 @@
 					return isType && fsize;
 				},
 				checkUploadStatus(type) {
-					if(!this.upload)
-					{
-						if(this.subscription.length)
+					if (!this.upload) {
+						if (this.subscription.length)
 							return false;
 						else
 							return true;
-					}
-					else
-					{
-						if(type==="if")
+					} else {
+						if (type === "if")
 							return true;
-						else if(type==="drag")
+						else if (type === "drag")
 							return false;
 					}
 				},
 				submit: function () {
-					if(!this.subscription.length) {
-						this.$alert("请先输入链接或选择文件！", "错误",{
+					if (!this.subscription.length) {
+						this.$alert("请先输入链接或选择文件！", "错误", {
 							type: "error",
 						});
 					} else {
 						this.loading = true;
-						this.loadingContent="等待后端响应……";
+						this.loadingContent = "等待后端响应……";
 						this.starttest();
 					}
 				},
 				terminate: function () {
 					this.loading = false;
-					this.loadingContent="等待后端响应……";
+					this.loadingContent = "等待后端响应……";
 					this.result = {};
 					this.disconnect();
 				},
@@ -255,14 +266,14 @@
 					let style = "color: black; font-weight: 600;";
 					let speed = 0;
 					switch (columnIndex) {
-					case 4:
-						speed = row.speed;
-						break;
-					case 5:
-						speed = row.maxspeed;
-						break;
-					default:
-						return style;
+						case 4:
+							speed = row.speed;
+							break;
+						case 5:
+							speed = row.maxspeed;
+							break;
+						default:
+							return style;
 					}
 					if (isNaN(parseFloat(speed))) return style;
 					let color = this.getSpeedColor(this.getSpeed(speed));
@@ -297,7 +308,7 @@
 					} else if (speed.toString().slice(-2) == "KB") {
 						value *= 1024;
 					} else value = parseFloat(speed.toString().slice(0, -1));
-						return value;
+					return value;
 				},
 				getColor(lc, rc, level) {
 					let colors = [];
@@ -309,23 +320,23 @@
 				},
 				getSpeedColor(speed) {
 					for (let i = 0; i < bounds.length - 1; i++) {
-					if (speed >= bounds[i] && speed <= bounds[i + 1]) {
-						let color = this.getColor(
-							colorgroup[i],
-							colorgroup[i + 1],
-							(speed - bounds[i]) / (bounds[i + 1] - bounds[i])
-						);
-						return "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
+						if (speed >= bounds[i] && speed <= bounds[i + 1]) {
+							let color = this.getColor(
+								colorgroup[i],
+								colorgroup[i + 1],
+								(speed - bounds[i]) / (bounds[i + 1] - bounds[i])
+							);
+							return "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
 						}
 					}
 					return (
-					"rgb(" +
+						"rgb(" +
 						colorgroup[colorgroup.length - 1][0] +
-					"," +
+						"," +
 						colorgroup[colorgroup.length - 1][1] +
-					"," +
+						"," +
 						colorgroup[colorgroup.length - 1][2] +
-					")"
+						")"
 					);
 				},
 				connect(url) {
@@ -362,17 +373,17 @@
 					this.result = [];
 					this.connect("ws://" + window.location.host);
 					if (ws) {
-					ws.addEventListener("open", function (ev) {
-						if(self.upload)
-						{
-							this.send("data:upload^"+ groupstr + "^" + self.speedtestMode + '^' + self.pingMethod	+ '^' + self.sortMethod + '^' + self.exportMaxSpeed);
-							this.send(self.filecontent);
-						}
-						else
-						{
-							this.send(self.subscription + "^" + groupstr + '^' + self.speedtestMode + '^' + self.pingMethod	+ '^' + self.sortMethod + '^' + self.exportMaxSpeed);
-						}
-					});
+						ws.addEventListener("open", function (ev) {
+							if (self.upload) {
+								this.send("data:upload^" + groupstr + "^" + self.speedtestMode + '^' + self
+									.pingMethod + '^' + self.sortMethod + '^' + self.exportMaxSpeed);
+								this.send(self.filecontent);
+							} else {
+								this.send(self.subscription + "^" + groupstr + '^' + self.speedtestMode +
+									'^' + self.pingMethod + '^' + self.sortMethod + '^' + self
+									.exportMaxSpeed);
+							}
+						});
 						ws.addEventListener("message", this.MessageEvent);
 					} else {
 						this.loading = false;
@@ -382,16 +393,16 @@
 				loopevent(id, tester) {
 					item = this.result[id];
 					switch (tester) {
-					case "ping":
-						item.ping = "测试中...";
-						item.loss = "测试中...";
-						this.$set(this.result, id, item);
-						break;
-					case "speed":
-						item.speed = "测试中...";
-						item.maxspeed = "测试中...";
-						this.$set(this.result, id, item);
-						break;
+						case "ping":
+							item.ping = "测试中...";
+							item.loss = "测试中...";
+							this.$set(this.result, id, item);
+							break;
+						case "speed":
+							item.speed = "测试中...";
+							item.maxspeed = "测试中...";
+							this.$set(this.result, id, item);
+							break;
 					}
 				},
 				MessageEvent(ev) {
@@ -401,128 +412,128 @@
 
 					let item = {};
 					switch (json.info) {
-					case "started":
-						this.loadingContent="后端已启动……";
-						break;
-					case "fetchingsub":
-						this.loadingContent="正在获取节点，若节点较多将需要一些时间……";
-						break;
-					case "begintest":
-						this.loadingContent="疯狂测速中……";
-						break;
-					case "gotserver":
-						item = {
-						group: this.groupname == "" ? json.group : this.groupname,
-						remark: json.remarks,
-						loss: "0.00%",
-						ping: "0.00",
-						speed: "0.00B",
-						maxspeed: "0.00B"
-						};
-						this.$set(this.result, id, item);
-						break;
-					case "startping":
-						//inverval=setInterval("app.loopevent("+id+",\"ping\")",300)
-						this.loopevent(id, "ping");
-						break;
-					case "gotping":
-						//clearInterval(interval)
-						item = this.result[id];
-						item.loss = json.loss;
-						item.ping = json.ping;
-						/*
-									item = {
-										"group": json.group,
-										"remark": json.remarks,
-										"loss": json.loss,
-										"ping": json.ping,
-										"speed": "0.00KB"
-									}
-									*/
-						this.$set(this.result, id, item);
-						break;
-					case "startspeed":
-						//inverval=setInterval("app.loopevent("+id+",\"speed\")",300)
-						this.loopevent(id, "speed");
-						break;
-					case "gotspeed":
-						//clearInterval(interval)
-						item = this.result[id];
-						item.speed = json.speed;
-						item.maxspeed = json.maxspeed;
-						/*
-									item = {
-										"group": json.group,
-										"remark": json.remarks,
-										"loss": json.loss,
-										"ping": json.ping,
-										"speed": json.speed
-									}
-									*/
-						this.$set(this.result, id, item);
-						break;
-					case "picsaving":
-						this.$notify.info("保存结果图片中……");
-						break;
-					case "picsaved":
-						this.$notify.success("图片已保存！路径：" + json.path);
-						break;
-					case "picdata":
-						this.picdata=json.data;
-						break;
-					case "eof":
-						this.loading = false;
-						break;
-					case "retest":
-						item = this.result[id];
-						this.$notify.error(
-						"节点 " + item.group + " - " + item.remark + " 第一次测试无速度，将重新测试。"
-						);
-						break;
-					case "nospeed":
-						item = this.result[id];
-						this.$notify.error(
-						"节点 " + item.group + " - " + item.remark + " 第二次测试无速度。"
-						);
-						item.speed = "0.00B";
-						item.maxspeed = "0.00B";
-						this.$set(this.result, id, item);
-						break;
-					case "error":
-						switch (json.reason) {
-						case "noconnection":
-							item = this.result[id];
-							item.ping = "0.00";
-							item.loss = "100.00%";
-							this.$notify.error(
-							"节点 " + item.group + " - " + item.remark + " 无法连接。"
-							);
+						case "started":
+							this.loadingContent = "后端已启动……";
+							break;
+						case "fetchingsub":
+							this.loadingContent = "正在获取节点，若节点较多将需要一些时间……";
+							break;
+						case "begintest":
+							this.loadingContent = "疯狂测速中……";
+							break;
+						case "gotserver":
+							item = {
+								group: this.groupname == "" ? json.group : this.groupname,
+								remark: json.remarks,
+								loss: "0.00%",
+								ping: "0.00",
+								speed: "0.00B",
+								maxspeed: "0.00B"
+							};
 							this.$set(this.result, id, item);
 							break;
-						case "noresolve":
+						case "startping":
+							//inverval=setInterval("app.loopevent("+id+",\"ping\")",300)
+							this.loopevent(id, "ping");
+							break;
+						case "gotping":
+							//clearInterval(interval)
 							item = this.result[id];
-							item.ping = "0.00";
-							item.loss = "100.00%";
-							this.$notify.error(
-							"节点 " + item.group + " - " + item.remark + " 无法解析到 IP 地址。"
-							);
+							item.loss = json.loss;
+							item.ping = json.ping;
+							/*
+										item = {
+											"group": json.group,
+											"remark": json.remarks,
+											"loss": json.loss,
+											"ping": json.ping,
+											"speed": "0.00KB"
+										}
+										*/
 							this.$set(this.result, id, item);
 							break;
-						case "nonodes":
-							this.$alert("找不到任何节点。请检查订阅链接。", "错误");
+						case "startspeed":
+							//inverval=setInterval("app.loopevent("+id+",\"speed\")",300)
+							this.loopevent(id, "speed");
 							break;
-						case "invalidsub":
-							this.$alert("订阅获取异常。请检查订阅链接。", "错误");
+						case "gotspeed":
+							//clearInterval(interval)
+							item = this.result[id];
+							item.speed = json.speed;
+							item.maxspeed = json.maxspeed;
+							/*
+										item = {
+											"group": json.group,
+											"remark": json.remarks,
+											"loss": json.loss,
+											"ping": json.ping,
+											"speed": json.speed
+										}
+										*/
+							this.$set(this.result, id, item);
 							break;
-						case "norecoglink":
-							this.$alert("找不到任何链接。请检查提供的链接格式。", "错误");
+						case "picsaving":
+							this.$notify.info("保存结果图片中……");
 							break;
-						case "unhandled":
-							this.$alert("程序异常退出！", "错误");
+						case "picsaved":
+							this.$notify.success("图片已保存！路径：" + json.path);
 							break;
-						}
-						console.log("error:" + json.reason);
-						break;
+						case "picdata":
+							this.picdata = json.data;
+							break;
+						case "eof":
+							this.loading = false;
+							break;
+						case "retest":
+							item = this.result[id];
+							this.$notify.error(
+								"节点 " + item.group + " - " + item.remark + " 第一次测试无速度，将重新测试。"
+							);
+							break;
+						case "nospeed":
+							item = this.result[id];
+							this.$notify.error(
+								"节点 " + item.group + " - " + item.remark + " 第二次测试无速度。"
+							);
+							item.speed = "0.00B";
+							item.maxspeed = "0.00B";
+							this.$set(this.result, id, item);
+							break;
+						case "error":
+							switch (json.reason) {
+								case "noconnection":
+									item = this.result[id];
+									item.ping = "0.00";
+									item.loss = "100.00%";
+									this.$notify.error(
+										"节点 " + item.group + " - " + item.remark + " 无法连接。"
+									);
+									this.$set(this.result, id, item);
+									break;
+								case "noresolve":
+									item = this.result[id];
+									item.ping = "0.00";
+									item.loss = "100.00%";
+									this.$notify.error(
+										"节点 " + item.group + " - " + item.remark + " 无法解析到 IP 地址。"
+									);
+									this.$set(this.result, id, item);
+									break;
+								case "nonodes":
+									this.$alert("找不到任何节点。请检查订阅链接。", "错误");
+									break;
+								case "invalidsub":
+									this.$alert("订阅获取异常。请检查订阅链接。", "错误");
+									break;
+								case "norecoglink":
+									this.$alert("找不到任何链接。请检查提供的链接格式。", "错误");
+									break;
+								case "unhandled":
+									this.$alert("程序异常退出！", "错误");
+									break;
+							}
+							console.log("error:" + json.reason);
+							break;
 					}
 					console.log(this.result);
 				},
