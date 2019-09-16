@@ -160,7 +160,7 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
     }
     else if(version == "2")
     {
-        jsondata["path"] >> path;
+        path = GetMember(jsondata, "path");
     }
 
     node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
