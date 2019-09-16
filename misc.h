@@ -59,6 +59,8 @@ struct nodePerfInfo
     string sitePing = "0.00";
     int rawTelegramPing[6] = {};
     string telegramPing = "0.00";
+    int rawCloudflarePing[6] = {};
+    string cloudflarePing = "0.00";
     geoIPInfo inboundGeoIP;
     geoIPInfo outboundGeoIP;
 };

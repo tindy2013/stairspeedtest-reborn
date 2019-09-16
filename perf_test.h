@@ -4,5 +4,6 @@
 #include "misc.h"
 
 void testTelegram(string localaddr, int localport, nodePerfInfo *node);
+void testCloudflare(string localaddr, int localport, nodePerfInfo *node);
 
 #endif // PERF_TEST_H_INCLUDED
