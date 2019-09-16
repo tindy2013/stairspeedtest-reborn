@@ -43,6 +43,7 @@ typedef sockaddr *LPSOCKADDR;
 
 using namespace std;
 
+int getNetworkType(string addr);
 int Send(SOCKET sHost, const char* data, int len, int flags);
 int Recv(SOCKET sHost, char* data, int len, int flags);
 int socks5_do_auth_userpass(SOCKET sHost, string user, string pass);
@@ -52,7 +53,7 @@ int simpleSend(string addr, int port, string data);
 int send_simple(SOCKET sHost, string data);
 string hostnameToIPAddr(string host);
 int connectSocks5(SOCKET sHost, string username, string password);
-int connectThruSocks(SOCKET sHost, string host, string addr, int port);
+int connectThruSocks(SOCKET sHost, string host, int port);
 int checkPort(int startport);
 
 struct socks5Proxy

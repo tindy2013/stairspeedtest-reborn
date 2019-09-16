@@ -104,7 +104,7 @@ int _thread_download(string host, int port, string uri, string localaddr, int lo
                     "Host: " + host + "\r\n"
                     "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
 
-    sHost = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         goto end;
     setTimeout(sHost, 3000);
@@ -112,7 +112,7 @@ int _thread_download(string host, int port, string uri, string localaddr, int lo
         goto end;
     if(connectSocks5(sHost, username, password) == -1)
         goto end;
-    if(connectThruSocks(sHost, host, "", port) == -1)
+    if(connectThruSocks(sHost, host, port) == -1)
         goto end;
 
     if(useTLS)

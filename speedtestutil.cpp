@@ -71,6 +71,8 @@ string ssrConstruct(string group, string remarks, string remarks_base64, string 
     string config_libev = config_ssr_libev;
     if(libev == true)
         config = config_libev;
+    if(isIPv6(server))
+        server = "[" + server + "]";
     config = replace_all_distinct(config, "?group?", group);
     config = replace_all_distinct(config, "?remarks?", remarks);
     config = replace_all_distinct(config, "?remarks_base64?", remarks_base64);
@@ -100,6 +102,8 @@ string ssConstruct(string server, string port, string password, string method, s
         plugin = "simple-obfs";
     if(libev == true)
         config = config_libev;
+    if(isIPv6(server))
+        server = "[" + server + "]";
     config = replace_all_distinct(config, "?server?", server);
     config = replace_all_distinct(config, "?port?", port);
     config = replace_all_distinct(config, "?password?", password);

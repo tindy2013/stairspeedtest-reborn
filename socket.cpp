@@ -192,13 +192,23 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
 
 int startConnect(SOCKET sHost, string addr, int port)
 {
-    int retVal;
-    SOCKADDR_IN servAddr;
-    servAddr.sin_family = getNetworkType(addr);
-    servAddr.sin_addr.s_addr = inet_addr(addr.data());
-    servAddr.sin_port = htons((short)port);
-    retVal = connect_adv(sHost, (LPSOCKADDR)&servAddr, sizeof(servAddr));
-    //retVal = connect(sHost, (LPSOCKADDR)&servAddr, sizeof(servAddr));
+    int retVal = -1;
+    sockaddr_in servAddr;
+    sockaddr_in6 servAddr6;
+    if(isIPv4(addr))
+    {
+        servAddr.sin_family = AF_INET;
+        servAddr.sin_port = htons((short)port);
+        inet_pton(AF_INET, addr.data(), (struct in_addr *)&servAddr.sin_addr.s_addr);
+        retVal = connect_adv(sHost, (LPSOCKADDR)&servAddr, sizeof(servAddr));
+    }
+    else if(isIPv6(addr))
+    {
+        servAddr6.sin6_family = AF_INET6;
+        servAddr6.sin6_port = htons((short)port);
+        inet_pton(AF_INET6, addr.data(), &servAddr6.sin6_addr);
+        retVal = connect_adv(sHost, (LPSOCKADDR)&servAddr6, sizeof(servAddr6));
+    }
     return retVal;
 }
 
@@ -247,22 +257,38 @@ string hostnameToIPAddr(string host)
     //new function
     int retVal;
     string retAddr;
+    char cAddr[128];
     struct sockaddr_in *target;
+    struct sockaddr_in6 *target6;
     struct addrinfo hint = {}, *retAddrInfo, *cur;
     retVal = getaddrinfo(host.data(), NULL, &hint, &retAddrInfo);
     if(retVal != 0)
+    {
+        freeaddrinfo(retAddrInfo);
         return string();
+    }
+
 
     for(cur = retAddrInfo; cur != NULL; cur=cur->ai_next)
     {
-        if(cur->ai_family == AF_INET || cur->ai_family == AF_INET6)
+        if(cur->ai_family == AF_INET)
         {
-            target = (struct sockaddr_in *)cur->ai_addr;
-            retAddr = inet_ntoa(target->sin_addr);
-            if(retAddr != "0.0.0.0" && retAddr != "")
-                return retAddr;
+            target = reinterpret_cast<struct sockaddr_in *>(cur->ai_addr);
+            inet_ntop(AF_INET, &target->sin_addr, cAddr, sizeof(cAddr));
+            retAddr.assign(cAddr);
+            freeaddrinfo(retAddrInfo);
+            return retAddr;
+        }
+        else if(cur->ai_family == AF_INET6)
+        {
+            target6 = reinterpret_cast<struct sockaddr_in6 *>(cur->ai_addr);
+            inet_ntop(AF_INET6, &target6->sin6_addr, cAddr, sizeof(cAddr));
+            retAddr.assign(cAddr);
+            freeaddrinfo(retAddrInfo);
+            return retAddr;
         }
     }
+    freeaddrinfo(retAddrInfo);
     return string();
 }
 
@@ -299,6 +325,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
         break;
 
     case SOCKS5_AUTH_USERPASS:
+        // do user/pass auth
         auth_result = socks5_do_auth_userpass(sHost, username, password);
         break;
 
@@ -313,40 +340,49 @@ int connectSocks5(SOCKET sHost, string username, string password)
     return 0;
 }
 
-int connectThruSocks(SOCKET sHost, string host, string addr, int port)
+int connectThruSocks(SOCKET sHost, string host, int port)
 {
     char buf[BUF_SIZE];//bufRecv[BUF_SIZE];
     ZeroMemory(buf, BUF_SIZE);
     char* ptr;
     /* destination target host and port */
-    const char* dest_host = NULL;
+    int len = 0;
     struct sockaddr_in dest_addr = {};
+    struct sockaddr_in6 dest_addr6 = {};
     u_short dest_port = 0;
 
-    dest_host = host.c_str();
-    //dest_addr.sin_addr = addr.data();
-    dest_port = port;
     ptr = buf;
     PUT_BYTE(ptr++, 5);                        // SOCKS version (5)
     PUT_BYTE(ptr++, 1);                        // CMD: CONNECT
     PUT_BYTE(ptr++, 0);                        // FLG: 0
-    if (dest_addr.sin_addr.s_addr == 0)
+    dest_port = port;
+
+    if(isIPv4(host))
     {
-        // resolved by SOCKS server
-        int len;
-        PUT_BYTE(ptr++, 3);                    // ATYP: DOMAINNAME
-        len = strlen(dest_host);
-        PUT_BYTE(ptr++, len);                  // DST.ADDR (len)
-        memcpy(ptr, dest_host, len);          //(hostname)
-        ptr += len;
+        // IPv4 address provided
+        inet_pton(AF_INET, host.data(), &dest_addr.sin_addr.s_addr);
+        PUT_BYTE(ptr++, 1);                   // ATYP: IPv4
+        len = sizeof(dest_addr.sin_addr);
+        memcpy(ptr, &dest_addr.sin_addr.s_addr, len);
+    }
+    else if(isIPv6(host))
+    {
+        // IPv6 address provided
+        inet_pton(AF_INET6, host.data(), &dest_addr6.sin6_addr);
+        PUT_BYTE(ptr++, 4);                   // ATYP: IPv6
+        len = sizeof(dest_addr6.sin6_addr);
+        memcpy(ptr, &dest_addr6.sin6_addr, len);
     }
     else
     {
-        // resolved locally
-        PUT_BYTE(ptr++, 1);                   // ATYP: IPv4
-        memcpy(ptr, &dest_addr.sin_addr.s_addr, sizeof(dest_addr.sin_addr));
-        ptr += sizeof(dest_addr.sin_addr);
+        // host name provided
+        PUT_BYTE(ptr++, 3);                    // ATYP: DOMAINNAME
+        len = host.size();
+        PUT_BYTE(ptr++, len);                  // DST.ADDR (len)
+        memcpy(ptr, host.data(), len);          //(hostname)
     }
+    ptr += len;
+
     PUT_BYTE(ptr++, dest_port>>8);     // DST.PORT
     PUT_BYTE(ptr++, dest_port & 0xFF);
     Send(sHost, buf, ptr - buf, 0);
@@ -357,16 +393,16 @@ int connectThruSocks(SOCKET sHost, string host, string addr, int port)
         return -1;
     }
     ptr = buf + 4;
-    switch(buf[3])                           /* case by ATYP */
+    switch(buf[3])                           // case by ATYP
     {
-    case 1:                                     /* IP v4 ADDR*/
+    case 1:                                     // IP v4 ADDR
         Recv(sHost, ptr, 4 + 2, 0);
         break;
-    case 3:                                     /* DOMAINNAME */
+    case 3:                                     // DOMAINNAME
         Recv(sHost, ptr, 1, 0);
         Recv(sHost, ptr + 1, *(unsigned char*)ptr + 2, 0);
         break;
-    case 4:                                     /* IP v6 ADDR */
+    case 4:                                     // IP v6 ADDR
         Recv(sHost, ptr, 16 + 2, 0);
         break;
     }
