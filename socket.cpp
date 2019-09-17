@@ -193,21 +193,21 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
 int startConnect(SOCKET sHost, string addr, int port)
 {
     int retVal = -1;
-    sockaddr_in servAddr;
-    sockaddr_in6 servAddr6;
+    struct sockaddr_in servAddr = {};
+    struct sockaddr_in6 servAddr6 = {};
     if(isIPv4(addr))
     {
         servAddr.sin_family = AF_INET;
         servAddr.sin_port = htons((short)port);
         inet_pton(AF_INET, addr.data(), (struct in_addr *)&servAddr.sin_addr.s_addr);
-        retVal = connect_adv(sHost, (LPSOCKADDR)&servAddr, sizeof(servAddr));
+        retVal = connect_adv(sHost, reinterpret_cast<sockaddr *>(&servAddr), sizeof(servAddr));
     }
     else if(isIPv6(addr))
     {
         servAddr6.sin6_family = AF_INET6;
         servAddr6.sin6_port = htons((short)port);
-        inet_pton(AF_INET6, addr.data(), &servAddr6.sin6_addr);
-        retVal = connect_adv(sHost, (LPSOCKADDR)&servAddr6, sizeof(servAddr6));
+        inet_pton(AF_INET6, addr.data(), (struct in_addr6 *)&servAddr6.sin6_addr);
+        retVal = connect_adv(sHost, reinterpret_cast<sockaddr *>(&servAddr6), sizeof(servAddr6));
     }
     return retVal;
 }
@@ -220,7 +220,7 @@ int send_simple(SOCKET sHost, string data)
 
 int simpleSend(string addr, int port, string data)
 {
-    SOCKET sHost = socket(getNetworkType(addr), SOCK_STREAM, IPPROTO_TCP);
+    SOCKET sHost = socket(getNetworkType(addr), SOCK_STREAM, IPPROTO_IP);
     setTimeout(sHost, 1000);
     if(sHost == INVALID_SOCKET)
         return SOCKET_ERROR;
