@@ -386,6 +386,11 @@ string replace_all_distinct(string str, string old_value, string new_value)
     }
     return str;
 }
+bool regFind(string src, string target)
+{
+    regex reg(target);
+    return regex_search(src, reg);
+}
 
 string regReplace(string src, string match, string rep)
 {
@@ -395,7 +400,7 @@ string regReplace(string src, string match, string rep)
     return result;
 }
 
-int regMatch(string src, string match)
+bool regMatch(string src, string match)
 {
     regex reg(match);
     return regex_match(src, reg);

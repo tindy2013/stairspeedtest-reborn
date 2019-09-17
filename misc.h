@@ -85,8 +85,9 @@ string trim(const string& str);
 string getSystemProxy();
 
 void sleep(int interval);
+bool regFind(string src, string target);
 string regReplace(string src, string match, string rep);
-int regMatch(string src, string match);
+bool regMatch(string src, string match);
 string speedCalc(double speed);
 string grabContent(string raw);
 string getMD5(string data);

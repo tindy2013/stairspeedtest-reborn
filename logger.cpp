@@ -64,7 +64,6 @@ void logInit(bool rpcmode)
         log_header += "GUI mode.";
     else
         log_header += "CLI mode.";
-    makeDir("logs");
     writeLog(LOG_TYPE_INFO, log_header);
 }
 
@@ -72,12 +71,10 @@ void resultInit(bool export_with_maxspeed)
 {
     curtime = getTime(1);
     resultPath = "results" PATH_SLASH + curtime + ".log";
-    makeDir("results");
     result_content = "group,remarks,loss,ping,avgspeed";
     if(export_with_maxspeed)
         result_content += ",maxspeed";
     result_content += "\n";
-    //result_content<<endl;
     writeToFile(resultPath, result_content, true);
 }
 

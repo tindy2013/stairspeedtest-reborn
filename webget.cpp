@@ -207,7 +207,7 @@ double getLoadPageTime(string url, long timeout, string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
     curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer_dummy);
-    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT,user_agent_str.data());
+    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
     curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);

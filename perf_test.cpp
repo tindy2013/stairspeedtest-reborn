@@ -12,8 +12,6 @@ void testTelegram(string localaddr, int localport, nodePerfInfo *node)
     else
         websitePing(&tmpNode, telegram_host, localaddr, localport, "", "");
     copy(begin(tmpNode.rawSitePing), end(tmpNode.rawSitePing), begin(node->rawTelegramPing));
-    //for(int i = 0; i < 6; i++)
-        //node->rawTelegramPing[i] = tmpNode.rawSitePing[i];
     node->telegramPing = tmpNode.sitePing;
 }
 
@@ -28,3 +26,4 @@ void testCloudflare(string localaddr, int localport, nodePerfInfo *node)
     copy(begin(tmpNode.rawSitePing), end(tmpNode.rawSitePing), begin(node->rawCloudflarePing));
     node->cloudflarePing = tmpNode.sitePing;
 }
+

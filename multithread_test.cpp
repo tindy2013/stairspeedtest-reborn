@@ -121,14 +121,16 @@ int _thread_download(string host, int port, string uri, string localaddr, int lo
         SSL *ssl;
 
         ctx = SSL_CTX_new(TLS_client_method());
-        ssl = SSL_new(ctx);
         if(ctx == NULL)
         {
             ERR_print_errors_fp(stderr);
             goto end;
         }
 
+        //SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+        ssl = SSL_new(ctx);
         SSL_set_fd(ssl, sHost);
+
         if(SSL_connect(ssl) != 1)
         {
             ERR_print_errors_fp(stderr);
@@ -203,7 +205,8 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test started.");
     //prep up vars first
     string host, uri, testfile = node->testFile;
-    int port, i;
+    vector<string> args;
+    int port = 0, i;
     bool useTLS = false;
 
     writeLog(LOG_TYPE_FILEDL, "Fetch target: " + testfile);
@@ -212,12 +215,19 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     testfile = regReplace(testfile, "^(http|https)://", "");
     host = testfile.substr(0, testfile.find("/"));
     uri = testfile.substr(testfile.find("/"));
-    if(strFind(host, ":"))
+    if(regFind(host, "\\[(.*)\\]")) //IPv6
     {
-        port = stoi(host.substr(host.rfind(":") + 1));
-        host = host.substr(0, host.rfind(":"));
+        args = split(regReplace(host, "\\[(.*)\\](.*)", "$1,$2"), ",");
+        if(args.size() == 2) //with port
+            port = stoi(args[1].substr(1));
+        host = args[0];
     }
-    else
+    else if(strFind(host, ":"))
+    {
+        port = stoi(host.substr(host.find(":") + 1));
+        host = host.substr(0, host.find(":"));
+    }
+    if(port == 0)
     {
         if(useTLS)
             port = 443;

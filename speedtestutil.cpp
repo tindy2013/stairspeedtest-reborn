@@ -18,9 +18,10 @@ string config_ss_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"pass
 string base_ssr_win = "{\"configs\":[?config?],\"index\":0,\"random\":true,\"sysProxyMode\":1,\"shareOverLan\":false,\"localPort\":?localport?,\"localAuthPassword\":null,\"localDnsServer\":\"\",\"dnsServer\":\"\",\"reconnectTimes\":2,\"balanceAlgorithm\":\"LowException\",\"randomInGroup\":false,\"TTL\":0,\"connectTimeout\":5,\"proxyRuleMode\":2,\"proxyEnable\":false,\"pacDirectGoProxy\":false,\"proxyType\":0,\"proxyHost\":null,\"proxyPort\":0,\"proxyAuthUser\":null,\"proxyAuthPass\":null,\"proxyUserAgent\":null,\"authUser\":null,\"authPass\":null,\"autoBan\":false,\"checkSwitchAutoCloseAll\":false,\"logEnable\":false,\"sameHostForSameTarget\":false,\"keepVisitTime\":180,\"isHideTips\":false,\"nodeFeedAutoUpdate\":true,\"serverSubscribes\":[],\"token\":{},\"portMap\":{}}";
 string config_ssr_win = "{\"remarks\":\"?remarks?\",\"id\":\"18C4949EBCFE46687AE4A7645725D35F\",\"server\":\"?server?\",\"server_port\":?port?,\"server_udp_port\":0,\"password\":\"?password?\",\"method\":\"?method?\",\"protocol\":\"?protocol?\",\"protocolparam\":\"?protoparam?\",\"obfs\":\"?obfs?\",\"obfsparam\":\"?obfsparam?\",\"remarks_base64\":\"?remarks_base64?\",\"group\":\"?group?\",\"enable\":true,\"udp_over_tcp\":false}";
 string config_ssr_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"protocol\":\"?protocol?\",\"method\":\"?method?\",\"obfs\":\"?obfs?\",\"password\":\"?password?\",\"obfs_param\":\"?obfsparam?\",\"protocol_param\":\"?protoparam?\",\"local_address\":\"127.0.0.1\",\"local_port\":?localport?}";
-string base_vmess = "{\"inbounds\":[{\"port\":?localport?,\"listen\":\"0.0.0.0\",\"protocol\":\"socks\"}],\"outbounds\":[{\"tag\":\"proxy\",\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"?add?\",\"port\":?port?,\"users\":[{\"id\":\"?id?\",\"alterId\":?aid?,\"email\":\"t@t.tt\",\"security\":\"?cipher?\"}]}]},\"streamSettings\":{\"network\":\"?net?\",\"security\":\"?tls?\",\"tlsSettings\":null,\"tcpSettings\":?tcpset?,\"wsSettings\":?wsset?},\"mux\":{\"enabled\":true}}],\"routing\":{\"domainStrategy\":\"IPIfNonMatch\"}}";
+string base_vmess = "{\"inbounds\":[{\"port\":?localport?,\"listen\":\"0.0.0.0\",\"protocol\":\"socks\"}],\"outbounds\":[{\"tag\":\"proxy\",\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"?add?\",\"port\":?port?,\"users\":[{\"id\":\"?id?\",\"alterId\":?aid?,\"email\":\"t@t.tt\",\"security\":\"?cipher?\"}]}]},\"streamSettings\":{\"network\":\"?net?\",\"security\":\"?tls?\",\"tlsSettings\":?tlsset?,\"tcpSettings\":?tcpset?,\"wsSettings\":?wsset?},\"mux\":{\"enabled\":true}}],\"routing\":{\"domainStrategy\":\"IPIfNonMatch\"}}";
 string wsset_vmess = "{\"connectionReuse\":true,\"path\":\"?path?\",\"headers\":{\"Host\":\"?host?\"}}";
 string tcpset_vmess = "{\"connectionReuse\":true,\"header\":{\"type\":\"?type?\",\"request\":{\"version\":\"1.1\",\"method\":\"GET\",\"path\":[\"?path?\"],\"headers\":{\"Host\":[\"?host?\"],\"User-Agent\":[\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36\",\"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46\"],\"Accept-Encoding\":[\"gzip, deflate\"],\"Connection\":[\"keep-alive\"],\"Pragma\":\"no-cache\"}}}}";
+string tlsset_vmess = "{\"serverName\":\"?serverName?\",\"allowInsecure\":false,\"allowInsecureCiphers\":false}";
 
 map<string, string> parsedMD5;
 string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
@@ -37,6 +38,7 @@ string vmessConstruct(string add, string port, string type, string id, string ai
     string base = base_vmess;
     string wsset = wsset_vmess;
     string tcpset = tcpset_vmess;
+    string tlsset = tlsset_vmess;
     base = replace_all_distinct(base, "?localport?", to_string(local_port));
     base = replace_all_distinct(base, "?add?", add);
     base = replace_all_distinct(base, "?port?", port);
@@ -57,9 +59,18 @@ string vmessConstruct(string add, string port, string type, string id, string ai
         tcpset = replace_all_distinct(tcpset, "?path?", path == "" ? "/" : path);
         base = replace_all_distinct(base, "?tcpset?", tcpset);
     }
+    if(host == "" && !isIPv4(add) && !isIPv6(add))
+        host = add;
+    if(host != "")
+    {
+        tlsset = replace_all_distinct(tlsset, "?serverName?", host);
+        base = replace_all_distinct(base, "?tlsset?", tlsset);
+    }
+
     base = replace_all_distinct(base, "?tls?", tls);
     base = replace_all_distinct(base, "?tcpset?", "null");
     base = replace_all_distinct(base, "?wsset?", "null");
+    base = replace_all_distinct(base, "?tlsset?", "null");
 
     return base;
 }
@@ -352,44 +363,36 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
         ps = replace_all_distinct(UrlDecode(ss.substr(ss.find("#") + 1)), "\r", "");
         ss = ss.substr(0, ss.find("#"));
     }
-    if(!strFind(ss, "/?"))
+    strTemp = ss;
+    if(strFind(ss, "/?"))
     {
-        ss = ss.substr(5);
-        if(strFind(ss, "@"))
-        {
-            strTemp = regReplace(ss, "(.*?)@(.*?):(.*)", "$1,$2,$3");
-            args = split(strTemp, ",");
-            secret = split(urlsafe_base64_decode(args[0]), ":");
-            method = secret[0];
-            password = secret[1];
-            server = args[1];
-            port = custom_port == "" ? args[2] : custom_port;
-        }
-        else
-        {
-            strTemp = regReplace(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*?):(.*)", "$1,$2,$3,$4");
-            args = split(strTemp, ",");
-            method = args[0];
-            password = args[1];
-            server = args[2];
-            port = custom_port == "" ? args[3] : custom_port;
-        }
-    }
-    else
-    {
-        strTemp = regReplace(ss, "ss://(.*?)@(.*?):(.*?)/\\?(.*)", "$1,$2,$3,$4");
-        vector<string> args = split(strTemp, ",");
-        vector<string> pass = split(urlsafe_base64_decode(args[0]), ":");
-        method = pass[0];
-        password = pass[1];
-        server = args[1];
-        port = custom_port == "" ? args[2] : custom_port;
-        addition = args[3];
+        ss = strTemp.substr(0, strTemp.find("/?"));
+        addition = strTemp.substr(strTemp.find("/?") + 2);
         plugins = UrlDecode(getUrlArg(addition, "plugin"));
         plugin = plugins.substr(0, plugins.find(";"));
         pluginopts = plugins.substr(plugins.find(";") + 1);
         if(getUrlArg(addition, "group") != "")
             group = base64_decode(getUrlArg(addition, "group"));
+    }
+    ss = ss.substr(5);
+    if(strFind(ss, "@"))
+    {
+        strTemp = regReplace(ss, "(.*?)@(.*):(.*)", "$1,$2,$3");
+        args = split(strTemp, ",");
+        secret = split(urlsafe_base64_decode(args[0]), ":");
+        method = secret[0];
+        password = secret[1];
+        server = args[1];
+        port = custom_port == "" ? args[2] : custom_port;
+    }
+    else
+    {
+        strTemp = regReplace(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*):(.*)", "$1,$2,$3,$4");
+        args = split(strTemp, ",");
+        method = args[0];
+        password = args[1];
+        server = args[2];
+        port = custom_port == "" ? args[3] : custom_port;
     }
     if(ps == "")
         ps = server;

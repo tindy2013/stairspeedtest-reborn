@@ -828,6 +828,8 @@ int main(int argc, char* argv[])
     cout << setprecision(2);
     signal(SIGINT, signalHandler);
 
+    makeDir("logs");
+    makeDir("results");
     logInit(rpcmode);
     readConf("pref.ini");
     chkArg(argc, argv);
@@ -843,7 +845,7 @@ int main(int argc, char* argv[])
     if(rpcmode)
         switchCodepage();
     else
-        SetConsoleTitle("Stair Speedtest " VERSION);
+        SetConsoleTitle("Stair Speedtest Reborn " VERSION);
 #endif // _WIN32
     //kill any client before testing
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
