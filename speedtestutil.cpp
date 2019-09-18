@@ -1,5 +1,7 @@
-#include <rapidjson/document.h>
 #include <fstream>
+#include <algorithm>
+
+#include <rapidjson/document.h>
 
 #include "misc.h"
 #include "printout.h"
@@ -587,7 +589,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
         }
         else if(proxytype == "ss")
         {
-            string password, method, plugin, pluginopts, addition;
+            string password, method, plugin, pluginopts;
             string pluginopts_mode, pluginopts_host;
             group = SS_DEFAULT_GROUP;
 
@@ -622,8 +624,29 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                 pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
             }
 
+            //support for go-shadowsocks2
+            if(method == "AEAD_CHACHA20_POLY1305")
+                method = "chacha20-ietf-poly1305";
+            else if(strFind(method, "AEAD"))
+            {
+                method = replace_all_distinct(replace_all_distinct(method, "AEAD_", ""), "_", "-");
+                transform(method.begin(), method.end(), method.begin(), ::tolower);
+            }
+
+
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
             node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
+        }
+        else if(proxytype == "socks")
+        {
+            string user, pass;
+            if(yamlnode["Proxy"][i]["username"].IsDefined() && yamlnode["Proxy"][i]["password"].IsDefined())
+            {
+                yamlnode["Proxy"][i]["username"] >> user;
+                yamlnode["Proxy"][i]["password"] >> pass;
+            }
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+            node.proxyStr = "user=" + user + "&pass=" + pass;
         }
         else
             continue;
