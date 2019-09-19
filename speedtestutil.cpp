@@ -9,6 +9,7 @@
 #include "speedtestutil.h"
 #include "webget.h"
 #include "rapidjson_extra.h"
+#include "ini_reader.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -137,7 +138,7 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
 {
     string version, ps, add, port, type, id, aid, net, path, host, tls;
     Document jsondata;
-    vector<string> vchild;
+    vector<string> vArray;
     vmess = vmess.substr(8);
     vmess = base64_decode(vmess);
     if(regMatch(vmess, "(.*?) = (.*)"))
@@ -167,11 +168,11 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
     {
         if(host != "")
         {
-            vchild = split(host, ";");
-            if(vchild.size() == 2)
+            vArray = split(host, ";");
+            if(vArray.size() == 2)
             {
-                host = vchild[0];
-                path = vchild[1];
+                host = vArray[0];
+                path = vArray[1];
             }
         }
     }
@@ -665,7 +666,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
 void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node)
 {
     string strTemp, itemname, itemval;
-    vector<string> configs, vchild;
+    vector<string> configs, vArray;
     strTemp = regReplace(quan, "(.*?) = (.*)", "$1,$2");
     configs = split(strTemp, ",");
     if(configs[1] == "vmess")
@@ -680,11 +681,11 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
         //read link
         for(unsigned int i = 6; i < configs.size(); i++)
         {
-            vchild = split(configs[i], "=");
-            if(vchild.size() < 2)
+            vArray = split(configs[i], "=");
+            if(vArray.size() < 2)
                 continue;
-            itemname = trim(vchild[0]);
-            itemval = trim(vchild[1]);
+            itemname = trim(vArray[0]);
+            itemval = trim(vArray[1]);
             if(itemname == "group")
                 group = itemval;
             else if(itemname == "over-tls")
@@ -724,93 +725,59 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
 {
     string line, remarks, server, port, method, username, password, plugin, pluginopts, pluginopts_mode, pluginopts_host = "cloudfront.net", mod_url, mod_md5;
     stringstream data;
-    vector<string> configs, vchild;
+    vector<string> configs, vArray;
+    multimap<string, string> proxies;
     nodeInfo node;
     unsigned int i, index = nodes->size();
-    bool isSurgeConfig = false, isProxySection = false;
+    INIReader ini;
 
-    data << surge;
-    while(getline(data, line))
+    ini.IncludeSection("Proxy");
+    ini.Parse(surge);
+
+    if(!ini.SectionExist("Proxy"))
+        return false;
+    ini.EnterSection("Proxy");
+    ini.GetItems(&proxies);
+
+    for(auto &x : proxies)
     {
-        if(!line.size() || line.find("#") == 0)
+        remarks = x.first;
+        configs = split(x.second, ",");
+        if(configs[0] == "direct")
             continue;
-        else if(isProxySection)
+        else if(configs[0] == "custom") //surge 2 style custom proxy
         {
-            if(regMatch(line, "(.*?) = (.*)"))
-            {
-                line = regReplace(line, "(.*?) = (.*)", "$1,$2");
-                configs = split(line, ",");
-                if(configs[1] == "custom") //surge 2 style custom proxy
+                mod_url = trim(configs[5]);
+                if(parsedMD5.count(mod_url) > 0)
                 {
-                    mod_url = trim(configs[6]);
-                    if(parsedMD5.count(mod_url) > 0)
-                    {
-                        mod_md5 = parsedMD5[mod_url]; //read calculated MD5 from map
-                    }
-                    else
-                    {
-                        mod_md5 = getMD5(webGet(mod_url)); //retrieve module and calculate MD5
-                        parsedMD5.insert(pair<string, string>(mod_url, mod_md5)); //save unrecognized module MD5 to map
-                    }
-
-                    if(mod_md5 == modSSMD5) //is SSEncrypt module
-                    {
-                        remarks = configs[0];
-                        server = trim(configs[2]);
-                        port = custom_port == "" ? trim(configs[3]) : custom_port;
-                        method = trim(configs[4]);
-                        password = trim(configs[5]);
-                        plugin = "";
-
-                        for(i = 7; i < configs.size(); i++)
-                        {
-                            vchild = split(trim(configs[i]), "=");
-                            if(vchild.size() < 2)
-                                continue;
-                            else if(vchild[0] == "obfs")
-                            {
-                                plugin = "simple-obfs";
-                                pluginopts_mode = vchild[1];
-                            }
-                            else if(vchild[0] == "obfs-host")
-                                pluginopts_host = vchild[1];
-                        }
-                        if(plugin != "")
-                        {
-                            pluginopts = "obfs=" + pluginopts_mode;
-                            pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
-                        }
-
-                        node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-                        node.group = SS_DEFAULT_GROUP;
-                        node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
-                    }
-                    else
-                        continue;
+                    mod_md5 = parsedMD5[mod_url]; //read calculated MD5 from map
                 }
-                else if(configs[1] == "ss") //surge 3 style ss proxy
+                else
                 {
-                    remarks = configs[0];
-                    server = trim(configs[2]);
-                    port = custom_port == "" ? trim(configs[3]) : custom_port;
+                    mod_md5 = getMD5(webGet(mod_url)); //retrieve module and calculate MD5
+                    parsedMD5.insert(pair<string, string>(mod_url, mod_md5)); //save unrecognized module MD5 to map
+                }
+
+                if(mod_md5 == modSSMD5) //is SSEncrypt module
+                {
+                    server = trim(configs[1]);
+                    port = custom_port == "" ? trim(configs[2]) : custom_port;
+                    method = trim(configs[3]);
+                    password = trim(configs[4]);
                     plugin = "";
 
-                    for(i = 4; i < configs.size(); i++)
+                    for(i = 6; i < configs.size(); i++)
                     {
-                        vchild = split(trim(configs[i]), "=");
-                        if(vchild.size() < 2)
+                        vArray = split(trim(configs[i]), "=");
+                        if(vArray.size() < 2)
                             continue;
-                        else if(vchild[0] == "encrypt-method")
-                            method = vchild[1];
-                        else if(vchild[0] == "password")
-                            password = vchild[1];
-                        else if(vchild[0] == "obfs")
+                        else if(vArray[0] == "obfs")
                         {
                             plugin = "simple-obfs";
-                            pluginopts_mode = vchild[1];
+                            pluginopts_mode = vArray[1];
                         }
-                        else if(vchild[0] == "obfs-host")
-                            pluginopts_host = vchild[1];
+                        else if(vArray[0] == "obfs-host")
+                            pluginopts_host = vArray[1];
                     }
                     if(plugin != "")
                     {
@@ -822,39 +789,64 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                     node.group = SS_DEFAULT_GROUP;
                     node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
                 }
-                else if(configs[1] == "socks5") //surge 3 style socks5 proxy
-                {
-                    node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-                    node.group = SOCKS_DEFAULT_GROUP;
-                    if(configs.size() >= 6)
-                    {
-                        username = trim(configs[3]);
-                        password = trim(configs[4]);
-                    }
-                    node.proxyStr = "user=" + username + "&pass=" + password;
-                }
                 else
                     continue;
-                node.remarks = remarks;
-                node.server = server;
-                node.port = stoi(port);
-                node.id = index;
-                nodes->push_back(node);
-                writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
-                index++;
+            }
+            else if(configs[0] == "ss") //surge 3 style ss proxy
+            {
+                server = trim(configs[1]);
+                port = custom_port == "" ? trim(configs[2]) : custom_port;
+                plugin = "";
+
+                for(i = 3; i < configs.size(); i++)
+                {
+                    vArray = split(trim(configs[i]), "=");
+                    if(vArray.size() < 2)
+                        continue;
+                    else if(vArray[0] == "encrypt-method")
+                        method = vArray[1];
+                    else if(vArray[0] == "password")
+                        password = vArray[1];
+                    else if(vArray[0] == "obfs")
+                    {
+                        plugin = "simple-obfs";
+                        pluginopts_mode = vArray[1];
+                    }
+                    else if(vArray[0] == "obfs-host")
+                        pluginopts_host = vArray[1];
+                }
+                if(plugin != "")
+                {
+                    pluginopts = "obfs=" + pluginopts_mode;
+                    pluginopts += pluginopts_host == "" ? "" : ";obfs-host=" + pluginopts_host;
+                }
+
+                node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+                node.group = SS_DEFAULT_GROUP;
+                node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
+            }
+            else if(configs[0] == "socks5") //surge 3 style socks5 proxy
+            {
+                node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+                node.group = SOCKS_DEFAULT_GROUP;
+                if(configs.size() >= 5)
+                {
+                    username = trim(configs[2]);
+                    password = trim(configs[3]);
+                }
+                node.proxyStr = "user=" + username + "&pass=" + password;
             }
             else
-            {
-                break;
-            }
-        }
-        else if(strFind(line, "[Proxy]") && !isProxySection)
-        {
-            isProxySection = true;
-            isSurgeConfig = true;
-        }
+                    continue;
+            node.remarks = remarks;
+            node.server = server;
+            node.port = stoi(port);
+            node.id = index;
+            nodes->push_back(node);
+            writeLog(LOG_TYPE_INFO, "Node  " + node.group + " - " + node.remarks + "  has been added.");
+            index++;
     }
-    return isSurgeConfig;
+    return true;
 }
 
 bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *include_remarks)

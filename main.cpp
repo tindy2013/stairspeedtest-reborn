@@ -17,6 +17,7 @@
 #include "processes.h"
 #include "rulematch.h"
 #include "version.h"
+#include "ini_reader.h"
 
 using namespace std;
 using namespace chrono;
@@ -70,8 +71,8 @@ void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downlo
 
 void clearTrans()
 {
-    vector<string>().swap(dict);
-    vector<string>().swap(trans);
+    eraseElements(&dict);
+    eraseElements(&trans);
 }
 
 void addTrans(string dictval, string transval)
@@ -282,126 +283,126 @@ int killClient(int client)
 
 void readConf(string path)
 {
-    string strTemp, itemname, itemval;
-    string parent = "^\\[(.*?)\\]$", child = "^(.*?)=(.*?)$";
-    vector<string> vchild, varray;
-    ifstream infile;
-    smatch result;
     downloadLink link;
     linkMatchRule rule;
     color tmpColor;
     unsigned int i;
+    vector<string> vChild, vArray;
+    INIReader ini;
+    string strTemp;
 
-    infile.open(path, ios::in);
-    while(getline(infile, strTemp))
+    ini.do_utf8_to_gbk = true;
+    ini.ParseFile("pref.ini");
+
+    ini.EnterSection("common");
+    if(ini.ItemPrefixExist("exclude_remark"))
+        ini.GetAll("exclude_remark", &exclude_remarks);
+    if(ini.ItemPrefixExist("include_remark"))
+        ini.GetAll("include_remark", &include_remarks);
+
+    ini.EnterSection("advanced");
+    if(ini.ItemExist("speedtest_mode"))
+        speedtest_mode = ini.Get("speedtest_mode");
+    if(ini.ItemExist("test_site_ping"))
+        test_site_ping = ini.Get("test_site_ping") == "true";
+#ifdef _WIN32
+    if(ini.ItemExist("preferred_ss_client"))
     {
-        strTemp = UTF8ToGBK(strTemp); //convert utf-8 to gbk on windows
-        if(strTemp.find(";") == 0)
-            continue;
-        if(regMatch(strTemp, parent))
+        strTemp = ini.Get("preferred_ss_client");
+        if(strTemp == "ss-csharp")
+            ss_libev = false;
+    }
+    if(ini.ItemExist("preferred_ssr_client"))
+    {
+        strTemp = ini.Get("preferred_ssr_client");
+        if(strTemp == "ssr-csharp")
+            ssr_libev = false;
+    }
+#endif // _WIN32
+    if(ini.ItemExist("override_conf_port"))
+        override_conf_port = ini.Get("override_conf_port");
+    if(ini.ItemExist("thread_count"))
+        def_thread_count = stoi(ini.Get("thread_count"));
+
+    ini.EnterSection("export");
+    if(ini.ItemExist("export_with_maxspeed"))
+        export_with_maxspeed = ini.Get("export_with_maxspeed") == "true";
+    if(ini.ItemExist("export_sort_method"))
+        export_sort_method = ini.Get("export_sort_method");
+    if(ini.ItemExist("multilink_export_as_one_image"))
+        multilink_export_as_one_image = ini.Get("multilink_export_as_one_image") == "true";
+    if(ini.ItemExist("single_test_force_export"))
+        single_test_force_export = ini.Get("single_test_force_export") == "true";
+    if(ini.ItemExist("export_as_new_style"))
+        export_as_new_style = ini.Get("export_as_new_style") == "true";
+    if(ini.ItemExist("export_color_style"))
+        export_color_style = ini.Get("export_color_style");
+    if(ini.ItemExist("custom_color_groups"))
+    {
+        vChild = split(ini.Get("custom_color_groups"), "|");
+        if(vChild.size() >= 2)
         {
-            //don't do anything right now
+            for(i = 0; i < vChild.size() - 1; i++)
+            {
+                vArray = split(vChild[i], ",");
+                if(vArray.size() == 3)
+                {
+                    tmpColor.red = stoi(trim(vArray[0]));
+                    tmpColor.green = stoi(trim(vArray[1]));
+                    tmpColor.blue = stoi(trim(vArray[2]));
+                    custom_color_groups.push_back(tmpColor);
+                }
+            }
         }
-        else if(regMatch(strTemp, child))
+    }
+    if(ini.ItemExist("custom_color_bounds"))
+    {
+        vChild = split(ini.Get("custom_color_bounds"), "|");
+        if(vChild.size() >= 2)
         {
-            /*
-            vchild = split(strTemp, "=");
-            if(vchild.size() < 2)
-                continue;
-            itemname = vchild[0];
-            itemval = "";
-            for(unsigned i = 1; i < vchild.size(); i++)
-                itemval += vchild[i];
-            */
-            itemname = trim(strTemp.substr(0, strTemp.find("=")));
-            itemval = trim(strTemp.substr(strTemp.find("=") + 1));
+            for(i = 0; i < vChild.size() - 1; i++)
+            {
+                   custom_color_bounds.push_back(stoi(vChild[i]));
+            }
+        }
+    }
+    if(ini.ItemExist("export_as_ssrspeed"))
+        export_as_ssrspeed = ini.Get("export_as_ssrspeed") == "true";
 
-            if(itemname == "speedtest_mode")
-                speedtest_mode = itemval;
-            #ifdef _WIN32
-            //csharp version only works on windows
-            else if(itemname == "preferred_ss_client" && itemval == "ss-csharp")
-                ss_libev = false;
-            else if(itemname == "preferred_ssr_client" && itemval == "ssr-csharp")
-                ssr_libev = false;
-            #endif // _WIN32
-            else if(itemname == "export_with_maxspeed")
-                export_with_maxspeed = itemval == "true";
-            else if(itemname == "override_conf_port")
-                override_conf_port = itemval;
-            else if(strFind(itemname, "exclude_remarks"))
-                exclude_remarks.push_back(itemval);
-            else if(strFind(itemname, "include_remarks"))
-                include_remarks.push_back(itemval);
-            else if(itemname == "test_file_urls")
+    ini.EnterSection("rules");
+    if(ini.ItemPrefixExist("test_file_urls"))
+    {
+        eraseElements(&vArray);
+        ini.GetAll("test_file_urls", &vArray);
+        for(auto &x : vArray)
+        {
+            vChild = split(x, "|");
+            if(vChild.size() == 2)
             {
-                vchild = split(itemval, "|");
-                if(vchild.size() == 2)
-                {
-                    link.url = vchild[0];
-                    link.tag = vchild[1];
-                    downloadFiles.push_back(link);
-                }
-
+                link.url = vChild[0];
+                link.tag = vChild[1];
+                downloadFiles.push_back(link);
             }
-            else if(itemname == "rules")
+        }
+    }
+    if(ini.ItemPrefixExist("rules"))
+    {
+        eraseElements(&vArray);
+        ini.GetAll("rules", &vArray);
+        for(auto &x : vArray)
+        {
+            vChild = split(x, "|");
+            if(vChild.size() >= 3)
             {
-                vchild = split(itemval, "|");
-                if(vchild.size() >= 3)
+                eraseElements(&rule.rules);
+                rule.mode = vChild[0];
+                for(i = 1; i < vChild.size() - 1; i++)
                 {
-                    rule.rules.clear();
-                    rule.mode = vchild[0];
-                    for(i = 1; i < vchild.size() - 1; i++)
-                    {
-                        rule.rules.push_back(vchild[i]);
-                    }
-                    rule.tag = vchild[vchild.size() - 1];
-                    matchRules.push_back(rule);
+                    rule.rules.push_back(vChild[i]);
                 }
+                rule.tag = vChild[vChild.size() - 1];
+                matchRules.push_back(rule);
             }
-            else if(itemname == "thread_count")
-                def_thread_count = stoi(itemval);
-            else if(itemname == "multilink_export_as_one_image")
-                multilink_export_as_one_image = itemval == "true";
-            else if(itemname == "single_test_force_export")
-                single_test_force_export = itemval == "true";
-            else if(itemname == "export_as_new_style")
-                export_as_new_style = itemval == "true";
-            else if(itemname == "export_color_style")
-                export_color_style = itemval;
-            else if(itemname == "custom_color_groups")
-            {
-                vchild = split(itemval, "|");
-                if(vchild.size() >= 2)
-                {
-                    for(i = 0; i < vchild.size() - 1; i++)
-                    {
-                        varray = split(vchild[i], ",");
-                        if(varray.size() == 3)
-                        {
-                            tmpColor.red = stoi(trim(varray[0]));
-                            tmpColor.green = stoi(trim(varray[1]));
-                            tmpColor.blue = stoi(trim(varray[2]));
-                            custom_color_groups.push_back(tmpColor);
-                        }
-                    }
-                }
-            }
-            else if(itemname == "custom_color_bounds")
-            {
-                vchild = split(itemval, "|");
-                if(vchild.size() >= 2)
-                {
-                    for(i = 0; i < vchild.size() - 1; i++)
-                    {
-                        custom_color_bounds.push_back(stoi(vchild[i]));
-                    }
-                }
-            }
-            else if(itemname == "test_site_ping")
-                test_site_ping = itemval == "true";
-            else if(itemname == "export_as_ssrspeed")
-                export_as_ssrspeed = itemval == "true";
         }
     }
     if(export_color_style == "custom")
@@ -409,7 +410,6 @@ void readConf(string path)
         colorgroup.swap(custom_color_groups);
         bounds.swap(custom_color_bounds);
     }
-    infile.close();
 }
 
 void signalHandler(int signum)

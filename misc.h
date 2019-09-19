@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #ifdef _WIN32
 #define PATH_SLASH "\\"
@@ -94,6 +95,7 @@ string getMD5(string data);
 bool isIPv4(string address);
 bool isIPv6(string address);
 
+string getFileContent(string path);
 bool fileExist(string path);
 bool fileCopy(string source,string dest);
 string fileToBase64(string filepath);
@@ -102,6 +104,11 @@ string fileGetMD5(string filepath);
 static inline bool strFind(string str, string target)
 {
     return str.find(target) != str.npos;
+}
+
+template <typename T> static inline void eraseElements(T *target)
+{
+    T().swap(*target);
 }
 
 #ifdef _WIN32

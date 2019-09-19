@@ -386,6 +386,7 @@ string replace_all_distinct(string str, string old_value, string new_value)
     }
     return str;
 }
+
 bool regFind(string src, string target)
 {
     regex reg(target);
@@ -467,6 +468,21 @@ string getMD5(string data)
     return result;
 }
 
+string getFileContent(string path)
+{
+    ifstream infile;
+    stringstream strstrm;
+
+    infile.open(path, ios::binary);
+    if(infile)
+    {
+        strstrm<<infile.rdbuf();
+        infile.close();
+        return strstrm.str();
+    }
+    return string();
+}
+
 bool fileExist(string path)
 {
     return _access(path.data(), 4) != -1;
@@ -497,32 +513,12 @@ bool fileCopy(string source, string dest)
 
 string fileToBase64(string filepath)
 {
-    ifstream infile;
-    string strdata;
-    stringstream strstrm;
-    infile.open(filepath, ios::binary);
-    if(!infile)
-        return string();
-    strstrm<<infile.rdbuf();
-    strdata = strstrm.str();
-    infile.close();
-
-    return base64_encode(strdata);
+    return base64_encode(getFileContent(filepath));
 }
 
 string fileGetMD5(string filepath)
 {
-    ifstream infile;
-    string strdata;
-    stringstream strstrm;
-    infile.open(filepath, ios::binary);
-    if(!infile)
-        return string();
-    strstrm<<infile.rdbuf();
-    strdata = strstrm.str();
-    infile.close();
-
-    return getMD5(strdata);
+    return getMD5(getFileContent(filepath));
 }
 
 bool isIPv4(string address)
