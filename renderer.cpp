@@ -308,10 +308,10 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
         sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
 
     //add title line into the list
+    node.group = "Group";
+    node.remarks = "Remarks";
     if(export_as_new_style)
     {
-        node.group = "Group";
-        node.remarks = "Remarks";
         node.pkLoss = "     Loss     ";
         node.avgPing = "     Ping     ";
         node.sitePing = "  Google Ping  ";
@@ -320,8 +320,6 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     }
     else
     {
-        node.group = "Group";
-        node.remarks = "Remarks";
         node.pkLoss = "Pk.Loss";
         node.avgPing = "TCP Ping";
         node.sitePing = "Google Ping";
