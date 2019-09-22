@@ -11,7 +11,7 @@ using namespace std::chrono;
 
 const int times_to_ping = 6;
 
-void draw_progress(int progress, int values[6])
+void draw_progress_tping(int progress, int values[6])
 {
     cerr<<"\r[";
     for(int i = 0; i <= progress; i++)
@@ -77,7 +77,7 @@ int tcping(nodeInfo *node)
             node->rawPing[loopcounter] = 0;
             writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + to_string(port) + "/tcp - No response - time=" + to_string(deltatime) + "ms");
         }
-        draw_progress(loopcounter, node->rawPing);
+        draw_progress_tping(loopcounter, node->rawPing);
         loopcounter++;
         if(loopcounter < times_to_ping)
         {

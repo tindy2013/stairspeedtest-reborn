@@ -8,7 +8,21 @@
 
 using namespace std;
 
-void draw_progress(int progress, int values[6]); //use a function from tcping
+const int times_to_ping = 3;
+
+void draw_progress_sping(int progress, int values[3])
+{
+    cerr<<"\r[";
+    for(int i = 0; i <= progress; i++)
+    {
+        cerr<<(values[i] == 0 ? "*" : "-");
+    }
+    if(progress == times_to_ping - 1)
+    {
+        cerr<<"]";
+    }
+    cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
+}
 
 string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
 
@@ -233,10 +247,10 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
     double time_total = 0.0, retval = 0.0;
     string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
     writeLog(LOG_TYPE_GPING, "Website ping started. Test with proxy '" + proxystr + "'.");
-    int loop_times = 0, times_to_ping = 6, succeedcounter = 0, failcounter = 0;
+    int loop_times = 0, times_to_ping = 3, succeedcounter = 0, failcounter = 0;
     while(loop_times < times_to_ping)
     {
-        retval = getLoadPageTime(url, 3L, proxystr);
+        retval = getLoadPageTime(url, 5L, proxystr);
         if(retval > 0)
         {
             succeedcounter++;
@@ -251,7 +265,7 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
             writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Fail - interval=0ms");
         }
         loop_times++;
-        draw_progress(loop_times - 1, node->rawSitePing);
+        draw_progress_sping(loop_times - 1, node->rawSitePing);
         sleep(200);
     }
     cerr<<endl;

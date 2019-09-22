@@ -280,20 +280,17 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     ssr = urlsafe_base64_decode(ssr);
     if(strFind(ssr, "/?"))
     {
-        ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*?)\\/\\?(.*)", "$1,$2,$3,$4,$5,$6,$7");
-        strcfg = split(ssr, ",");
-        strobfs = strcfg[6];
+        strobfs = ssr.substr(ssr.find("/?") + 2);
+        ssr = ssr.substr(0, ssr.find("/?"));
         group = urlsafe_base64_decode(getUrlArg(strobfs, "group"));
         remarks = urlsafe_base64_decode(getUrlArg(strobfs, "remarks"));
         remarks_base64 = urlsafe_base64_reverse(getUrlArg(strobfs, "remarks"));
         obfsparam = urlsafe_base64_decode(getUrlArg(strobfs, "obfsparam"));
         protoparam = urlsafe_base64_decode(getUrlArg(strobfs, "protoparam"));
     }
-    else
-    {
-        ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*)", "$1,$2,$3,$4,$5,$6");
-        strcfg = split(ssr, ",");
-    }
+
+    ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*)", "$1,$2,$3,$4,$5,$6");
+    strcfg = split(ssr, ",");
 
     server = strcfg[0];
     port = custom_port == "" ? strcfg[1] : custom_port;
@@ -360,28 +357,27 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
 {
     string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP;
     vector<string> args, secret;
-    string strTemp;
+    ss = ss.substr(5);
     if(strFind(ss, "#"))
     {
         ps = replace_all_distinct(UrlDecode(ss.substr(ss.find("#") + 1)), "\r", "");
         ss = ss.substr(0, ss.find("#"));
     }
-    strTemp = ss;
+
     if(strFind(ss, "/?"))
     {
-        ss = strTemp.substr(0, strTemp.find("/?"));
-        addition = strTemp.substr(strTemp.find("/?") + 2);
+        addition = ss.substr(ss.find("/?") + 2);
         plugins = UrlDecode(getUrlArg(addition, "plugin"));
         plugin = plugins.substr(0, plugins.find(";"));
         pluginopts = plugins.substr(plugins.find(";") + 1);
         if(getUrlArg(addition, "group") != "")
             group = base64_decode(getUrlArg(addition, "group"));
+        ss = ss.substr(0, ss.find("/?"));
     }
-    ss = ss.substr(5);
     if(strFind(ss, "@"))
     {
-        strTemp = regReplace(ss, "(.*?)@(.*):(.*)", "$1,$2,$3");
-        args = split(strTemp, ",");
+        ss = regReplace(ss, "(.*?)@(.*):(.*)", "$1,$2,$3");
+        args = split(ss, ",");
         secret = split(urlsafe_base64_decode(args[0]), ":");
         method = secret[0];
         password = secret[1];
@@ -390,8 +386,8 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
     }
     else
     {
-        strTemp = regReplace(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*):(.*)", "$1,$2,$3,$4");
-        args = split(strTemp, ",");
+        ss = regReplace(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*):(.*)", "$1,$2,$3,$4");
+        args = split(ss, ",");
         method = args[0];
         password = args[1];
         server = args[2];
@@ -561,7 +557,10 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
 {
     nodeInfo node;
     unsigned int index = nodes->size();
-    string proxytype, strTemp, ps, server, port, cipher, group;
+    string proxytype, strTemp, ps, server, port, cipher, group; //common
+    string type = "none", id, aid = "0", net = "tcp", path, host, tls; //vmess
+    string password, plugin, pluginopts, pluginopts_mode, pluginopts_host; //ss
+    string user, pass; //socks
     for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
     {
         yamlnode["Proxy"][i]["type"] >> proxytype;
@@ -570,7 +569,6 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
         port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<string>() : custom_port;
         if(proxytype == "vmess")
         {
-            string type = "none", id, aid = "0", net = "tcp", path, host, tls;
             group = V2RAY_DEFAULT_GROUP;
 
             yamlnode["Proxy"][i]["uuid"] >> id;
@@ -579,22 +577,23 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<string>() : "tcp";
             path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<string>() : "/";
             if(yamlnode["Proxy"][i]["tls"].IsDefined())
-            {
                 tls = yamlnode["Proxy"][i]["tls"].as<string>() == "true" ? "tls" : "";
-            }
+            else
+                tls = "";
             if(yamlnode["Proxy"][i]["ws-headers"].IsDefined())
                 yamlnode["Proxy"][i]["ws-headers"]["Host"] >> host;
+            else
+                host = "";
+
 
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.proxyStr = vmessConstruct(server, port, type, id, aid, net, cipher, path, host, tls, local_port);
         }
         else if(proxytype == "ss")
         {
-            string password, method, plugin, pluginopts;
-            string pluginopts_mode, pluginopts_host;
             group = SS_DEFAULT_GROUP;
 
-            yamlnode["Proxy"][i]["cipher"] >> method;
+            yamlnode["Proxy"][i]["cipher"] >> cipher;
             yamlnode["Proxy"][i]["password"] >> password;
             if(yamlnode["Proxy"][i]["plugin"].IsDefined())
             {
@@ -618,6 +617,8 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
                     yamlnode["Proxy"][i]["obfs-host"] >> pluginopts_host;
                 }
             }
+            else
+                plugin = "";
 
             if(plugin != "")
             {
@@ -626,21 +627,21 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             }
 
             //support for go-shadowsocks2
-            if(method == "AEAD_CHACHA20_POLY1305")
-                method = "chacha20-ietf-poly1305";
-            else if(strFind(method, "AEAD"))
+            if(cipher == "AEAD_CHACHA20_POLY1305")
+                cipher = "chacha20-ietf-poly1305";
+            else if(strFind(cipher, "AEAD"))
             {
-                method = replace_all_distinct(replace_all_distinct(method, "AEAD_", ""), "_", "-");
-                transform(method.begin(), method.end(), method.begin(), ::tolower);
+                cipher = replace_all_distinct(replace_all_distinct(cipher, "AEAD_", ""), "_", "-");
+                transform(cipher.begin(), cipher.end(), cipher.begin(), ::tolower);
             }
 
-
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-            node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
+            node.proxyStr = ssConstruct(server, port, password, cipher, plugin, pluginopts, ps, local_port, libev);
         }
         else if(proxytype == "socks")
         {
-            string user, pass;
+            group = SOCKS_DEFAULT_GROUP;
+
             if(yamlnode["Proxy"][i]["username"].IsDefined() && yamlnode["Proxy"][i]["password"].IsDefined())
             {
                 yamlnode["Proxy"][i]["username"] >> user;
@@ -665,13 +666,13 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
 
 void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node)
 {
-    string strTemp, itemname, itemval;
+    string strTemp, itemName, itemVal;
+    string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
     vector<string> configs, vArray;
     strTemp = regReplace(quan, "(.*?) = (.*)", "$1,$2");
     configs = split(strTemp, ",");
     if(configs[1] == "vmess")
     {
-        string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
         ps = trim(configs[0]);
         add = trim(configs[2]);
         port = trim(configs[3]);
@@ -684,30 +685,27 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
             vArray = split(configs[i], "=");
             if(vArray.size() < 2)
                 continue;
-            itemname = trim(vArray[0]);
-            itemval = trim(vArray[1]);
-            if(itemname == "group")
-                group = itemval;
-            else if(itemname == "over-tls")
-                tls = itemval == "true" ? "tls" : "";
-            else if(itemname == "tls-host")
-                host = itemval;
-            else if(itemname == "obfs-path")
-                path = replace_all_distinct(itemval, "\"", "");
-            else if(itemname == "obfs-header")
+            itemName = trim(vArray[0]);
+            itemVal = trim(vArray[1]);
+            if(itemName == "group")
+                group = itemVal;
+            else if(itemName == "over-tls")
+                tls = itemVal == "true" ? "tls" : "";
+            else if(itemName == "tls-host")
+                host = itemVal;
+            else if(itemName == "obfs-path")
+                path = replace_all_distinct(itemVal, "\"", "");
+            else if(itemName == "obfs-header")
             {
-                vector<string> headers = split(replace_all_distinct(replace_all_distinct(itemval, "\"", ""), "[Rr][Nn]", "|"), "|");
+                vector<string> headers = split(replace_all_distinct(replace_all_distinct(itemVal, "\"", ""), "[Rr][Nn]", "|"), "|");
                 for(unsigned int j = 0; j < headers.size(); j++)
                 {
                     if(strFind(headers[j], "Host: "))
                         host = headers[j].substr(6);
                 }
             }
-            else if(itemname == "obfs")
-            {
-                if(itemval == "ws")
-                    net = "ws";
-            }
+            else if(itemName == "obfs" && itemVal == "ws")
+                net = "ws";
         }
         if(path == "")
             path = "/";

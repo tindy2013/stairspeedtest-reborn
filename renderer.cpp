@@ -46,6 +46,7 @@ int getTextLength(string str)
     return ((calcLength(str) - str.size()) / 3) * 2 + (str.size() * 2 - calcLength(str)) - count(str.begin(), str.end(), ' ') / 2;
 }
 
+/*
 static inline int calcCharCount(string data, int type)
 {
     int uBound, lBound, total = 0;
@@ -76,7 +77,7 @@ static inline int calcCharCount(string data, int type)
     }
     return total;
 }
-
+*/
 
 static inline int getWidth(pngwriter *png, string font, int fontsize, string text)
 {
