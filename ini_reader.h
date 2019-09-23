@@ -6,6 +6,8 @@
 
 #include "misc.h"
 
+#define MAX_LINE_LENGTH 512
+
     /**
     *  @brief A simple INI reader which utilize map and vector
     *  to store sections and items, allowing access in logarithmic time.
@@ -108,7 +110,7 @@ public:
         while(getline(strStrm, strLine, delimiter)) //get one line of content
         {
             strLine = replace_all_distinct(strLine, "\r", ""); //remove line break
-            if(!strLine.size() || strLine.find(";") == 0 || strLine.find("#") == 0) //empty lines and comments are ignored
+            if(!strLine.size() || strLine.size() > MAX_LINE_LENGTH || strLine.find(";") == 0 || strLine.find("#") == 0) //empty lines, lines longer than MAX_LINE_LENGTH and comments are ignored
                 continue;
             if(regMatch(strLine, regItem)) //is an item
             {

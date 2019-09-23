@@ -34,7 +34,7 @@ struct nodeInfo
     string pkLoss = "100.00%";
     int rawPing[6] = {};
     string avgPing = "0.00";
-    int rawSitePing[6] = {};
+    int rawSitePing[3] = {};
     string sitePing = "0.00";
     string traffic;
     geoIPInfo inboundGeoIP;

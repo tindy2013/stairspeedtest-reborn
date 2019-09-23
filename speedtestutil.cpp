@@ -729,6 +729,9 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
     unsigned int i, index = nodes->size();
     INIReader ini;
 
+    if(!strFind(surge, "[Proxy]"))
+        return false;
+
     ini.IncludeSection("Proxy");
     ini.Parse(surge);
 
@@ -971,11 +974,14 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
     //try to parse as clash configuration
     try
     {
-        Node yamlnode = Load(sub);
-        if(yamlnode.size() && yamlnode["Proxy"])
+        if(strFind(sub, "Proxy"))
         {
-            explodeClash(yamlnode, custom_port, local_port, nodes, sslibev);
-            return;
+            Node yamlnode = Load(sub);
+            if(yamlnode.size() && yamlnode["Proxy"])
+            {
+                explodeClash(yamlnode, custom_port, local_port, nodes, sslibev);
+                return;
+            }
         }
     }
     catch (exception &e)

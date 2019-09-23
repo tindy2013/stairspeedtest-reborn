@@ -828,11 +828,11 @@ int main(int argc, char* argv[])
     cout << setprecision(2);
     signal(SIGINT, signalHandler);
 
+    chkArg(argc, argv);
     makeDir("logs");
     makeDir("results");
     logInit(rpcmode);
     readConf("pref.ini");
-    chkArg(argc, argv);
 #ifdef _WIN32
     //start up windows socket library first
     WSADATA wsd;
