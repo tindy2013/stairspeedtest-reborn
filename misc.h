@@ -42,30 +42,6 @@ struct nodeInfo
     string testFile;
 };
 
-struct nodePerfInfo
-{
-    int linkType = -1;
-    int id = 0;
-    int groupID = 0;
-    bool online = false;
-    string group;
-    string remarks;
-    string server;
-    int port = 0;
-    string proxyStr;
-    string pkLoss = "100.00%";
-    int rawPing[6] = {};
-    string avgPing = "0.00";
-    int rawSitePing[6] = {};
-    string sitePing = "0.00";
-    int rawTelegramPing[6] = {};
-    string telegramPing = "0.00";
-    int rawCloudflarePing[6] = {};
-    string cloudflarePing = "0.00";
-    geoIPInfo inboundGeoIP;
-    geoIPInfo outboundGeoIP;
-};
-
 static const string base64_chars =
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              "abcdefghijklmnopqrstuvwxyz"

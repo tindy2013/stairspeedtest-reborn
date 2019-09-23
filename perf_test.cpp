@@ -2,6 +2,7 @@
 #include "socket.h"
 #include "webget.h"
 #include "printout.h"
+#include "perf_test.h"
 
 void testTelegram(string localaddr, int localport, nodePerfInfo *node)
 {
