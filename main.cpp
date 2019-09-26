@@ -36,6 +36,7 @@ string pngpath;
 bool ss_libev = true;
 bool ssr_libev = true;
 string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe";
+string def_upload_target = "http://losangeles.speed.googlefiber.net:3004/upload?time=0";
 vector<downloadLink> downloadFiles;
 vector<linkMatchRule> matchRules;
 vector<string> exclude_remarks, include_remarks, dict, trans;
@@ -49,6 +50,7 @@ int def_thread_count = 4;
 bool export_with_maxspeed = false;
 bool export_as_new_style = true;
 bool test_site_ping = true;
+bool test_upload = false;
 bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
 string export_sort_method = "none";
@@ -64,6 +66,7 @@ HANDLE hProc = 0;
 //declarations
 
 int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count);
+int upload_test(nodeInfo *node, string localaddr, int localport, string username, string password);
 int tcping(nodeInfo *node);
 void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downloadFiles, vector<linkMatchRule> *matchRules, string defaultTestFile);
 
@@ -304,7 +307,9 @@ void readConf(string path)
     if(ini.ItemExist("speedtest_mode"))
         speedtest_mode = ini.Get("speedtest_mode");
     if(ini.ItemExist("test_site_ping"))
-        test_site_ping = ini.Get("test_site_ping") == "true";
+        test_site_ping = ini.GetBool("test_site_ping");
+    if(ini.ItemExist("test_upload"))
+        test_upload = ini.GetBool("test_upload");
 #ifdef _WIN32
     if(ini.ItemExist("preferred_ss_client"))
     {
@@ -326,15 +331,15 @@ void readConf(string path)
 
     ini.EnterSection("export");
     if(ini.ItemExist("export_with_maxspeed"))
-        export_with_maxspeed = ini.Get("export_with_maxspeed") == "true";
+        export_with_maxspeed = ini.GetBool("export_with_maxspeed");
     if(ini.ItemExist("export_sort_method"))
         export_sort_method = ini.Get("export_sort_method");
     if(ini.ItemExist("multilink_export_as_one_image"))
-        multilink_export_as_one_image = ini.Get("multilink_export_as_one_image") == "true";
+        multilink_export_as_one_image = ini.GetBool("multilink_export_as_one_image");
     if(ini.ItemExist("single_test_force_export"))
-        single_test_force_export = ini.Get("single_test_force_export") == "true";
+        single_test_force_export = ini.GetBool("single_test_force_export");
     if(ini.ItemExist("export_as_new_style"))
-        export_as_new_style = ini.Get("export_as_new_style") == "true";
+        export_as_new_style = ini.GetBool("export_as_new_style");
     if(ini.ItemExist("export_color_style"))
         export_color_style = ini.Get("export_color_style");
     if(ini.ItemExist("custom_color_groups"))
@@ -367,7 +372,7 @@ void readConf(string path)
         }
     }
     if(ini.ItemExist("export_as_ssrspeed"))
-        export_as_ssrspeed = ini.Get("export_as_ssrspeed") == "true";
+        export_as_ssrspeed = ini.GetBool("export_as_ssrspeed");
 
     ini.EnterSection("rules");
     if(ini.ItemPrefixExist("test_file_urls"))
@@ -427,7 +432,7 @@ void signalHandler(int signum)
 
 void chkArg(int argc, char* argv[])
 {
-    for(int i = 0; i<argc; i++)
+    for(int i = 0; i < argc; i++)
     {
         if(!strcmp(argv[i], "/rpc"))
             rpcmode = true;
@@ -459,6 +464,7 @@ int singleTest(nodeInfo *node)
     string logdata = "", testserver, username, password;
     int testport;
     socks5Proxy proxy;
+    node->ulTarget = def_upload_target; //for now only use default
 
     if(node->linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
     {
@@ -586,8 +592,15 @@ int singleTest(nodeInfo *node)
             }
         }
     }
-    writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + " Traffic used in bytes: " + to_string(node->totalRecvBytes));
     printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
+    if(test_upload)
+    {
+        writeLog(LOG_TYPE_INFO, "Now performing upload speed test...");
+        printMsg(SPEEDTEST_MESSAGE_STARTUPD, node, rpcmode);
+        upload_test(node, testserver, testport, username, password);
+        printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
+    }
+    writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + to_string(node->totalRecvBytes));
     printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
     node->online = true;
     killClient(node->linkType);
@@ -726,7 +739,10 @@ void addNodes(string link, bool multilink)
             writeLog(LOG_TYPE_WARN, "Cannot download subscription directly. Using system proxy.");
             strProxy = getSystemProxy();
             if(strProxy != "")
+            {
+                printMsgDirect(SPEEDTEST_ERROR_SUBFETCHERR, rpcmode);
                 strSub = webGet(link, strProxy);
+            }
             else
                 writeLog(LOG_TYPE_WARN, "No system proxy is set. Skipping.");
         }

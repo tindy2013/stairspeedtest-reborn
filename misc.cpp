@@ -538,3 +538,27 @@ bool isIPv6(string address)
     }
     return false;
 }
+
+string rand_str(const int len)
+{
+    string retData;
+    srand(time(NULL));
+    int cnt = 0;
+    while(cnt < len)
+    {
+        switch((rand() % 3))
+        {
+        case 1:
+            retData += ('A' + rand() % 26);
+            break;
+        case 2:
+            retData += ('a' + rand() % 26);
+            break;
+        default:
+            retData += ('0' + rand() % 10);
+            break;
+        }
+        cnt++;
+    }
+    return retData;
+}

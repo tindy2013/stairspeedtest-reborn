@@ -533,7 +533,15 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     //basic border
     png.line(1, 1, total_width, 1, border_red, border_green, border_blue);//bottom
     png.line(1, total_height, total_width, total_height, border_red, border_green, border_blue);//top
-    png.line(1, 1, 1, total_height, border_red, border_green, border_blue);//left
+    if(export_as_ssrspeed)
+    {
+        png.line(2, 1, 2, total_height, border_red, border_green, border_blue);//left, offset +1 pixel
+    }
+    else
+    {
+        png.line(1, 1, 1, total_height, border_red, border_green, border_blue);//left
+    }
+
     png.line(total_width, 1, total_width, total_height, border_red, border_green, border_blue);//right
     png.close(); //save picture
     //all done!

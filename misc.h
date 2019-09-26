@@ -31,6 +31,7 @@ struct nodeInfo
     int duration = 0;
     string avgSpeed = "N/A";
     string maxSpeed = "N/A";
+    string ulSpeed = "N/A";
     string pkLoss = "100.00%";
     int rawPing[6] = {};
     string avgPing = "0.00";
@@ -40,6 +41,7 @@ struct nodeInfo
     geoIPInfo inboundGeoIP;
     geoIPInfo outboundGeoIP;
     string testFile;
+    string ulTarget;
 };
 
 static const string base64_chars =
@@ -60,6 +62,7 @@ string UTF8ToGBK(string str_src);
 string GBKToUTF8(string str_src);
 string trim(const string& str);
 string getSystemProxy();
+string rand_str(const int len);
 
 void sleep(int interval);
 bool regFind(string src, string target);

@@ -276,7 +276,7 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     string strobfs;
     vector<string> strcfg;
     string remarks, group, server, port, method, password, protocol, protoparam, obfs, obfsparam, remarks_base64;
-    ssr = ssr.substr(6);
+    ssr = replace_all_distinct(ssr.substr(6), "\r", "");
     ssr = urlsafe_base64_decode(ssr);
     if(strFind(ssr, "/?"))
     {
@@ -357,10 +357,10 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
 {
     string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP;
     vector<string> args, secret;
-    ss = ss.substr(5);
+    ss = replace_all_distinct(ss.substr(5), "\r", "");
     if(strFind(ss, "#"))
     {
-        ps = replace_all_distinct(UrlDecode(ss.substr(ss.find("#") + 1)), "\r", "");
+        ps = UrlDecode(ss.substr(ss.find("#") + 1));
         ss = ss.substr(0, ss.find("#"));
     }
 

@@ -15,6 +15,7 @@
 #define LOG_TYPE_RULES 8
 #define LOG_TYPE_GPING 9
 #define LOG_TYPE_RENDER 10
+#define LOG_TYPE_FILEUL 11
 
 using namespace std;
 

@@ -354,6 +354,22 @@ public:
     }
 
     /**
+    * @brief Retrieve one boolean item value with the exact same name in the given section.
+    */
+    bool GetBool(string section, string itemName)
+    {
+        return Get(section, itemName) == "true";
+    }
+
+    /**
+    * @brief Retrieve one boolean item value with the exact same name in current section.
+    */
+    bool GetBool(string itemName)
+    {
+        return current_section != "" ? Get(current_section, itemName) == "true" : false;
+    }
+
+    /**
     * @brief Retrieve the first item found in the given section.
     */
     string GetFirst(string section, string itemName) //return the first item value found in section

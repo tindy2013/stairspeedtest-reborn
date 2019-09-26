@@ -104,6 +104,9 @@ void writeLog(int type, string content)
     case LOG_TYPE_FILEDL:
         typestr = "[FILEDL]";
         break;
+    case LOG_TYPE_FILEUL:
+        typestr = "[FILEUL]";
+        break;
     case LOG_TYPE_RULES:
         typestr = "[RULES]";
         break;
