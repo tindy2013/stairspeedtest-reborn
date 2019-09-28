@@ -26,6 +26,8 @@ string wsset_vmess = "{\"connectionReuse\":true,\"path\":\"?path?\",\"headers\":
 string tcpset_vmess = "{\"connectionReuse\":true,\"header\":{\"type\":\"?type?\",\"request\":{\"version\":\"1.1\",\"method\":\"GET\",\"path\":[\"?path?\"],\"headers\":{\"Host\":[\"?host?\"],\"User-Agent\":[\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36\",\"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46\"],\"Accept-Encoding\":[\"gzip, deflate\"],\"Connection\":[\"keep-alive\"],\"Pragma\":\"no-cache\"}}}}";
 string tlsset_vmess = "{\"serverName\":\"?serverName?\",\"allowInsecure\":false,\"allowInsecureCiphers\":false}";
 
+vector<string> ss_ciphers = {"rc4-md5","aes-128-gcm","aes-192-gcm","aes-256-gcm","aes-128-cfb","aes-192-cfb","aes-256-cfb","aes-128-ctr","aes-192-ctr","aes-256-ctr","camellia-128-cfb","camellia-192-cfb","camellia-256-cfb","bf-cfb","chacha20-ietf-poly1305","xchacha20-ietf-poly1305","salsa20","chacha20","chacha20-ietf"};
+
 map<string, string> parsedMD5;
 string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
 
@@ -260,7 +262,7 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
         }
         if(ps == "")
         {
-            ps = add;
+            ps = add + ":" + port;
         }
         node.group = group;
         node.remarks = ps;
@@ -303,7 +305,7 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
         group = SSR_DEFAULT_GROUP;
     if(remarks == "")
     {
-        remarks = server;
+        remarks = server + ":" + port;
         remarks_base64 = base64_encode(remarks);
     }
 
@@ -394,7 +396,7 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
         port = custom_port == "" ? args[3] : custom_port;
     }
     if(ps == "")
-        ps = server;
+        ps = server + ":" + port;
 
     node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
     node->group = group;
@@ -465,7 +467,7 @@ void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port,
         json["nodes"][i]["remarks"] >> ps;
 
         if(ps == "")
-            ps = server;
+            ps = server + ":" + port;
 
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
         node.group = group;
@@ -499,7 +501,7 @@ void explodeSSConf(string content, string custom_port, int local_port, bool libe
         json["configs"][i]["plugin_opts"] >> pluginopts;
         if(ps == "")
         {
-            ps = server;
+            ps = server + ":" + port;
         }
 
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
@@ -538,7 +540,7 @@ void explodeSocks(string link, string custom_port, nodeInfo *node)
     }
     if(remarks == "")
     {
-        remarks = server;
+        remarks = server + ":" + port;
     }
     if(custom_port != "")
     {
@@ -850,6 +852,62 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
     return true;
 }
 
+void explodeSSTap(string sstap, string custom_port, int local_port, vector<nodeInfo> *nodes, bool ss_libev, bool ssr_libev)
+{
+    Document json;
+    nodeInfo node;
+    string configType, group, remarks, server, port;
+    string cipher;
+    string user, pass;
+    string protocol, protoparam, obfs, obfsparam;
+    json.Parse(sstap.data());
+
+    for(unsigned int i = 0; i < json["configs"].Size(); i++)
+    {
+        json["configs"][i]["group"] >> group;
+        json["configs"][i]["remarks"] >> remarks;
+        json["configs"][i]["server"] >> server;
+        json["configs"][i]["server_port"] >> port;
+        json["configs"][i]["password"] >> pass;
+        json["configs"][i]["type"] >> configType;
+        if(configType == "5") //socks 5
+        {
+            json["configs"][i]["username"] >> user;
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+            node.proxyStr = "user=" + user + "&pass=" + pass;
+        }
+        else if(configType == "6") //ss/ssr
+        {
+            json["configs"][i]["protocol"] >> protocol;
+            json["configs"][i]["obfs"] >> obfs;
+            json["configs"][i]["method"] >> cipher;
+            if(find(ss_ciphers.begin(), ss_ciphers.end(), cipher) != ss_ciphers.end() && protocol == "origin" && obfs == "plain") //is ss
+            {
+                node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+                node.proxyStr = ssConstruct(server, port, pass, cipher, "", "", remarks, local_port, ss_libev);
+            }
+            else //is ssr cipher
+            {
+                json["configs"][i]["obfsparam"] >> obfsparam;
+                json["configs"][i]["protocolparam"] >> protoparam;
+                node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
+                node.proxyStr = ssrConstruct(group, remarks, base64_encode(remarks), server, port, protocol, cipher, obfs, pass, obfsparam, protoparam, local_port, ssr_libev);
+            }
+        }
+        else
+            continue;
+
+        if(remarks == "")
+            remarks = server + ":" + port;
+
+        node.group = group;
+        node.remarks = remarks;
+        node.server = server;
+        node.port = stoi(port);
+        nodes->push_back(node);
+    }
+}
+
 bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *include_remarks)
 {
     bool excluded = false, included = false;
@@ -903,6 +961,8 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
         filetype = SPEEDTEST_MESSAGE_FOUNDVMESS;
     else if(strFind(content, "\"proxy_apps\""))
         filetype = SPEEDTEST_MESSAGE_FOUNDSSCONF;
+    else if(strFind(content, "\"idInUse\""))
+        filetype = SPEEDTEST_MESSAGE_FOUNDSSTAP;
 
     switch(filetype)
     {
@@ -917,6 +977,9 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
         break;
     case SPEEDTEST_MESSAGE_FOUNDSSCONF:
         explodeSSAndroid(content, sslibev, custom_port, local_port, nodes);
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDSSTAP:
+        explodeSSTap(content, custom_port, local_port, nodes, sslibev, ssrlibev);
         break;
     default:
         //try to parse as a local subscription
