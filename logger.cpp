@@ -67,15 +67,10 @@ void logInit(bool rpcmode)
     writeLog(LOG_TYPE_INFO, log_header);
 }
 
-void resultInit(bool export_with_maxspeed)
+void resultInit()
 {
     curtime = getTime(1);
     resultPath = "results" PATH_SLASH + curtime + ".log";
-    result_content = "group,remarks,loss,ping,avgspeed";
-    if(export_with_maxspeed)
-        result_content += ",maxspeed";
-    result_content += "\n";
-    writeToFile(resultPath, result_content, true);
 }
 
 void writeLog(int type, string content)
@@ -118,7 +113,26 @@ void writeLog(int type, string content)
         break;
     }
     content = timestr + typestr + content;
-    writeToFile(logPath, content, false);
+    fileWrite(logPath, content, false);
+}
+
+void logEOF()
+{
+    writeLog(LOG_TYPE_INFO,"Program terminated.");
+    fileWrite(logPath, "--EOF--", false);
+}
+
+/*
+
+void resultInit(bool export_with_maxspeed)
+{
+    curtime = getTime(1);
+    resultPath = "results" PATH_SLASH + curtime + ".log";
+    result_content = "group,remarks,loss,ping,avgspeed";
+    if(export_with_maxspeed)
+        result_content += ",maxspeed";
+    result_content += "\n";
+    fileWrite(resultPath, result_content, true);
 }
 
 void writeResult(nodeInfo *node, bool export_with_maxspeed)
@@ -129,12 +143,6 @@ void writeResult(nodeInfo *node, bool export_with_maxspeed)
     result_content += content + "\n";
     //write2file(resultPath,result_content.str(),true);
     writeToFile(resultPath, content, false);
-}
-
-void logEOF()
-{
-    writeLog(LOG_TYPE_INFO,"Program terminated.");
-    writeToFile(logPath, "--EOF--", false);
 }
 
 void resultEOF(string traffic, int worknodes, int totnodes)
@@ -195,3 +203,4 @@ void exportResult(string outpath, string utiljspath, string stylepath, bool expo
     outfile<<"</table></body></html>";
     outfile.close();
 }
+*/

@@ -2,11 +2,12 @@
 #define INI_READER_H_INCLUDED
 
 #include <map>
+#include <vector>
 #include <algorithm>
 
 #include "misc.h"
 
-#define MAX_LINE_LENGTH 512
+#define MAX_LINE_LENGTH 4096
 
     /**
     *  @brief A simple INI reader which utilize map and vector
@@ -160,7 +161,7 @@ public:
     */
     int ParseFile(string filePath)
     {
-        return Parse(getFileContent(filePath));
+        return Parse(fileGet(filePath));
     }
 
     /**
@@ -180,6 +181,21 @@ public:
     }
 
     /**
+    *  @brief Return all section names inside INI.
+    */
+    vector<string> GetSections()
+    {
+        vector<string> retData;
+
+        for(auto &x : ini_content)
+        {
+            retData.push_back(x.first);
+        }
+
+        return retData;
+    }
+
+    /**
     *  @brief Enter a section with the given name. Section name and data will be cached to speed up the following reading process.
     */
     int EnterSection(string section)
@@ -189,6 +205,14 @@ public:
         current_section = cached_section = section;
         cached_section_content = ini_content.at(section);
         return 0;
+    }
+
+    /**
+    *  @brief Set current section.
+    */
+    void SetCurrentSection(string section)
+    {
+        current_section = section;
     }
 
     /**
@@ -389,6 +413,123 @@ public:
     string GetFirst(string itemName)
     {
         return current_section != "" ? GetFirst(current_section, itemName) : string();
+    }
+
+    /**
+    *  @brief Add a string value with given values.
+    */
+    int Set(string section, string itemName, string itemVal)
+    {
+        multimap<string, string> mapTemp;
+        string value;
+
+        if(!parsed)
+            parsed = true;
+
+        if(SectionExist(section))
+        {
+            mapTemp = ini_content.at(section);
+            mapTemp.insert(pair<string, string>(itemName, itemVal));
+            ini_content[section] = mapTemp;
+        }
+        else
+        {
+            mapTemp.insert(pair<string, string>(itemName, itemVal));
+            ini_content.insert(pair<string, multimap<string, string>>(section, mapTemp));
+        }
+
+        return 0;
+    }
+
+    /**
+    *  @brief Add a string value with given values.
+    */
+    int Set(string itemName, string itemVal)
+    {
+        if(!current_section.size())
+            return -1;
+        return Set(current_section, itemName, itemVal);
+    }
+
+    /**
+    *  @brief Add a boolean value with given values.
+    */
+    int SetBool(string section, string itemName, bool itemVal)
+    {
+        return Set(section, itemName, itemVal ? "true" : "false");
+    }
+
+    /**
+    *  @brief Add a boolean value with given values.
+    */
+    int SetBool(string itemName, bool itemVal)
+    {
+        return SetBool(current_section, itemName, itemVal);
+    }
+
+    /**
+    *  @brief Add a double value with given values.
+    */
+    int SetDouble(string section, string itemName, double itemVal)
+    {
+        return Set(section, itemName, to_string(itemVal));
+    }
+
+    /**
+    *  @brief Add a double value with given values.
+    */
+    int SetDouble(string itemName, double itemVal)
+    {
+        return SetDouble(current_section, itemName, itemVal);
+    }
+
+    /**
+    *  @brief Add a long value with given values.
+    */
+    int SetLong(string section, string itemName, long itemVal)
+    {
+        return Set(section, itemName, to_string(itemVal));
+    }
+
+    /**
+    *  @brief Add a long value with given values.
+    */
+    int SetLong(string itemName, double itemVal)
+    {
+        return SetLong(current_section, itemName, itemVal);
+    }
+
+    /**
+    *  @brief Export the whole INI data structure into a string.
+    */
+    string ToString()
+    {
+        string content;
+
+        if(!parsed)
+            return string();
+
+        for(auto &x : ini_content)
+        {
+            content += "[" + x.first + "]\n";
+            for(auto &y : x.second)
+            {
+                if(y.first != "{NONAME}")
+                    content += y.first + " = ";
+                content += y.second + "\n";
+            }
+            content += "\n";
+        }
+
+        return content;
+    }
+
+    /**
+    *  @brief Export the whole INI data structure into a file.
+    */
+    int ToFile(string filePath)
+    {
+        return fileWrite(filePath, ToString(), true);
     }
 };
 

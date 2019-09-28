@@ -468,7 +468,7 @@ string getMD5(string data)
     return result;
 }
 
-string getFileContent(string path)
+string fileGet(string path)
 {
     ifstream infile;
     stringstream strstrm;
@@ -513,12 +513,22 @@ bool fileCopy(string source, string dest)
 
 string fileToBase64(string filepath)
 {
-    return base64_encode(getFileContent(filepath));
+    return base64_encode(fileGet(filepath));
 }
 
 string fileGetMD5(string filepath)
 {
-    return getMD5(getFileContent(filepath));
+    return getMD5(fileGet(filepath));
+}
+
+int fileWrite(string path, string content, bool overwrite)
+{
+    fstream outfile;
+    ios::openmode mode = overwrite ? ios::out : ios::app;
+    outfile.open(path, mode);
+    outfile<<content<<endl;
+    outfile.close();
+    return 0;
 }
 
 bool isIPv4(string address)

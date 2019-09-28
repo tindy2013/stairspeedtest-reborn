@@ -74,7 +74,8 @@ string getMD5(string data);
 bool isIPv4(string address);
 bool isIPv6(string address);
 
-string getFileContent(string path);
+string fileGet(string path);
+int fileWrite(string path, string content, bool overwrite);
 bool fileExist(string path);
 bool fileCopy(string source,string dest);
 string fileToBase64(string filepath);

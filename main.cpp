@@ -447,6 +447,7 @@ void switchCodepage()
 #endif // _WIN32
 }
 
+/*
 void exportHTML()
 {
     string htmpath = replace_all_distinct(resultPath, ".log", ".htm");
@@ -456,6 +457,49 @@ void exportHTML()
     //string rendercmd = "..\\tools\\misc\\phantomjs.exe ..\\tools\\misc\\render_alt.js " + htmname + " " + pngname + " " + export_sort_method;
     exportResult(htmpath, "tools\\misc\\util.js", "tools\\misc\\style.css", export_with_maxspeed);
     //runprogram(rendercmd, "results", true);
+}
+*/
+
+void saveResult(vector<nodeInfo> *nodes)
+{
+    INIReader ini;
+    string data;
+
+    ini.SetCurrentSection("Basic");
+    ini.Set("Tester", "Stair Speedtest Reborn " VERSION);
+    ini.Set("GenerationTime", getTime(3));
+
+    for(nodeInfo &x : *nodes)
+    {
+        ini.SetCurrentSection(x.group + "^" + x.remarks);
+        ini.Set("AvgPing", x.avgPing);
+        ini.Set("PkLoss", x.pkLoss);
+        ini.Set("SitePing", x.sitePing);
+        ini.Set("AvgSpeed", x.avgSpeed);
+        ini.Set("MaxSpeed", x.maxSpeed);
+        ini.Set("ULSpeed", x.ulSpeed);
+        ini.SetLong("UsedTraffic", x.totalRecvBytes);
+        ini.SetLong("GroupID", x.groupID);
+        ini.SetLong("ID", x.id);
+        ini.SetBool("Online", x.online);
+        for(auto &y : x.rawPing)
+            data += to_string(y) + ",";
+        data = data.substr(0, data.size() - 1);
+        ini.Set("RawPing", data);
+        data = "";
+        for(auto &y : x.rawSitePing)
+            data += to_string(y) + ",";
+        data = data.substr(0, data.size() - 1);
+        ini.Set("RawSitePing", data);
+        data = "";
+        for(auto &y : x.rawSpeed)
+            data += to_string(y) + ",";
+        data = data.substr(0, data.size() - 1);
+        ini.Set("RawSpeed", data);
+        data = "";
+    }
+
+    ini.ToFile(resultPath);
 }
 
 int singleTest(nodeInfo *node)
@@ -478,7 +522,7 @@ int singleTest(nodeInfo *node)
         testserver = socksaddr;
         testport = socksport;
         writeLog(LOG_TYPE_INFO, "Writing config file...");
-        writeToFile("config.json", node->proxyStr, true);
+        fileWrite("config.json", node->proxyStr, true);
         if(node->linkType != -1 && avail_status[node->linkType] == 1)
             runClient(node->linkType, "");
     }
@@ -623,7 +667,7 @@ void batchTest(vector<nodeInfo> *nodes)
     }
     else
     {
-        resultInit(export_with_maxspeed);
+        resultInit();
         writeLog(LOG_TYPE_INFO, "Speedtest will now begin.");
         printMsgDirect(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
         //first print out all nodes when in Web mode
@@ -640,14 +684,15 @@ void batchTest(vector<nodeInfo> *nodes)
             if(custom_group.size() != 0)
                 x.group = custom_group;
             singleTest(&x);
-            writeResult(&x, export_with_maxspeed);
+            //writeResult(&x, export_with_maxspeed);
             tottraffic += x.totalRecvBytes;
             if(x.online)
                 onlines++;
         }
-        resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
+        //resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
         writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + to_string(node_count) + "/" + to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
-        exportHTML();
+        //exportHTML();
+        saveResult(nodes);
         if(!multilink || (multilink && !multilink_export_as_one_image))
         {
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);

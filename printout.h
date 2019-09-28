@@ -65,6 +65,5 @@ using namespace std;
 void printMsg(int index, nodeInfo *node, bool rpcmode);
 void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<string> trans);
 void printMsgDirect(int index, bool rpcmode);
-int writeToFile(string path, string content, bool overwrite);
 
 #endif // PRINTOUT_H_INCLUDED
