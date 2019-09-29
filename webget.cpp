@@ -8,7 +8,21 @@
 
 using namespace std;
 
-void draw_progress(int progress, int values[6]); //use a function from tcping
+const int times_to_ping = 3;
+
+void draw_progress_sping(int progress, int values[3])
+{
+    cerr<<"\r[";
+    for(int i = 0; i <= progress; i++)
+    {
+        cerr<<(values[i] == 0 ? "*" : "-");
+    }
+    if(progress == times_to_ping - 1)
+    {
+        cerr<<"]";
+    }
+    cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
+}
 
 string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
 
@@ -160,6 +174,39 @@ string curlGet(string url, string proxy)
     return data;
 }
 
+long curlPost(string url, string data, string proxy)
+{
+    CURL *curl_handle;
+    double retVal = 0.0;
+
+    CURLcode res = curl_global_init(CURL_GLOBAL_ALL);
+
+    curl_handle = curl_easy_init();
+
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
+    curl_easy_setopt(curl_handle, CURLOPT_HEADER, 0L);
+    curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data.data());
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, data.size());
+    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 10L);
+    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+    if(proxy != "")
+        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
+
+    res = curl_easy_perform(curl_handle);
+
+    if(res == CURLE_OK)
+    {
+        res = curl_easy_getinfo(curl_handle, CURLINFO_SPEED_UPLOAD, &retVal);
+    }
+
+    curl_easy_cleanup(curl_handle);
+    curl_global_cleanup();
+    return retVal;
+}
+
 string buildSocks5ProxyString(string addr, int port, string username, string password)
 {
     string authstr = username != "" && password != "" ? username + ":" + password + "@" : "";
@@ -169,9 +216,7 @@ string buildSocks5ProxyString(string addr, int port, string username, string pas
 
 string buildSocks5ProxyString(socks5Proxy proxy)
 {
-    string authstr = proxy.username != "" && proxy.password != "" ? proxy.username + ":" + proxy.password + "@" : "";
-    string proxystr = "socks5://" + authstr + proxy.address + ":" + to_string(proxy.port);
-    return proxystr;
+    return buildSocks5ProxyString(proxy.address, proxy.port, proxy.username, proxy.password);
 }
 
 string webGet(string url, string proxy)
@@ -207,7 +252,7 @@ double getLoadPageTime(string url, long timeout, string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
     curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer_dummy);
-    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT,user_agent_str.data());
+    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
     curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -233,10 +278,10 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
     double time_total = 0.0, retval = 0.0;
     string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
     writeLog(LOG_TYPE_GPING, "Website ping started. Test with proxy '" + proxystr + "'.");
-    int loop_times = 0, times_to_ping = 6, succeedcounter = 0, failcounter = 0;
+    int loop_times = 0, times_to_ping = 3, succeedcounter = 0, failcounter = 0;
     while(loop_times < times_to_ping)
     {
-        retval = getLoadPageTime(url, 3L, proxystr);
+        retval = getLoadPageTime(url, 5L, proxystr);
         if(retval > 0)
         {
             succeedcounter++;
@@ -251,7 +296,7 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
             writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Fail - interval=0ms");
         }
         loop_times++;
-        draw_progress(loop_times - 1, node->rawSitePing);
+        draw_progress_sping(loop_times - 1, node->rawSitePing);
         sleep(200);
     }
     cerr<<endl;

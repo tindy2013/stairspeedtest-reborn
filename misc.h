@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #ifdef _WIN32
 #define PATH_SLASH "\\"
@@ -28,17 +29,19 @@ struct nodeInfo
     long long rawSpeed[20] = {};
     long long totalRecvBytes = 0;
     int duration = 0;
-    string avgSpeed = "0.00B";
-    string maxSpeed = "0.00B";
+    string avgSpeed = "N/A";
+    string maxSpeed = "N/A";
+    string ulSpeed = "N/A";
     string pkLoss = "100.00%";
     int rawPing[6] = {};
     string avgPing = "0.00";
-    int rawSitePing[6] = {};
+    int rawSitePing[10] = {};
     string sitePing = "0.00";
     string traffic;
     geoIPInfo inboundGeoIP;
     geoIPInfo outboundGeoIP;
     string testFile;
+    string ulTarget;
 };
 
 static const string base64_chars =
@@ -59,21 +62,35 @@ string UTF8ToGBK(string str_src);
 string GBKToUTF8(string str_src);
 string trim(const string& str);
 string getSystemProxy();
+string rand_str(const int len);
 
 void sleep(int interval);
+bool regFind(string src, string target);
 string regReplace(string src, string match, string rep);
-int regMatch(string src, string match);
+bool regMatch(string src, string match);
 string speedCalc(double speed);
-bool strFind(string str, string target);
 string grabContent(string raw);
 string getMD5(string data);
 bool isIPv4(string address);
 bool isIPv6(string address);
+void urlParse(string url, string &host, string &path, int &port, bool &isTLS);
 
+string fileGet(string path);
+int fileWrite(string path, string content, bool overwrite);
 bool fileExist(string path);
 bool fileCopy(string source,string dest);
 string fileToBase64(string filepath);
 string fileGetMD5(string filepath);
+
+static inline bool strFind(string str, string target)
+{
+    return str.find(target) != str.npos;
+}
+
+template <typename T> static inline void eraseElements(T *target)
+{
+    T().swap(*target);
+}
 
 #ifdef _WIN32
 void StringToWstring(std::wstring& szDst, std::string str);

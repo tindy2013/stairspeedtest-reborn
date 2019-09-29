@@ -51,6 +51,9 @@
 #define SPEEDTEST_MESSAGE_MULTILINK 27
 #define SPEEDTEST_MESSAGE_PICSAVINGMULTI 28
 #define SPEEDTEST_MESSAGE_PICSAVEDMULTI 29
+#define SPEEDTEST_MESSAGE_STARTUPD 30
+#define SPEEDTEST_MESSAGE_GOTUPD 31
+#define SPEEDTEST_MESSAGE_FOUNDSSTAP 32
 #define SPEEDTEST_MESSAGE_EOF 49
 
 #define SS_DEFAULT_GROUP "SSProvider"
@@ -63,6 +66,5 @@ using namespace std;
 void printMsg(int index, nodeInfo *node, bool rpcmode);
 void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<string> trans);
 void printMsgDirect(int index, bool rpcmode);
-int writeToFile(string path, string content, bool overwrite);
 
 #endif // PRINTOUT_H_INCLUDED

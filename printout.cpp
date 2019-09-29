@@ -27,7 +27,8 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_STARTGEOIP, "Now performing GeoIP parse...\n"},
     {SPEEDTEST_MESSAGE_STARTGPING, "Now performing Google Ping...\n"},
     {SPEEDTEST_MESSAGE_STARTSPEED, "Now performing Speed Test...\n"},
-    {SPEEDTEST_MESSAGE_GOTRESULT, "Result: DL.Speed: ?speed? Max.Speed: ?maxspeed? Pk.Loss: ?pkloss? Avg.Ping: ?avgping? Google Ping: ?siteping?\n"},
+    {SPEEDTEST_MESSAGE_STARTUPD, "Now performing Upload Test...\n"},
+    {SPEEDTEST_MESSAGE_GOTRESULT, "Result: DL.Speed: ?speed? Max.Speed: ?maxspeed? UL.Speed: ?ulspeed? Pk.Loss: ?pkloss? Avg.Ping: ?avgping? Google Ping: ?siteping?\n"},
     {SPEEDTEST_MESSAGE_TRAFFIC, "Traffic used: ?traffic?\n"},
     {SPEEDTEST_MESSAGE_PICSAVING, "Now exporting picture...\n"},
     {SPEEDTEST_MESSAGE_PICSAVINGMULTI, "Now exporting picture for group ?id?...\n"},
@@ -70,6 +71,8 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {SPEEDTEST_MESSAGE_GOTGEOIP, "{\"info\":\"gotgeoip\",\"id\":?id?,\"isp\":\"?isp?\",\"location\":\"?location?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTSPEED, "{\"info\":\"startspeed\",\"id\":?id?}\n"},
     {SPEEDTEST_MESSAGE_GOTSPEED, "{\"info\":\"gotspeed\",\"id\":?id?,\"speed\":\"?speed?\",\"maxspeed\":\"?maxspeed?\"}\n"},
+    {SPEEDTEST_MESSAGE_STARTUPD, "{\"info\":\"startupd\",\"id\":?id?}\n"},
+    {SPEEDTEST_MESSAGE_GOTUPD, "{\"info\":\"gotupd\",\"id\":?id?,\"ulspeed\":\"?ulspeed?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTGPING, "{\"info\":\"startgping\",\"id\":?id?}\n"},
     {SPEEDTEST_MESSAGE_GOTGPING, "{\"info\":\"gotgping\",\"id\":?id?,\"ping\":\"?siteping?\"}\n"},
     {SPEEDTEST_MESSAGE_TRAFFIC, "(\"info\":\"traffic\",\"size\":\"?traffic?\"}\n"},
@@ -133,6 +136,7 @@ void printMsg(int index, nodeInfo *node, bool rpcmode)
     printout = replace_all_distinct(printout, "?siteping?", node->sitePing);
     printout = replace_all_distinct(printout, "?speed?", node->avgSpeed);
     printout = replace_all_distinct(printout, "?maxspeed?", node->maxSpeed);
+    printout = replace_all_distinct(printout, "?ulspeed?", node->ulSpeed);
     printout = replace_all_distinct(printout, "?traffic?", node->traffic);
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
@@ -165,14 +169,4 @@ void printMsgDirect(int index, bool rpcmode)
     cout<<lookUp(index, rpcmode);
     cout.clear();
     cout.flush();
-}
-
-int writeToFile(string path, string content, bool overwrite)
-{
-    fstream outfile;
-    ios::openmode mode = overwrite ? ios::out : ios::app;
-    outfile.open(path, mode);
-    outfile<<content<<endl;
-    outfile.close();
-    return 0;
 }

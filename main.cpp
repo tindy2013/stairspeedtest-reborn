@@ -17,6 +17,8 @@
 #include "processes.h"
 #include "rulematch.h"
 #include "version.h"
+#include "ini_reader.h"
+#include "multithread_test.h"
 
 using namespace std;
 using namespace chrono;
@@ -35,6 +37,7 @@ string pngpath;
 bool ss_libev = true;
 bool ssr_libev = true;
 string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe";
+string def_upload_target = "http://losangeles.speed.googlefiber.net:3004/upload?time=0";
 vector<downloadLink> downloadFiles;
 vector<linkMatchRule> matchRules;
 vector<string> exclude_remarks, include_remarks, dict, trans;
@@ -48,6 +51,7 @@ int def_thread_count = 4;
 bool export_with_maxspeed = false;
 bool export_as_new_style = true;
 bool test_site_ping = true;
+bool test_upload = false;
 bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
 string export_sort_method = "none";
@@ -62,7 +66,6 @@ HANDLE hProc = 0;
 
 //declarations
 
-int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count);
 int tcping(nodeInfo *node);
 void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downloadFiles, vector<linkMatchRule> *matchRules, string defaultTestFile);
 
@@ -70,8 +73,8 @@ void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downlo
 
 void clearTrans()
 {
-    vector<string>().swap(dict);
-    vector<string>().swap(trans);
+    eraseElements(&dict);
+    eraseElements(&trans);
 }
 
 void addTrans(string dictval, string transval)
@@ -282,126 +285,128 @@ int killClient(int client)
 
 void readConf(string path)
 {
-    string strTemp, itemname, itemval;
-    string parent = "^\\[(.*?)\\]$", child = "^(.*?)=(.*?)$";
-    vector<string> vchild, varray;
-    ifstream infile;
-    smatch result;
     downloadLink link;
     linkMatchRule rule;
     color tmpColor;
     unsigned int i;
+    vector<string> vChild, vArray;
+    INIReader ini;
+    string strTemp;
 
-    infile.open(path, ios::in);
-    while(getline(infile, strTemp))
+    ini.do_utf8_to_gbk = true;
+    ini.ParseFile("pref.ini");
+
+    ini.EnterSection("common");
+    if(ini.ItemPrefixExist("exclude_remark"))
+        ini.GetAll("exclude_remark", &exclude_remarks);
+    if(ini.ItemPrefixExist("include_remark"))
+        ini.GetAll("include_remark", &include_remarks);
+
+    ini.EnterSection("advanced");
+    if(ini.ItemExist("speedtest_mode"))
+        speedtest_mode = ini.Get("speedtest_mode");
+    if(ini.ItemExist("test_site_ping"))
+        test_site_ping = ini.GetBool("test_site_ping");
+    if(ini.ItemExist("test_upload"))
+        test_upload = ini.GetBool("test_upload");
+#ifdef _WIN32
+    if(ini.ItemExist("preferred_ss_client"))
     {
-        strTemp = UTF8ToGBK(strTemp); //convert utf-8 to gbk on windows
-        if(strTemp.find(";") == 0)
-            continue;
-        if(regMatch(strTemp, parent))
+        strTemp = ini.Get("preferred_ss_client");
+        if(strTemp == "ss-csharp")
+            ss_libev = false;
+    }
+    if(ini.ItemExist("preferred_ssr_client"))
+    {
+        strTemp = ini.Get("preferred_ssr_client");
+        if(strTemp == "ssr-csharp")
+            ssr_libev = false;
+    }
+#endif // _WIN32
+    if(ini.ItemExist("override_conf_port"))
+        override_conf_port = ini.Get("override_conf_port");
+    if(ini.ItemExist("thread_count"))
+        def_thread_count = stoi(ini.Get("thread_count"));
+
+    ini.EnterSection("export");
+    if(ini.ItemExist("export_with_maxspeed"))
+        export_with_maxspeed = ini.GetBool("export_with_maxspeed");
+    if(ini.ItemExist("export_sort_method"))
+        export_sort_method = ini.Get("export_sort_method");
+    if(ini.ItemExist("multilink_export_as_one_image"))
+        multilink_export_as_one_image = ini.GetBool("multilink_export_as_one_image");
+    if(ini.ItemExist("single_test_force_export"))
+        single_test_force_export = ini.GetBool("single_test_force_export");
+    if(ini.ItemExist("export_as_new_style"))
+        export_as_new_style = ini.GetBool("export_as_new_style");
+    if(ini.ItemExist("export_color_style"))
+        export_color_style = ini.Get("export_color_style");
+    if(ini.ItemExist("custom_color_groups"))
+    {
+        vChild = split(ini.Get("custom_color_groups"), "|");
+        if(vChild.size() >= 2)
         {
-            //don't do anything right now
+            for(i = 0; i < vChild.size() - 1; i++)
+            {
+                vArray = split(vChild[i], ",");
+                if(vArray.size() == 3)
+                {
+                    tmpColor.red = stoi(trim(vArray[0]));
+                    tmpColor.green = stoi(trim(vArray[1]));
+                    tmpColor.blue = stoi(trim(vArray[2]));
+                    custom_color_groups.push_back(tmpColor);
+                }
+            }
         }
-        else if(regMatch(strTemp, child))
+    }
+    if(ini.ItemExist("custom_color_bounds"))
+    {
+        vChild = split(ini.Get("custom_color_bounds"), "|");
+        if(vChild.size() >= 2)
         {
-            /*
-            vchild = split(strTemp, "=");
-            if(vchild.size() < 2)
-                continue;
-            itemname = vchild[0];
-            itemval = "";
-            for(unsigned i = 1; i < vchild.size(); i++)
-                itemval += vchild[i];
-            */
-            itemname = trim(strTemp.substr(0, strTemp.find("=")));
-            itemval = trim(strTemp.substr(strTemp.find("=") + 1));
+            for(i = 0; i < vChild.size() - 1; i++)
+            {
+                   custom_color_bounds.push_back(stoi(vChild[i]));
+            }
+        }
+    }
+    if(ini.ItemExist("export_as_ssrspeed"))
+        export_as_ssrspeed = ini.GetBool("export_as_ssrspeed");
 
-            if(itemname == "speedtest_mode")
-                speedtest_mode = itemval;
-            #ifdef _WIN32
-            //csharp version only works on windows
-            else if(itemname == "preferred_ss_client" && itemval == "ss-csharp")
-                ss_libev = false;
-            else if(itemname == "preferred_ssr_client" && itemval == "ssr-csharp")
-                ssr_libev = false;
-            #endif // _WIN32
-            else if(itemname == "export_with_maxspeed")
-                export_with_maxspeed = itemval == "true";
-            else if(itemname == "override_conf_port")
-                override_conf_port = itemval;
-            else if(strFind(itemname, "exclude_remarks"))
-                exclude_remarks.push_back(itemval);
-            else if(strFind(itemname, "include_remarks"))
-                include_remarks.push_back(itemval);
-            else if(itemname == "test_file_urls")
+    ini.EnterSection("rules");
+    if(ini.ItemPrefixExist("test_file_urls"))
+    {
+        eraseElements(&vArray);
+        ini.GetAll("test_file_urls", &vArray);
+        for(auto &x : vArray)
+        {
+            vChild = split(x, "|");
+            if(vChild.size() == 2)
             {
-                vchild = split(itemval, "|");
-                if(vchild.size() == 2)
-                {
-                    link.url = vchild[0];
-                    link.tag = vchild[1];
-                    downloadFiles.push_back(link);
-                }
-
+                link.url = vChild[0];
+                link.tag = vChild[1];
+                downloadFiles.push_back(link);
             }
-            else if(itemname == "rules")
+        }
+    }
+    if(ini.ItemPrefixExist("rules"))
+    {
+        eraseElements(&vArray);
+        ini.GetAll("rules", &vArray);
+        for(auto &x : vArray)
+        {
+            vChild = split(x, "|");
+            if(vChild.size() >= 3)
             {
-                vchild = split(itemval, "|");
-                if(vchild.size() >= 3)
+                eraseElements(&rule.rules);
+                rule.mode = vChild[0];
+                for(i = 1; i < vChild.size() - 1; i++)
                 {
-                    rule.rules.clear();
-                    rule.mode = vchild[0];
-                    for(i = 1; i < vchild.size() - 1; i++)
-                    {
-                        rule.rules.push_back(vchild[i]);
-                    }
-                    rule.tag = vchild[vchild.size() - 1];
-                    matchRules.push_back(rule);
+                    rule.rules.push_back(vChild[i]);
                 }
+                rule.tag = vChild[vChild.size() - 1];
+                matchRules.push_back(rule);
             }
-            else if(itemname == "thread_count")
-                def_thread_count = stoi(itemval);
-            else if(itemname == "multilink_export_as_one_image")
-                multilink_export_as_one_image = itemval == "true";
-            else if(itemname == "single_test_force_export")
-                single_test_force_export = itemval == "true";
-            else if(itemname == "export_as_new_style")
-                export_as_new_style = itemval == "true";
-            else if(itemname == "export_color_style")
-                export_color_style = itemval;
-            else if(itemname == "custom_color_groups")
-            {
-                vchild = split(itemval, "|");
-                if(vchild.size() >= 2)
-                {
-                    for(i = 0; i < vchild.size() - 1; i++)
-                    {
-                        varray = split(vchild[i], ",");
-                        if(varray.size() == 3)
-                        {
-                            tmpColor.red = stoi(trim(varray[0]));
-                            tmpColor.green = stoi(trim(varray[1]));
-                            tmpColor.blue = stoi(trim(varray[2]));
-                            custom_color_groups.push_back(tmpColor);
-                        }
-                    }
-                }
-            }
-            else if(itemname == "custom_color_bounds")
-            {
-                vchild = split(itemval, "|");
-                if(vchild.size() >= 2)
-                {
-                    for(i = 0; i < vchild.size() - 1; i++)
-                    {
-                        custom_color_bounds.push_back(stoi(vchild[i]));
-                    }
-                }
-            }
-            else if(itemname == "test_site_ping")
-                test_site_ping = itemval == "true";
-            else if(itemname == "export_as_ssrspeed")
-                export_as_ssrspeed = itemval == "true";
         }
     }
     if(export_color_style == "custom")
@@ -409,7 +414,6 @@ void readConf(string path)
         colorgroup.swap(custom_color_groups);
         bounds.swap(custom_color_bounds);
     }
-    infile.close();
 }
 
 void signalHandler(int signum)
@@ -427,7 +431,7 @@ void signalHandler(int signum)
 
 void chkArg(int argc, char* argv[])
 {
-    for(int i = 0; i<argc; i++)
+    for(int i = 0; i < argc; i++)
     {
         if(!strcmp(argv[i], "/rpc"))
             rpcmode = true;
@@ -442,6 +446,7 @@ void switchCodepage()
 #endif // _WIN32
 }
 
+/*
 void exportHTML()
 {
     string htmpath = replace_all_distinct(resultPath, ".log", ".htm");
@@ -452,6 +457,49 @@ void exportHTML()
     exportResult(htmpath, "tools\\misc\\util.js", "tools\\misc\\style.css", export_with_maxspeed);
     //runprogram(rendercmd, "results", true);
 }
+*/
+
+void saveResult(vector<nodeInfo> *nodes)
+{
+    INIReader ini;
+    string data;
+
+    ini.SetCurrentSection("Basic");
+    ini.Set("Tester", "Stair Speedtest Reborn " VERSION);
+    ini.Set("GenerationTime", getTime(3));
+
+    for(nodeInfo &x : *nodes)
+    {
+        ini.SetCurrentSection(x.group + "^" + x.remarks);
+        ini.Set("AvgPing", x.avgPing);
+        ini.Set("PkLoss", x.pkLoss);
+        ini.Set("SitePing", x.sitePing);
+        ini.Set("AvgSpeed", x.avgSpeed);
+        ini.Set("MaxSpeed", x.maxSpeed);
+        ini.Set("ULSpeed", x.ulSpeed);
+        ini.SetLong("UsedTraffic", x.totalRecvBytes);
+        ini.SetLong("GroupID", x.groupID);
+        ini.SetLong("ID", x.id);
+        ini.SetBool("Online", x.online);
+        for(auto &y : x.rawPing)
+            data += to_string(y) + ",";
+        data = data.substr(0, data.size() - 1);
+        ini.Set("RawPing", data);
+        data = "";
+        for(auto &y : x.rawSitePing)
+            data += to_string(y) + ",";
+        data = data.substr(0, data.size() - 1);
+        ini.Set("RawSitePing", data);
+        data = "";
+        for(auto &y : x.rawSpeed)
+            data += to_string(y) + ",";
+        data = data.substr(0, data.size() - 1);
+        ini.Set("RawSpeed", data);
+        data = "";
+    }
+
+    ini.ToFile(resultPath);
+}
 
 int singleTest(nodeInfo *node)
 {
@@ -459,6 +507,7 @@ int singleTest(nodeInfo *node)
     string logdata = "", testserver, username, password;
     int testport;
     socks5Proxy proxy;
+    node->ulTarget = def_upload_target; //for now only use default
 
     if(node->linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
     {
@@ -472,7 +521,7 @@ int singleTest(nodeInfo *node)
         testserver = socksaddr;
         testport = socksport;
         writeLog(LOG_TYPE_INFO, "Writing config file...");
-        writeToFile("config.json", node->proxyStr, true);
+        fileWrite("config.json", node->proxyStr, true);
         if(node->linkType != -1 && avail_status[node->linkType] == 1)
             runClient(node->linkType, "");
     }
@@ -542,7 +591,8 @@ int singleTest(nodeInfo *node)
     {
         printMsg(SPEEDTEST_MESSAGE_STARTGPING, node, rpcmode);
         writeLog(LOG_TYPE_INFO, "Now performing site ping...");
-        websitePing(node, "https://www.google.com/", testserver, testport, username, password);
+        //websitePing(node, "https://www.google.com/", testserver, testport, username, password);
+        sitePing(node, testserver, testport, username, password, "https://www.google.com/");
         logdata = "";
         for(auto &x : node->rawSitePing)
         {
@@ -586,8 +636,15 @@ int singleTest(nodeInfo *node)
             }
         }
     }
-    writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + " Traffic used in bytes: " + to_string(node->totalRecvBytes));
     printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
+    if(test_upload)
+    {
+        writeLog(LOG_TYPE_INFO, "Now performing upload speed test...");
+        printMsg(SPEEDTEST_MESSAGE_STARTUPD, node, rpcmode);
+        upload_test(node, testserver, testport, username, password);
+        printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
+    }
+    writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + to_string(node->totalRecvBytes));
     printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
     node->online = true;
     killClient(node->linkType);
@@ -610,7 +667,7 @@ void batchTest(vector<nodeInfo> *nodes)
     }
     else
     {
-        resultInit(export_with_maxspeed);
+        resultInit();
         writeLog(LOG_TYPE_INFO, "Speedtest will now begin.");
         printMsgDirect(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
         //first print out all nodes when in Web mode
@@ -627,14 +684,15 @@ void batchTest(vector<nodeInfo> *nodes)
             if(custom_group.size() != 0)
                 x.group = custom_group;
             singleTest(&x);
-            writeResult(&x, export_with_maxspeed);
+            //writeResult(&x, export_with_maxspeed);
             tottraffic += x.totalRecvBytes;
             if(x.online)
                 onlines++;
         }
-        resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
+        //resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
         writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + to_string(node_count) + "/" + to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
-        exportHTML();
+        //exportHTML();
+        saveResult(nodes);
         if(!multilink || (multilink && !multilink_export_as_one_image))
         {
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
@@ -726,7 +784,10 @@ void addNodes(string link, bool multilink)
             writeLog(LOG_TYPE_WARN, "Cannot download subscription directly. Using system proxy.");
             strProxy = getSystemProxy();
             if(strProxy != "")
+            {
+                printMsgDirect(SPEEDTEST_ERROR_SUBFETCHERR, rpcmode);
                 strSub = webGet(link, strProxy);
+            }
             else
                 writeLog(LOG_TYPE_WARN, "No system proxy is set. Skipping.");
         }
@@ -828,9 +889,11 @@ int main(int argc, char* argv[])
     cout << setprecision(2);
     signal(SIGINT, signalHandler);
 
+    chkArg(argc, argv);
+    makeDir("logs");
+    makeDir("results");
     logInit(rpcmode);
     readConf("pref.ini");
-    chkArg(argc, argv);
 #ifdef _WIN32
     //start up windows socket library first
     WSADATA wsd;
@@ -843,7 +906,7 @@ int main(int argc, char* argv[])
     if(rpcmode)
         switchCodepage();
     else
-        SetConsoleTitle("Stair Speedtest " VERSION);
+        SetConsoleTitle("Stair Speedtest Reborn " VERSION);
 #endif // _WIN32
     //kill any client before testing
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);

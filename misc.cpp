@@ -387,6 +387,12 @@ string replace_all_distinct(string str, string old_value, string new_value)
     return str;
 }
 
+bool regFind(string src, string target)
+{
+    regex reg(target);
+    return regex_search(src, reg);
+}
+
 string regReplace(string src, string match, string rep)
 {
     string result = "";
@@ -395,7 +401,7 @@ string regReplace(string src, string match, string rep)
     return result;
 }
 
-int regMatch(string src, string match)
+bool regMatch(string src, string match)
 {
     regex reg(match);
     return regex_match(src, reg);
@@ -427,11 +433,6 @@ string urlsafe_base64_reverse(string encoded_string)
 string urlsafe_base64_decode(string encoded_string)
 {
     return base64_decode(urlsafe_base64_reverse(encoded_string));
-}
-
-bool strFind(string str,string target)
-{
-    return str.find(target) != str.npos;
 }
 
 string grabContent(string raw)
@@ -467,6 +468,21 @@ string getMD5(string data)
     return result;
 }
 
+string fileGet(string path)
+{
+    ifstream infile;
+    stringstream strstrm;
+
+    infile.open(path, ios::binary);
+    if(infile)
+    {
+        strstrm<<infile.rdbuf();
+        infile.close();
+        return strstrm.str();
+    }
+    return string();
+}
+
 bool fileExist(string path)
 {
     return _access(path.data(), 4) != -1;
@@ -497,32 +513,22 @@ bool fileCopy(string source, string dest)
 
 string fileToBase64(string filepath)
 {
-    ifstream infile;
-    string strdata;
-    stringstream strstrm;
-    infile.open(filepath, ios::binary);
-    if(!infile)
-        return string();
-    strstrm<<infile.rdbuf();
-    strdata = strstrm.str();
-    infile.close();
-
-    return base64_encode(strdata);
+    return base64_encode(fileGet(filepath));
 }
 
 string fileGetMD5(string filepath)
 {
-    ifstream infile;
-    string strdata;
-    stringstream strstrm;
-    infile.open(filepath, ios::binary);
-    if(!infile)
-        return string();
-    strstrm<<infile.rdbuf();
-    strdata = strstrm.str();
-    infile.close();
+    return getMD5(fileGet(filepath));
+}
 
-    return getMD5(strdata);
+int fileWrite(string path, string content, bool overwrite)
+{
+    fstream outfile;
+    ios::openmode mode = overwrite ? ios::out : ios::app;
+    outfile.open(path, mode);
+    outfile<<content<<endl;
+    outfile.close();
+    return 0;
 }
 
 bool isIPv4(string address)
@@ -541,4 +547,66 @@ bool isIPv6(string address)
             return true;
     }
     return false;
+}
+
+string rand_str(const int len)
+{
+    string retData;
+    srand(time(NULL));
+    int cnt = 0;
+    while(cnt < len)
+    {
+        switch((rand() % 3))
+        {
+        case 1:
+            retData += ('A' + rand() % 26);
+            break;
+        case 2:
+            retData += ('a' + rand() % 26);
+            break;
+        default:
+            retData += ('0' + rand() % 10);
+            break;
+        }
+        cnt++;
+    }
+    return retData;
+}
+
+void urlParse(string url, string &host, string &path, int &port, bool &isTLS)
+{
+    vector<string> args;
+
+    if(regMatch(url, "^https://(.*)"))
+        isTLS = true;
+    url = regReplace(url, "^(http|https)://", "");
+    if(url.find("/") == url.npos)
+    {
+        host = url;
+        path = "/";
+    }
+    else
+    {
+        host = url.substr(0, url.find("/"));
+        path = url.substr(url.find("/"));
+    }
+    if(regFind(host, "\\[(.*)\\]")) //IPv6
+    {
+        args = split(regReplace(host, "\\[(.*)\\](.*)", "$1,$2"), ",");
+        if(args.size() == 2) //with port
+            port = stoi(args[1].substr(1));
+        host = args[0];
+    }
+    else if(strFind(host, ":"))
+    {
+        port = stoi(host.substr(host.rfind(":") + 1));
+        host = host.substr(0, host.rfind(":"));
+    }
+    if(port == 0)
+    {
+        if(isTLS)
+            port = 443;
+        else
+            port = 80;
+    }
 }
