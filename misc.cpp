@@ -572,3 +572,41 @@ string rand_str(const int len)
     }
     return retData;
 }
+
+void urlParse(string url, string &host, string &path, int &port, bool &isTLS)
+{
+    vector<string> args;
+
+    if(regMatch(url, "^https://(.*)"))
+        isTLS = true;
+    url = regReplace(url, "^(http|https)://", "");
+    if(url.find("/") == url.npos)
+    {
+        host = url;
+        path = "/";
+    }
+    else
+    {
+        host = url.substr(0, url.find("/"));
+        path = url.substr(url.find("/"));
+    }
+    if(regFind(host, "\\[(.*)\\]")) //IPv6
+    {
+        args = split(regReplace(host, "\\[(.*)\\](.*)", "$1,$2"), ",");
+        if(args.size() == 2) //with port
+            port = stoi(args[1].substr(1));
+        host = args[0];
+    }
+    else if(strFind(host, ":"))
+    {
+        port = stoi(host.substr(host.rfind(":") + 1));
+        host = host.substr(0, host.rfind(":"));
+    }
+    if(port == 0)
+    {
+        if(isTLS)
+            port = 443;
+        else
+            port = 80;
+    }
+}

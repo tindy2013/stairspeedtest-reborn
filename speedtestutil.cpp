@@ -359,22 +359,22 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
 {
     string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP;
     vector<string> args, secret;
-    ss = replace_all_distinct(ss.substr(5), "\r", "");
+    ss = replace_all_distinct(replace_all_distinct(ss.substr(5), "\r", ""), "/?", "?");
     if(strFind(ss, "#"))
     {
         ps = UrlDecode(ss.substr(ss.find("#") + 1));
         ss = ss.substr(0, ss.find("#"));
     }
 
-    if(strFind(ss, "/?"))
+    if(strFind(ss, "?"))
     {
-        addition = ss.substr(ss.find("/?") + 2);
+        addition = ss.substr(ss.find("?") + 1);
         plugins = UrlDecode(getUrlArg(addition, "plugin"));
         plugin = plugins.substr(0, plugins.find(";"));
         pluginopts = plugins.substr(plugins.find(";") + 1);
         if(getUrlArg(addition, "group") != "")
             group = base64_decode(getUrlArg(addition, "group"));
-        ss = ss.substr(0, ss.find("/?"));
+        ss = ss.substr(0, ss.find("?"));
     }
     if(strFind(ss, "@"))
     {

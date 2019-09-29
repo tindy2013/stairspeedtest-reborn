@@ -18,6 +18,7 @@
 #include "rulematch.h"
 #include "version.h"
 #include "ini_reader.h"
+#include "multithread_test.h"
 
 using namespace std;
 using namespace chrono;
@@ -65,8 +66,6 @@ HANDLE hProc = 0;
 
 //declarations
 
-int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count);
-int upload_test(nodeInfo *node, string localaddr, int localport, string username, string password);
 int tcping(nodeInfo *node);
 void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downloadFiles, vector<linkMatchRule> *matchRules, string defaultTestFile);
 
@@ -592,7 +591,8 @@ int singleTest(nodeInfo *node)
     {
         printMsg(SPEEDTEST_MESSAGE_STARTGPING, node, rpcmode);
         writeLog(LOG_TYPE_INFO, "Now performing site ping...");
-        websitePing(node, "https://www.google.com/", testserver, testport, username, password);
+        //websitePing(node, "https://www.google.com/", testserver, testport, username, password);
+        sitePing(node, testserver, testport, username, password, "https://www.google.com/");
         logdata = "";
         for(auto &x : node->rawSitePing)
         {

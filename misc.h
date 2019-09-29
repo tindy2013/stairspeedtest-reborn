@@ -35,7 +35,7 @@ struct nodeInfo
     string pkLoss = "100.00%";
     int rawPing[6] = {};
     string avgPing = "0.00";
-    int rawSitePing[3] = {};
+    int rawSitePing[10] = {};
     string sitePing = "0.00";
     string traffic;
     geoIPInfo inboundGeoIP;
@@ -73,6 +73,7 @@ string grabContent(string raw);
 string getMD5(string data);
 bool isIPv4(string address);
 bool isIPv6(string address);
+void urlParse(string url, string &host, string &path, int &port, bool &isTLS);
 
 string fileGet(string path);
 int fileWrite(string path, string content, bool overwrite);

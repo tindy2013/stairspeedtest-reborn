@@ -11,6 +11,7 @@
 #include "misc.h"
 #include "socket.h"
 #include "logger.h"
+#include "printout.h"
 #include "webget.h"
 
 using namespace std;
@@ -18,6 +19,9 @@ using namespace chrono;
 
 #define MAX_FILE_SIZE 512*1024*1024
 #define BUF_SIZE 8192
+
+//for use of site ping
+const int times_to_ping = 10, fail_limit = 3;
 
 //for use of multi-thread socket test
 typedef lock_guard<mutex> guarded_mutex;
@@ -118,6 +122,20 @@ static inline void draw_progress_ul(int progress, long long this_bytes)
 {
     draw_progress_icon(progress);
     cerr<<" "<<speedCalc(this_bytes);
+}
+
+static inline void draw_progress_gping(int progress, int values[10])
+{
+    cerr<<"\r[";
+    for(int i = 0; i <= progress; i++)
+    {
+        cerr<<(values[i] == 0 ? "*" : "-");
+    }
+    if(progress == times_to_ping - 1)
+    {
+        cerr<<"]";
+    }
+    cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
 }
 
 int _thread_download(string host, int port, string uri, string localaddr, int localport, string username, string password, bool useTLS = false)
@@ -231,7 +249,6 @@ int _thread_upload(string host, int port, string uri, string localaddr, int loca
 {
     launch_acc();
     running_acc();
-    char bufRecv[BUF_SIZE];
     int retVal, cur_len;
     SOCKET sHost;
     string request = "POST " + uri + " HTTP/1.1\r\n"
@@ -330,35 +347,11 @@ int perform_test(nodeInfo *node, string localaddr, int localport, string usernam
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test started.");
     //prep up vars first
     string host, uri, testfile = node->testFile;
-    vector<string> args;
     int port = 0, i;
     bool useTLS = false;
 
     writeLog(LOG_TYPE_FILEDL, "Fetch target: " + testfile);
-    if(regMatch(testfile, "^https://(.*)"))
-        useTLS = true;
-    testfile = regReplace(testfile, "^(http|https)://", "");
-    host = testfile.substr(0, testfile.find("/"));
-    uri = testfile.substr(testfile.find("/"));
-    if(regFind(host, "\\[(.*)\\]")) //IPv6
-    {
-        args = split(regReplace(host, "\\[(.*)\\](.*)", "$1,$2"), ",");
-        if(args.size() == 2) //with port
-            port = stoi(args[1].substr(1));
-        host = args[0];
-    }
-    else if(strFind(host, ":"))
-    {
-        port = stoi(host.substr(host.rfind(":") + 1));
-        host = host.substr(0, host.rfind(":"));
-    }
-    if(port == 0)
-    {
-        if(useTLS)
-            port = 443;
-        else
-            port = 80;
-    }
+    urlParse(testfile, host, uri, port, useTLS);
     received_bytes = 0;
     EXIT_FLAG = false;
 
@@ -446,35 +439,11 @@ int upload_test(nodeInfo *node, string localaddr, int localport, string username
     writeLog(LOG_TYPE_FILEUL, "Upload test started.");
     //prep up vars first
     string host, uri, testfile = node->ulTarget;
-    vector<string> args;
     int port = 0, i;
     bool useTLS = false;
 
     writeLog(LOG_TYPE_FILEUL, "Upload destination: " + testfile);
-    if(regMatch(testfile, "^https://(.*)"))
-        useTLS = true;
-    testfile = regReplace(testfile, "^(http|https)://", "");
-    host = testfile.substr(0, testfile.find("/"));
-    uri = testfile.substr(testfile.find("/"));
-    if(regFind(host, "\\[(.*)\\]")) //IPv6
-    {
-        args = split(regReplace(host, "\\[(.*)\\](.*)", "$1,$2"), ",");
-        if(args.size() == 2) //with port
-            port = stoi(args[1].substr(1));
-        host = args[0];
-    }
-    else if(strFind(host, ":"))
-    {
-        port = stoi(host.substr(host.find(":") + 1));
-        host = host.substr(0, host.find(":"));
-    }
-    if(port == 0)
-    {
-        if(useTLS)
-            port = 443;
-        else
-            port = 80;
-    }
+    urlParse(testfile, host, uri, port, useTLS);
     received_bytes = 0;
     EXIT_FLAG = false;
 
@@ -569,4 +538,151 @@ int upload_test_curl(nodeInfo *node, string localaddr, int localport, string use
         worker.join();//wait until worker thread has exited
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
     return 0;
+}
+
+int sitePing(nodeInfo *node, string localaddr, int localport, string username, string password, string target)
+{
+    char bufRecv[BUF_SIZE];
+    int retVal, cur_len;
+    SOCKET sHost;
+    string host, uri;
+    int port = 0;
+    bool useTLS = false;
+    urlParse(target, host, uri, port, useTLS);
+    string request = "GET " + uri + " HTTP/1.1\r\n"
+                    "Host: " + host + "\r\n"
+                    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
+
+
+    writeLog(LOG_TYPE_GPING, "Website ping started. Target: '" + target + "' . Proxy: '" + localaddr + ":" + to_string(localport) + "' .");
+    int loopcounter = 0, succeedcounter = 0, failcounter = 0, totduration = 0;
+    while(loopcounter < times_to_ping)
+    {
+        if(failcounter >= fail_limit)
+        {
+            writeLog(LOG_TYPE_GPING, "Fail limit exceeded. Stop now.");
+            break;
+        }
+        auto start = steady_clock::now();
+        sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
+        if(INVALID_SOCKET == sHost)
+        {
+            failcounter++;
+            node->rawSitePing[loopcounter] = 0;
+            writeLog(LOG_TYPE_GPING, "ERROR: Could not create socket.");
+            goto end;
+        }
+        setTimeout(sHost, 3000);
+        if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
+        {
+            failcounter++;
+            node->rawSitePing[loopcounter] = 0;
+            writeLog(LOG_TYPE_GPING, "ERROR: Connect to SOCKS5 server " + localaddr + ":" + to_string(localport) + " failed.");
+            goto end;
+        }
+        if(connectSocks5(sHost, username, password) == -1)
+        {
+            failcounter++;
+            node->rawSitePing[loopcounter] = 0;
+            writeLog(LOG_TYPE_GPING, "ERROR: SOCKS5 server authentication failed.");
+            goto end;
+        }
+        if(connectThruSocks(sHost, host, port) == -1)
+        {
+            failcounter++;
+            node->rawSitePing[loopcounter] = 0;
+            writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + to_string(port) + " through SOCKS5 server failed.");
+            goto end;
+        }
+
+        if(useTLS)
+        {
+            SSL_CTX *ctx;
+            SSL *ssl;
+
+            ctx = SSL_CTX_new(TLS_client_method());
+            if(ctx == NULL)
+            {
+                failcounter++;
+                node->rawSitePing[loopcounter] = 0;
+                writeLog(LOG_TYPE_GPING, "OpenSSL: " + string(ERR_error_string(ERR_get_error(), NULL)));
+            }
+            else
+            {
+                ssl = SSL_new(ctx);
+                SSL_set_fd(ssl, sHost);
+
+                if(SSL_connect(ssl) != 1)
+                {
+                    failcounter++;
+                    node->rawSitePing[loopcounter] = 0;
+                    writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + to_string(port) + " through SOCKS5 server failed.");
+                }
+                else
+                {
+                    SSL_write(ssl, request.data(), request.size());
+                    cur_len = SSL_read(ssl, bufRecv, BUF_SIZE - 1);
+                    auto end = steady_clock::now();
+                    auto duration = duration_cast<milliseconds>(end - start);
+                    int deltatime = duration.count();
+                    if(cur_len <= 0)
+                    {
+                        failcounter++;
+                        node->rawSitePing[loopcounter] = 0;
+                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + to_string(deltatime) + "ms");
+                    }
+                    else
+                    {
+                        succeedcounter++;
+                        node->rawSitePing[loopcounter] = deltatime;
+                        totduration += deltatime;
+                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + to_string(deltatime) + "ms");
+                    }
+                }
+                SSL_clear(ssl);
+            }
+        }
+        else
+        {
+            retVal = Send(sHost, request.data(), request.size(), 0);
+            if (SOCKET_ERROR == retVal)
+            {
+                closesocket(sHost);
+                return -1;
+            }
+            cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
+            auto end = steady_clock::now();
+            auto duration = duration_cast<milliseconds>(end - start);
+            int deltatime = duration.count();
+            if(cur_len <= 0)
+            {
+                failcounter++;
+                node->rawSitePing[loopcounter] = 0;
+                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + to_string(deltatime) + "ms");
+            }
+            else
+            {
+                succeedcounter++;
+                node->rawSitePing[loopcounter] = deltatime;
+                totduration += deltatime;
+                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + to_string(deltatime) + "ms");
+
+            }
+        }
+end:
+        draw_progress_gping(loopcounter, node->rawSitePing);
+        loopcounter++;
+        closesocket(sHost);
+    }
+    cerr<<endl;
+    float pingval = 0.0;
+    if(succeedcounter > 0)
+        pingval = totduration * 1.0 / succeedcounter;
+    char strtmp[16] = {};
+    int len = snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
+    node->sitePing.assign(strtmp);
+    writeLog(LOG_TYPE_GPING, "Ping statistics of target " + target + " : " \
+             + to_string(loopcounter) + " probes sent, " + to_string(succeedcounter) + " successful, " + to_string(failcounter) + " failed. ");
+    writeLog(LOG_TYPE_GPING, "Website ping completed. Leaving.");
+    return SPEEDTEST_MESSAGE_GOTGPING;
 }

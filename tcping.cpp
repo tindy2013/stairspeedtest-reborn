@@ -94,10 +94,10 @@ int tcping(nodeInfo *node)
         pingval = totduration * 1.0 / succeedcounter;
     char strtmp[16] = {};
     float pkLoss = failcounter * 100.0 / times_to_ping;
-    snprintf(strtmp, sizeof(strtmp), "%0.2f", pkLoss);
-    node->pkLoss = string(strtmp) + string("%");
+    snprintf(strtmp, sizeof(strtmp), "%0.2f%%", pkLoss);
+    node->pkLoss.assign(strtmp);
     snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
-    node->avgPing = string(strtmp);
+    node->avgPing.assign(strtmp);
     writeLog(LOG_TYPE_TCPING, "Ping statistics for " + addrstr + ":" + to_string(port) + " : " \
              + to_string(loopcounter) + " probes sent, " + to_string(succeedcounter) + " successful, " + to_string(failcounter) + " failed. " \
              + "(" + node->pkLoss + " fail)");
