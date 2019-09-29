@@ -679,7 +679,7 @@ end:
     if(succeedcounter > 0)
         pingval = totduration * 1.0 / succeedcounter;
     char strtmp[16] = {};
-    int len = snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
+    snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
     node->sitePing.assign(strtmp);
     writeLog(LOG_TYPE_GPING, "Ping statistics of target " + target + " : " \
              + to_string(loopcounter) + " probes sent, " + to_string(succeedcounter) + " successful, " + to_string(failcounter) + " failed. ");
