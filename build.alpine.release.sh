@@ -53,6 +53,7 @@ cd ../..
 
 git clone https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
+git checkout -b latest origin/Akkariiin/develop
 ./configure --disable-documentation
 make -j4
 cd src

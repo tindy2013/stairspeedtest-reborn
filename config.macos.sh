@@ -21,6 +21,7 @@ cd ..
 echo downloading and compiling shadowsocksr-libev
 git clone https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
+git checkout -b latest origin/Akkariiin/develop
 ./configure --with-openssl-lib=/usr/local/opt/openssl/lib --with-openssl-include=/usr/local/opt/openssl/include --disable-documentation
 make -j8
 #fix dynamic lib reference error
