@@ -499,6 +499,49 @@ public:
         return SetLong(current_section, itemName, itemVal);
     }
 
+    int Erase(string section, string itemName)
+    {
+        int retVal;
+        if(!SectionExist(section))
+            return -1;
+
+        retVal = ini_content.at(section).erase(itemName);
+        if(retVal && cached_section == section)
+        {
+            cached_section_content = ini_content.at(section);
+        }
+        return retVal;
+    }
+
+    int Erase(string itemName)
+    {
+        return current_section != "" ? Erase(current_section, itemName) : -1;
+    }
+
+    int EraseFirst(string section, string itemName)
+    {
+        multimap<string, string> &mapTemp = ini_content.at(section);
+        multimap<string, string>::iterator iter = mapTemp.find(itemName);
+        if(iter != mapTemp.end())
+        {
+            mapTemp.erase(iter);
+            if(cached_section == section)
+            {
+                cached_section_content = mapTemp;
+            }
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    int EraseFirst(string itemName)
+    {
+        return current_section != "" ? EraseFirst(current_section, itemName) : -1;
+    }
+
     /**
     *  @brief Export the whole INI data structure into a string.
     */

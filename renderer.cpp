@@ -191,7 +191,7 @@ bool comparer(nodeInfo &a, nodeInfo &b)
     else if(export_sort_method_render == "rping")
         return stof(a.avgPing) > stof(b.avgPing);
     else
-        return 0;
+        return a.groupID < b.groupID || a.id < b.id;
 }
 
 void getColor(color lc, color rc, float level, color *finalcolor)
@@ -305,8 +305,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     node_count = nodes.size();
     total_line = node_count + 4;
     total_height = height_line * total_line;
-    if(export_sort_method != "none")
-        sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
+    sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
 
     //add title line into the list
     node.group = "Group";

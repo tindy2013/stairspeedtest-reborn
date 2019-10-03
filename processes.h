@@ -2,26 +2,13 @@
 #define PROCESSES_H_INCLUDED
 
 #include <string>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include "misc.h"
-
-#ifdef _WIN32
-#include <io.h>
-#include <windows.h>
-#include <psapi.h>
-#endif // _WIN32
 
 using namespace std;
 
 int chkProgram(string command);
+bool runProgram(string command, string runpath, bool wait);
 #ifdef _WIN32
-bool runProgram(string command, string runpath, bool wait, HANDLE *hProc);
-void killByHandle(HANDLE hProc);
-#else
-bool runProgram(string command,string runpath,bool wait);
+void killByHandle();
 #endif // _WIN32
 bool killProgram(string program);
 /*

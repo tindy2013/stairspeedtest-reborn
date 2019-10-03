@@ -7,6 +7,12 @@
 #include <fstream>
 #include <iomanip>
 
+#ifdef _WIN32
+#include <conio.h>
+#else
+#include <termio.h>
+#endif // _WIN32
+
 #include "socket.h"
 #include "misc.h"
 #include "speedtestutil.h"
@@ -60,16 +66,40 @@ int avail_status[4] = {0, 0, 0, 0};
 unsigned int node_count = 0;
 int curGroupID = 0;
 
-#ifdef _WIN32
-HANDLE hProc = 0;
-#endif // _WIN32
-
 //declarations
 
 int tcping(nodeInfo *node);
 void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downloadFiles, vector<linkMatchRule> *matchRules, string defaultTestFile);
 
 //original codes
+
+#ifndef _WIN32
+int _getch()
+{
+    struct termios tm, tm_old;
+    int fd = 0, ch;
+
+    if (tcgetattr(fd, &tm) < 0)
+    {
+        return -1;
+    }
+
+    tm_old = tm;
+    cfmakeraw(&tm);
+    if (tcsetattr(fd, TCSANOW, &tm) < 0)
+    {
+        return -1;
+    }
+
+    ch = getchar();
+    if (tcsetattr(fd, TCSANOW, &tm_old) < 0)
+    {
+        return -1;
+    }
+
+    return ch;
+}
+#endif // _WIN32
 
 void clearTrans()
 {
@@ -162,32 +192,32 @@ int runClient(int client, string runpath)
     {
     case SPEEDTEST_MESSAGE_FOUNDVMESS:
         writeLog(LOG_TYPE_INFO, "Starting up v2ray core...");
-        runProgram(v2core_path, "", false, &hProc);
+        runProgram(v2core_path, "", false);
         break;
     case SPEEDTEST_MESSAGE_FOUNDSSR:
         if(ssr_libev)
         {
             writeLog(LOG_TYPE_INFO, "Starting up shadowsocksr-libev...");
-            runProgram(ssr_libev_path, "", false, &hProc);
+            runProgram(ssr_libev_path, "", false);
         }
         else
         {
             writeLog(LOG_TYPE_INFO, "Starting up shadowsocksr-win...");
             fileCopy("config.json", ssr_win_dir + "gui-config.json");
-            runProgram(ssr_win_path, "", false, &hProc);
+            runProgram(ssr_win_path, "", false);
         }
         break;
     case SPEEDTEST_MESSAGE_FOUNDSS:
         if(ss_libev)
         {
             writeLog(LOG_TYPE_INFO, "Starting up shadowsocks-libev...");
-            runProgram(ss_libev_path, ss_libev_dir, false, &hProc);
+            runProgram(ss_libev_path, ss_libev_dir, false);
         }
         else
         {
             writeLog(LOG_TYPE_INFO, "Starting up shadowsocks-win...");
             fileCopy("config.json", ss_win_dir + "gui-config.json");
-            runProgram(ss_win_path, ss_win_dir, false, &hProc);
+            runProgram(ss_win_path, ss_win_dir, false);
         }
         break;
     }
@@ -221,7 +251,8 @@ int killClient(int client)
 {
     //TerminateProcess(hProc, 0);
 #ifdef _WIN32
-    killByHandle(hProc);
+    killByHandle();
+    /*
     string v2core_name = "v2-core.exe";
     string ss_libev_name = "ss-libev.exe";
     string ssr_libev_name = "ssr-libev.exe";
@@ -259,6 +290,7 @@ int killClient(int client)
         }
         break;
     }
+    */
 #else
     string v2core_name = "v2ray";
     string ss_libev_name = "ss-local";
@@ -438,14 +470,6 @@ void chkArg(int argc, char* argv[])
     }
 }
 
-void switchCodepage()
-{
-    //only needed on windows
-#ifdef _WIN32
-    system("chcp 65001>nul");
-#endif // _WIN32
-}
-
 /*
 void exportHTML()
 {
@@ -508,6 +532,27 @@ int singleTest(nodeInfo *node)
     int testport;
     socks5Proxy proxy;
     node->ulTarget = def_upload_target; //for now only use default
+
+    if(node->proxyStr == "LOG") //import from result
+    {
+        if(!rpcmode)
+        {
+            clearTrans();
+            addTrans("?group?", node->group);
+            addTrans("?remarks?", node->remarks);
+            addTrans("?index?", to_string(node->id + 1));
+            addTrans("?total?", to_string(node_count));
+            printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
+        }
+        writeLog(LOG_TYPE_INFO, "Received server. Group: " + node->group + " Name: " + node->remarks);
+        printMsg(SPEEDTEST_MESSAGE_GOTPING, node, rpcmode);
+        printMsg(SPEEDTEST_MESSAGE_GOTGPING, node, rpcmode);
+        printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
+        printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
+        writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + to_string(node->totalRecvBytes));
+        printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
+        return SPEEDTEST_ERROR_NONE;
+    }
 
     if(node->linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
     {
@@ -722,6 +767,8 @@ void rewriteNodeID(vector<nodeInfo> *nodes)
     int index = 0;
     for(auto &x : *nodes)
     {
+        if(x.proxyStr == "LOG")
+            return;
         x.id = index;
         index++;
     }
@@ -772,7 +819,6 @@ void addNodes(string link, bool multilink)
                 writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
             }
         }
-        switchCodepage();
         writeLog(LOG_TYPE_INFO, "Downloading subscription data...");
         printMsgDirect(SPEEDTEST_MESSAGE_FETCHSUB, rpcmode);
         if(strFind(link, "surge:///install-config")) //surge config link
@@ -816,7 +862,6 @@ void addNodes(string link, bool multilink)
                 writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
             }
         }
-        switchCodepage();
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
         if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
@@ -855,7 +900,6 @@ void addNodes(string link, bool multilink)
         if(linkType > 0)
         {
             node_count = 1;
-            switchCodepage();
             printMsg(linkType, &node, rpcmode);
             explode(link, ss_libev, ssr_libev, override_conf_port, socksport, &node);
             if(custom_group.size() != 0)
@@ -903,15 +947,19 @@ int main(int argc, char* argv[])
         return -1;
     }
     //along with some console window info
-    if(rpcmode)
-        switchCodepage();
-    else
+    if(!rpcmode)
         SetConsoleTitle("Stair Speedtest Reborn " VERSION);
+
+    SetConsoleOutputCP(65001);
+#else
+    setsid();
 #endif // _WIN32
     //kill any client before testing
+    /*
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+    */
     clientCheck();
     socksport = checkPort(socksport);
     writeLog(LOG_TYPE_INFO, "Using local port: " + to_string(socksport));
@@ -940,7 +988,6 @@ int main(int argc, char* argv[])
     if(strFind(link, "|"))
     {
         multilink = true;
-        switchCodepage();
         printMsgDirect(SPEEDTEST_MESSAGE_MULTILINK, rpcmode);
         vector<string> linkList = split(link, "|");
         for(auto &x : linkList)
@@ -1060,11 +1107,13 @@ int main(int argc, char* argv[])
     logEOF();
     printMsgDirect(SPEEDTEST_MESSAGE_EOF, rpcmode);
     sleep(1);
-#ifdef _WIN32
     if(!rpcmode)
-        system("pause>nul");
+        _getch();
+#ifdef _WIN32
     //stop socket library before exit
     WSACleanup();
+#else
+    cout<<endl;
 #endif // _WIN32
     return 0;
 }

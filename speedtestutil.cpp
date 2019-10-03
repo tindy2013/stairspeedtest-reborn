@@ -294,6 +294,9 @@ void explodeSSR(string ssr, bool libev, string custom_port, int local_port, node
     ssr = regReplace(ssr, "(.*):(.*?):(.*?):(.*?):(.*?):(.*)", "$1,$2,$3,$4,$5,$6");
     strcfg = split(ssr, ",");
 
+    if(strcfg.size() != 6)
+        return;
+
     server = strcfg[0];
     port = custom_port == "" ? strcfg[1] : custom_port;
     protocol = strcfg[2];
@@ -908,6 +911,65 @@ void explodeSSTap(string sstap, string custom_port, int local_port, vector<nodeI
     }
 }
 
+int explodeLog(string log, vector<nodeInfo> *nodes)
+{
+    INIReader ini;
+    vector<string> nodeList, vArray;
+    string strTemp;
+    int index;
+    nodeInfo node;
+    ini.Parse(log);
+
+    if(!ini.SectionExist("Basic"))
+        return -1;
+
+    nodeList = ini.GetSections();
+    node.proxyStr = "LOG";
+    for(auto &x : nodeList)
+    {
+        if(x == "Basic")
+            continue;
+        ini.EnterSection(x);
+        vArray = split(x, "^");
+        node.group = vArray[0];
+        node.remarks = vArray[1];
+        node.avgPing = ini.Get("AvgPing");
+        node.avgSpeed = ini.Get("AvgSpeed");
+        node.groupID = stoi(ini.Get("GroupID"));
+        node.id = stoi(ini.Get("ID"));
+        node.maxSpeed = ini.Get("MaxSpeed");
+        node.online = ini.GetBool("Online");
+        node.pkLoss = ini.Get("PkLoss");
+        vArray = split(ini.Get("RawPing"), ",");
+        index = 0;
+        for(auto &y : vArray)
+        {
+            node.rawPing[index] = stoi(y);
+            index++;
+        }
+        vArray = split(ini.Get("RawSitePing"), ",");
+        index = 0;
+        for(auto &y : vArray)
+        {
+            node.rawSitePing[index] = stoi(y);
+            index++;
+        }
+        vArray = split(ini.Get("RawSpeed"), ",");
+        index = 0;
+        for(auto &y : vArray)
+        {
+            node.rawSpeed[index] = stoi(y);
+            index++;
+        }
+        node.sitePing = ini.Get("SitePing");
+        node.totalRecvBytes = stoi(ini.Get("UsedTraffic"));
+        node.ulSpeed = ini.Get("ULSpeed");
+        nodes->push_back(node);
+    }
+
+    return 0;
+}
+
 bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *include_remarks)
 {
     bool excluded = false, included = false;
@@ -1030,6 +1092,12 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
 
     //try to parse as surge configuration
     if(explodeSurge(sub, custom_port, local_port, nodes, sslibev))
+    {
+        return;
+    }
+
+    //try to parse as exported log
+    if(explodeLog(sub, nodes) == 0)
     {
         return;
     }
