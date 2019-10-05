@@ -10,7 +10,9 @@
 #ifdef _WIN32
 #include <conio.h>
 #else
+#ifndef _MACOS
 #include <termio.h>
+#endif // _MACOS
 #endif // _WIN32
 
 #include "socket.h"
@@ -74,10 +76,15 @@ void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downlo
 //original codes
 
 #ifndef _WIN32
+
 int _getch()
 {
+    int ch;
+    #ifdef _MACOS
+    ch = cin.get();
+    #else
     struct termios tm, tm_old;
-    int fd = 0, ch;
+    int fd = 0;
 
     if (tcgetattr(fd, &tm) < 0)
     {
@@ -91,14 +98,21 @@ int _getch()
         return -1;
     }
 
-    ch = getchar();
+    ch = cin.get();
     if (tcsetattr(fd, TCSANOW, &tm_old) < 0)
     {
         return -1;
     }
-
+    #endif // _MACOS
     return ch;
 }
+
+
+void SetConsoleTitle(string title)
+{
+    system(string("echo -n \"\\033]0;" + title + "\\007\"").data());
+}
+
 #endif // _WIN32
 
 void clearTrans()
@@ -450,15 +464,18 @@ void readConf(string path)
 
 void signalHandler(int signum)
 {
-   cerr << "Interrupt signal (" << signum << ") received.\n";
+    cerr << "Interrupt signal (" << signum << ") received.\n";
 
-   killClient(SPEEDTEST_MESSAGE_FOUNDSS);
-   killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
-   killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
-   writeLog(LOG_TYPE_INFO, "Received SIGINT. Exit right now.");
-   logEOF();
+    /*
+    killClient(SPEEDTEST_MESSAGE_FOUNDSS);
+    killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+    killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
+    */
+    killByHandle();
+    writeLog(LOG_TYPE_INFO, "Received SIGINT. Exit right now.");
+    logEOF();
 
-   exit(signum);
+    exit(signum);
 }
 
 void chkArg(int argc, char* argv[])
@@ -925,6 +942,22 @@ void addNodes(string link, bool multilink)
 
 int main(int argc, char* argv[])
 {
+    /*
+    //do some trick to allow child processes die on termination
+    #ifndef _WIN32
+    setsid();
+    unshare(CLONE_NEWPID | CLONE_NEWUSER);
+    fileWrite("/proc/self/uid_map", "0 " + to_string(getuid()) + " 1", false);
+    int retVal = fork();
+    if(retVal == -1)
+    {
+        cerr << "error on fork" << endl;
+        return 1;
+    }
+    else if(retVal != 0)
+        return 0;
+    #endif // _WIN32
+    */
     vector<nodeInfo> nodes;
     nodeInfo node;
     string link;
@@ -947,13 +980,10 @@ int main(int argc, char* argv[])
         return -1;
     }
     //along with some console window info
+    SetConsoleOutputCP(65001);
+#endif // _WIN32
     if(!rpcmode)
         SetConsoleTitle("Stair Speedtest Reborn " VERSION);
-
-    SetConsoleOutputCP(65001);
-#else
-    setsid();
-#endif // _WIN32
     //kill any client before testing
     /*
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);

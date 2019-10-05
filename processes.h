@@ -7,9 +7,7 @@ using namespace std;
 
 int chkProgram(string command);
 bool runProgram(string command, string runpath, bool wait);
-#ifdef _WIN32
 void killByHandle();
-#endif // _WIN32
 bool killProgram(string program);
 /*
 class Runner

@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <vector>
+#include <algorithm>
+#include <iostream>
 
 #include "misc.h"
 
@@ -13,10 +16,14 @@
 
 #include "processes.h"
 
+#ifndef _WIN32
+typedef pid_t HANDLE;
+#endif // _WIN32
+
 //Runner runner;
 
-#ifdef _WIN32
 HANDLE hProc = 0;
+#ifdef _WIN32
 HANDLE job = 0;
 JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits = {};
 #else
@@ -86,31 +93,52 @@ bool runProgram(string command, string runpath, bool wait)
         CloseHandle(hProc);
     }
     return retval;
+
 #else
     /*
     string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
     total_path += command;
     pPipe = popen(total_path.data(), "r");
     */
-    char curdir[1024] = {};
-    getcwd(curdir, 1024);
-    chdir(runpath.data());
-    pPipe = popen(command.data(), "r");
-    chdir(curdir);
+    //char curdir[1024] = {};
+    //char* const* argp = accumulate(next(args.begin()), args.end(), args[0], [](string a, string b){return a + b;}).c_str();
+    //char* argp = command.substr(command.find(" ") + 1).data();
+    //command = command.substr(0, command.find(" "));
+    //getcwd(curdir, 1024);
+    //chdir(runpath.data());
+    //pPipe = popen(command.data(), "r");
+    //chdir(curdir);
+
+
+    vector<string> args = split(command, " ");
+    posix_spawn_file_actions_t file_actions;
+    const char* cargs[4] = {"sh", "-c", command.data(), NULL};
+    //command = args[0];
+    //transform(next(args.begin()), args.end(), &cargs[0], mem_fun_ref(&string::c_str));
+    //cargs[args.size() - 1] = nullptr;
+    posix_spawn_file_actions_init(&file_actions);
+    posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
+    posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
+    posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), environ);
     return true;
 #endif // _WIN32
+
 }
 
-#ifdef _WIN32
 void killByHandle()
 {
+    #ifdef _WIN32
     if(hProc != NULL)
     {
         TerminateProcess(hProc, 0);
         CloseHandle(hProc);
+
     }
+    #else
+    if(hProc != 0)
+        kill(hProc, SIGTERM);
+    #endif // _WIN32
 }
-#endif // _WIN32
 
 
 /*
