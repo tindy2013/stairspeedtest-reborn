@@ -10,6 +10,8 @@ void operator >> (const rapidjson::Value& value, std::string& i)
         i = std::to_string(value.GetDouble());
     else if(value.IsString())
         i = std::string(value.GetString());
+    else if(value.IsBool())
+        i = value.GetBool() ? "true" : "false";
     else
         i = std::string();
 }
@@ -22,6 +24,8 @@ void operator >> (const rapidjson::Value& value, int& i)
         i = value.GetInt();
     else if(value.IsString())
         i = std::stoi(value.GetString());
+    else if(value.IsBool())
+        i = value.GetBool() ? 1 : 0;
     else
         i = 0;
 }

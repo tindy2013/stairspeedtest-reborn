@@ -12,25 +12,25 @@
 #include "rapidjson_extra.h"
 #include "ini_reader.h"
 
-using namespace std;
+using namespace std::__cxx11;
 using namespace rapidjson;
 using namespace YAML;
 
-string base_ss_win = "{\"version\":\"4.1.6\",\"configs\":[?config?],\"strategy\":null,\"index\":0,\"global\":false,\"enabled\":false,\"shareOverLan\":true,\"isDefault\":false,\"localPort\":?localport?,\"portableMode\":true,\"pacUrl\":null,\"useOnlinePac\":false,\"secureLocalPac\":true,\"availabilityStatistics\":false,\"autoCheckUpdate\":true,\"checkPreRelease\":false,\"isVerboseLogging\":false,\"logViewer\":{\"topMost\":false,\"wrapText\":false,\"toolbarShown\":false,\"Font\":\"Consolas, 8pt\",\"BackgroundColor\":\"Black\",\"TextColor\":\"White\"},\"proxy\":{\"useProxy\":false,\"proxyType\":0,\"proxyServer\":\"\",\"proxyPort\":0,\"proxyTimeout\":3,\"useAuth\":false,\"authUser\":\"\",\"authPwd\":\"\"},\"hotkey\":{\"SwitchSystemProxy\":\"\",\"SwitchSystemProxyMode\":\"\",\"SwitchAllowLan\":\"\",\"ShowLogs\":\"\",\"ServerMoveUp\":\"\",\"ServerMoveDown\":\"\",\"RegHotkeysAtStartup\":false}}";
-string config_ss_win = "{\"server\":\"?server?\",\"server_port\":?port?,\"password\":\"?password?\",\"method\":\"?method?\",\"plugin\":\"?plugin?\",\"plugin_opts\":\"?plugin_opts?\",\"plugin_args\":\"\",\"remarks\":\"?remarks?\",\"timeout\":5}";
-string config_ss_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"password\":\"?password?\",\"method\":\"?method?\",\"plugin\":\"?plugin?\",\"plugin_opts\":\"?plugin_opts?\",\"plugin_args\":\"\",\"local_address\":\"127.0.0.1\",\"local_port\":?localport?}";
-string base_ssr_win = "{\"configs\":[?config?],\"index\":0,\"random\":true,\"sysProxyMode\":1,\"shareOverLan\":false,\"localPort\":?localport?,\"localAuthPassword\":null,\"localDnsServer\":\"\",\"dnsServer\":\"\",\"reconnectTimes\":2,\"balanceAlgorithm\":\"LowException\",\"randomInGroup\":false,\"TTL\":0,\"connectTimeout\":5,\"proxyRuleMode\":2,\"proxyEnable\":false,\"pacDirectGoProxy\":false,\"proxyType\":0,\"proxyHost\":null,\"proxyPort\":0,\"proxyAuthUser\":null,\"proxyAuthPass\":null,\"proxyUserAgent\":null,\"authUser\":null,\"authPass\":null,\"autoBan\":false,\"checkSwitchAutoCloseAll\":false,\"logEnable\":false,\"sameHostForSameTarget\":false,\"keepVisitTime\":180,\"isHideTips\":false,\"nodeFeedAutoUpdate\":true,\"serverSubscribes\":[],\"token\":{},\"portMap\":{}}";
-string config_ssr_win = "{\"remarks\":\"?remarks?\",\"id\":\"18C4949EBCFE46687AE4A7645725D35F\",\"server\":\"?server?\",\"server_port\":?port?,\"server_udp_port\":0,\"password\":\"?password?\",\"method\":\"?method?\",\"protocol\":\"?protocol?\",\"protocolparam\":\"?protoparam?\",\"obfs\":\"?obfs?\",\"obfsparam\":\"?obfsparam?\",\"remarks_base64\":\"?remarks_base64?\",\"group\":\"?group?\",\"enable\":true,\"udp_over_tcp\":false}";
-string config_ssr_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"protocol\":\"?protocol?\",\"method\":\"?method?\",\"obfs\":\"?obfs?\",\"password\":\"?password?\",\"obfs_param\":\"?obfsparam?\",\"protocol_param\":\"?protoparam?\",\"local_address\":\"127.0.0.1\",\"local_port\":?localport?}";
-string base_vmess = "{\"inbounds\":[{\"port\":?localport?,\"listen\":\"127.0.0.1\",\"protocol\":\"socks\"}],\"outbounds\":[{\"tag\":\"proxy\",\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"?add?\",\"port\":?port?,\"users\":[{\"id\":\"?id?\",\"alterId\":?aid?,\"email\":\"t@t.tt\",\"security\":\"?cipher?\"}]}]},\"streamSettings\":{\"network\":\"?net?\",\"security\":\"?tls?\",\"tlsSettings\":?tlsset?,\"tcpSettings\":?tcpset?,\"wsSettings\":?wsset?},\"mux\":{\"enabled\":true}}],\"routing\":{\"domainStrategy\":\"IPIfNonMatch\"}}";
-string wsset_vmess = "{\"connectionReuse\":true,\"path\":\"?path?\",\"headers\":{\"Host\":\"?host?\"}}";
-string tcpset_vmess = "{\"connectionReuse\":true,\"header\":{\"type\":\"?type?\",\"request\":{\"version\":\"1.1\",\"method\":\"GET\",\"path\":[\"?path?\"],\"headers\":{\"Host\":[\"?host?\"],\"User-Agent\":[\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36\",\"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46\"],\"Accept-Encoding\":[\"gzip, deflate\"],\"Connection\":[\"keep-alive\"],\"Pragma\":\"no-cache\"}}}}";
-string tlsset_vmess = "{\"serverName\":\"?serverName?\",\"allowInsecure\":false,\"allowInsecureCiphers\":false}";
+std::string base_ss_win = "{\"version\":\"4.1.6\",\"configs\":[?config?],\"strategy\":null,\"index\":0,\"global\":false,\"enabled\":false,\"shareOverLan\":true,\"isDefault\":false,\"localPort\":?localport?,\"portableMode\":true,\"pacUrl\":null,\"useOnlinePac\":false,\"secureLocalPac\":true,\"availabilityStatistics\":false,\"autoCheckUpdate\":true,\"checkPreRelease\":false,\"isVerboseLogging\":false,\"logViewer\":{\"topMost\":false,\"wrapText\":false,\"toolbarShown\":false,\"Font\":\"Consolas, 8pt\",\"BackgroundColor\":\"Black\",\"TextColor\":\"White\"},\"proxy\":{\"useProxy\":false,\"proxyType\":0,\"proxyServer\":\"\",\"proxyPort\":0,\"proxyTimeout\":3,\"useAuth\":false,\"authUser\":\"\",\"authPwd\":\"\"},\"hotkey\":{\"SwitchSystemProxy\":\"\",\"SwitchSystemProxyMode\":\"\",\"SwitchAllowLan\":\"\",\"ShowLogs\":\"\",\"ServerMoveUp\":\"\",\"ServerMoveDown\":\"\",\"RegHotkeysAtStartup\":false}}";
+std::string config_ss_win = "{\"server\":\"?server?\",\"server_port\":?port?,\"password\":\"?password?\",\"method\":\"?method?\",\"plugin\":\"?plugin?\",\"plugin_opts\":\"?plugin_opts?\",\"plugin_args\":\"\",\"remarks\":\"?remarks?\",\"timeout\":5}";
+std::string config_ss_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"password\":\"?password?\",\"method\":\"?method?\",\"plugin\":\"?plugin?\",\"plugin_opts\":\"?plugin_opts?\",\"plugin_args\":\"\",\"local_address\":\"127.0.0.1\",\"local_port\":?localport?}";
+std::string base_ssr_win = "{\"configs\":[?config?],\"index\":0,\"random\":true,\"sysProxyMode\":1,\"shareOverLan\":false,\"localPort\":?localport?,\"localAuthPassword\":null,\"localDnsServer\":\"\",\"dnsServer\":\"\",\"reconnectTimes\":2,\"balanceAlgorithm\":\"LowException\",\"randomInGroup\":false,\"TTL\":0,\"connectTimeout\":5,\"proxyRuleMode\":2,\"proxyEnable\":false,\"pacDirectGoProxy\":false,\"proxyType\":0,\"proxyHost\":null,\"proxyPort\":0,\"proxyAuthUser\":null,\"proxyAuthPass\":null,\"proxyUserAgent\":null,\"authUser\":null,\"authPass\":null,\"autoBan\":false,\"checkSwitchAutoCloseAll\":false,\"logEnable\":false,\"sameHostForSameTarget\":false,\"keepVisitTime\":180,\"isHideTips\":false,\"nodeFeedAutoUpdate\":true,\"serverSubscribes\":[],\"token\":{},\"portMap\":{}}";
+std::string config_ssr_win = "{\"remarks\":\"?remarks?\",\"id\":\"18C4949EBCFE46687AE4A7645725D35F\",\"server\":\"?server?\",\"server_port\":?port?,\"server_udp_port\":0,\"password\":\"?password?\",\"method\":\"?method?\",\"protocol\":\"?protocol?\",\"protocolparam\":\"?protoparam?\",\"obfs\":\"?obfs?\",\"obfsparam\":\"?obfsparam?\",\"remarks_base64\":\"?remarks_base64?\",\"group\":\"?group?\",\"enable\":true,\"udp_over_tcp\":false}";
+std::string config_ssr_libev = "{\"server\":\"?server?\",\"server_port\":?port?,\"protocol\":\"?protocol?\",\"method\":\"?method?\",\"obfs\":\"?obfs?\",\"password\":\"?password?\",\"obfs_param\":\"?obfsparam?\",\"protocol_param\":\"?protoparam?\",\"local_address\":\"127.0.0.1\",\"local_port\":?localport?}";
+std::string base_vmess = "{\"inbounds\":[{\"port\":?localport?,\"listen\":\"127.0.0.1\",\"protocol\":\"socks\"}],\"outbounds\":[{\"tag\":\"proxy\",\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"?add?\",\"port\":?port?,\"users\":[{\"id\":\"?id?\",\"alterId\":?aid?,\"email\":\"t@t.tt\",\"security\":\"?cipher?\"}]}]},\"streamSettings\":{\"network\":\"?net?\",\"security\":\"?tls?\",\"tlsSettings\":?tlsset?,\"tcpSettings\":?tcpset?,\"wsSettings\":?wsset?},\"mux\":{\"enabled\":true}}],\"routing\":{\"domainStrategy\":\"IPIfNonMatch\"}}";
+std::string wsset_vmess = "{\"connectionReuse\":true,\"path\":\"?path?\",\"headers\":{\"Host\":\"?host?\"}}";
+std::string tcpset_vmess = "{\"connectionReuse\":true,\"header\":{\"type\":\"?type?\",\"request\":{\"version\":\"1.1\",\"method\":\"GET\",\"path\":[\"?path?\"],\"headers\":{\"Host\":[\"?host?\"],\"User-Agent\":[\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36\",\"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46\"],\"Accept-Encoding\":[\"gzip, deflate\"],\"Connection\":[\"keep-alive\"],\"Pragma\":\"no-cache\"}}}}";
+std::string tlsset_vmess = "{\"serverName\":\"?serverName?\",\"allowInsecure\":false,\"allowInsecureCiphers\":false}";
 
-vector<string> ss_ciphers = {"rc4-md5","aes-128-gcm","aes-192-gcm","aes-256-gcm","aes-128-cfb","aes-192-cfb","aes-256-cfb","aes-128-ctr","aes-192-ctr","aes-256-ctr","camellia-128-cfb","camellia-192-cfb","camellia-256-cfb","bf-cfb","chacha20-ietf-poly1305","xchacha20-ietf-poly1305","salsa20","chacha20","chacha20-ietf"};
+std::vector<std::string> ss_ciphers = {"rc4-md5","aes-128-gcm","aes-192-gcm","aes-256-gcm","aes-128-cfb","aes-192-cfb","aes-256-cfb","aes-128-ctr","aes-192-ctr","aes-256-ctr","camellia-128-cfb","camellia-192-cfb","camellia-256-cfb","bf-cfb","chacha20-ietf-poly1305","xchacha20-ietf-poly1305","salsa20","chacha20","chacha20-ietf"};
 
-map<string, string> parsedMD5;
-string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
+std::map<std::string, std::string> parsedMD5;
+std::string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
 
 //remake from speedtestutil
 
@@ -39,12 +39,12 @@ template <typename T> void operator >> (const YAML::Node& node,  T& i)
     i = node.as<T>();
 };
 
-string vmessConstruct(string add, string port, string type, string id, string aid, string net, string cipher, string path, string host, string tls, int local_port)
+std::string vmessConstruct(std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string tls, int local_port)
 {
-    string base = base_vmess;
-    string wsset = wsset_vmess;
-    string tcpset = tcpset_vmess;
-    string tlsset = tlsset_vmess;
+    std::string base = base_vmess;
+    std::string wsset = wsset_vmess;
+    std::string tcpset = tcpset_vmess;
+    std::string tlsset = tlsset_vmess;
     base = replace_all_distinct(base, "?localport?", to_string(local_port));
     base = replace_all_distinct(base, "?add?", add);
     base = replace_all_distinct(base, "?port?", port);
@@ -81,11 +81,11 @@ string vmessConstruct(string add, string port, string type, string id, string ai
     return base;
 }
 
-string ssrConstruct(string group, string remarks, string remarks_base64, string server, string port, string protocol, string method, string obfs, string password, string obfsparam, string protoparam, int local_port, bool libev)
+std::string ssrConstruct(std::string group, std::string remarks, std::string remarks_base64, std::string server, std::string port, std::string protocol, std::string method, std::string obfs, std::string password, std::string obfsparam, std::string protoparam, int local_port, bool libev)
 {
-    string base = base_ssr_win;
-    string config = config_ssr_win;
-    string config_libev = config_ssr_libev;
+    std::string base = base_ssr_win;
+    std::string config = config_ssr_win;
+    std::string config_libev = config_ssr_libev;
     if(libev == true)
         config = config_libev;
     if(isIPv6(server))
@@ -110,11 +110,11 @@ string ssrConstruct(string group, string remarks, string remarks_base64, string 
     return base;
 }
 
-string ssConstruct(string server, string port, string password, string method, string plugin, string pluginopts, string remarks, int local_port, bool libev)
+std::string ssConstruct(std::string server, std::string port, std::string password, std::string method, std::string plugin, std::string pluginopts, std::string remarks, int local_port, bool libev)
 {
-    string base = base_ss_win;
-    string config = config_ss_win;
-    string config_libev = config_ss_libev;
+    std::string base = base_ss_win;
+    std::string config = config_ss_win;
+    std::string config_libev = config_ss_libev;
     if(plugin == "obfs-local")
         plugin = "simple-obfs";
     if(libev == true)
@@ -137,11 +137,11 @@ string ssConstruct(string server, string port, string password, string method, s
     return base;
 }
 
-void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *node)
+void explodeVmess(std::string vmess, std::string custom_port, int local_port, nodeInfo *node)
 {
-    string version, ps, add, port, type, id, aid, net, path, host, tls;
+    std::string version, ps, add, port, type, id, aid, net, path, host, tls;
     Document jsondata;
-    vector<string> vArray;
+    std::vector<std::string> vArray;
     vmess = vmess.substr(8);
     vmess = base64_decode(vmess);
     if(regMatch(vmess, "(.*?) = (.*)"))
@@ -192,14 +192,14 @@ void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *no
     node->proxyStr = vmessConstruct(add, port, type, id, aid, net, "auto", path, host, tls, local_port);
 }
 
-void explodeVmessConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
+void explodeVmessConf(std::string content, std::string custom_port, int local_port, bool libev, std::vector<nodeInfo> *nodes)
 {
     nodeInfo node;
     Document json;
-    string group, ps, add, port, type, id, aid, net, path, host, tls, cipher, subid;
+    std::string group, ps, add, port, type, id, aid, net, path, host, tls, cipher, subid;
     int configType;
-    map<string, string> subdata;
-    map<string, string>::iterator iter;
+    std::map<std::string, std::string> subdata;
+    std::map<std::string, std::string>::iterator iter;
 
     json.Parse(content.data());
     if(json.HasMember("outbounds")) //single config
@@ -232,7 +232,7 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
     //read all subscribe remark as group name
     for(unsigned int i = 0; i < json["subItem"].Size(); i++)
     {
-        subdata.insert(pair<string, string>(json["subItem"][i]["id"].GetString(), json["subItem"][i]["remarks"].GetString()));
+        subdata.insert(std::pair<std::string, std::string>(json["subItem"][i]["id"].GetString(), json["subItem"][i]["remarks"].GetString()));
     }
 
     for(unsigned int i = 0; i < json["vmess"].Size(); i++)
@@ -301,10 +301,10 @@ void explodeVmessConf(string content, string custom_port, int local_port, bool l
     return;
 }
 
-void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeInfo *node)
+void explodeSS(std::string ss, bool libev, std::string custom_port, int local_port, nodeInfo *node)
 {
-    string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP;
-    vector<string> args, secret;
+    std::string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP;
+    std::vector<std::string> args, secret;
     ss = replace_all_distinct(replace_all_distinct(ss.substr(5), "\r", ""), "/?", "?");
     if(strFind(ss, "#"))
     {
@@ -352,13 +352,13 @@ void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeIn
     node->proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, ps, local_port, libev);
 }
 
-void explodeSSD(string link, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
+void explodeSSD(std::string link, bool libev, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes)
 {
     Document jsondata;
     nodeInfo node;
     unsigned int index = nodes->size();
-    string group, port, method, password, server, remarks;
-    string plugin, pluginopts;
+    std::string group, port, method, password, server, remarks;
+    std::string plugin, pluginopts;
     link = base64_decode(link.substr(6));
     jsondata.Parse(link.c_str());
     for(unsigned int i = 0; i < jsondata["servers"].Size(); i++)
@@ -392,11 +392,11 @@ void explodeSSD(string link, bool libev, string custom_port, int local_port, vec
     return;
 }
 
-void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes)
+void explodeSSAndroid(std::string ss, bool libev, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes)
 {
     Document json;
     nodeInfo node;
-    string ps, password, method, server, port, group = SS_DEFAULT_GROUP;
+    std::string ps, password, method, server, port, group = SS_DEFAULT_GROUP;
     //first add some extra data before parsing
     ss = "{\"nodes\":" + ss + "}";
     json.Parse(ss.data());
@@ -425,11 +425,11 @@ void explodeSSAndroid(string ss, bool libev, string custom_port, int local_port,
     }
 }
 
-void explodeSSConf(string content, string custom_port, int local_port, bool libev, vector<nodeInfo> *nodes)
+void explodeSSConf(std::string content, std::string custom_port, int local_port, bool libev, std::vector<nodeInfo> *nodes)
 {
     nodeInfo node;
     Document json;
-    string config, ps, password, method, server, port, plugin, pluginopts, group = SS_DEFAULT_GROUP;
+    std::string config, ps, password, method, server, port, plugin, pluginopts, group = SS_DEFAULT_GROUP;
 
     json.Parse(content.data());
     if(json.HasMember("local_port") && json.HasMember("local_address")) //single libev config
@@ -479,11 +479,11 @@ void explodeSSConf(string content, string custom_port, int local_port, bool libe
     return;
 }
 
-void explodeSSR(string ssr, bool ss_libev, bool ssr_libev, string custom_port, int local_port, nodeInfo *node)
+void explodeSSR(std::string ssr, bool ss_libev, bool ssr_libev, std::string custom_port, int local_port, nodeInfo *node)
 {
-    string strobfs;
-    vector<string> strcfg;
-    string remarks, group, server, port, method, password, protocol, protoparam, obfs, obfsparam, remarks_base64;
+    std::string strobfs;
+    std::vector<std::string> strcfg;
+    std::string remarks, group, server, port, method, password, protocol, protoparam, obfs, obfsparam, remarks_base64;
     ssr = replace_all_distinct(ssr.substr(6), "\r", "");
     ssr = urlsafe_base64_decode(ssr);
     if(strFind(ssr, "/?"))
@@ -534,11 +534,11 @@ void explodeSSR(string ssr, bool ss_libev, bool ssr_libev, string custom_port, i
     }
 }
 
-void explodeSSRConf(string content, string custom_port, int local_port, bool ss_libev, bool ssr_libev, vector<nodeInfo> *nodes)
+void explodeSSRConf(std::string content, std::string custom_port, int local_port, bool ss_libev, bool ssr_libev, std::vector<nodeInfo> *nodes)
 {
     nodeInfo node;
     Document json;
-    string base, config, remarks, remarks_base64, group, server, port, method, password, protocol, protoparam, obfs, obfsparam;
+    std::string base, config, remarks, remarks_base64, group, server, port, method, password, protocol, protoparam, obfs, obfsparam;
 
     json.Parse(content.data());
     if(json.HasMember("local_port") && json.HasMember("local_address")) //single libev config
@@ -598,12 +598,12 @@ void explodeSSRConf(string content, string custom_port, int local_port, bool ss_
     return;
 }
 
-void explodeSocks(string link, string custom_port, nodeInfo *node)
+void explodeSocks(std::string link, std::string custom_port, nodeInfo *node)
 {
-    string remarks, server, port, username, password;
+    std::string remarks, server, port, username, password;
     if(strFind(link, "socks://")) //v2rayn socks link
     {
-        vector<string> arguments;
+        std::vector<std::string> arguments;
         if(strFind(link, "#"))
         {
             remarks = UrlDecode(link.substr(link.find("#") + 1));
@@ -638,20 +638,21 @@ void explodeSocks(string link, string custom_port, nodeInfo *node)
     node->proxyStr = "user=" + username + "&pass=" + password;
 }
 
-void explodeClash(Node yamlnode, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
+void explodeClash(Node yamlnode, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes, bool ss_libev, bool ssr_libev)
 {
     nodeInfo node;
     unsigned int index = nodes->size();
-    string proxytype, strTemp, ps, server, port, cipher, group; //common
-    string type = "none", id, aid = "0", net = "tcp", path, host, tls; //vmess
-    string password, plugin, pluginopts, pluginopts_mode, pluginopts_host; //ss
-    string user, pass; //socks
+    std::string proxytype, strTemp, ps, server, port, cipher, group, password; //common
+    std::string type = "none", id, aid = "0", net = "tcp", path, host, tls; //vmess
+    std::string plugin, pluginopts, pluginopts_mode, pluginopts_host; //ss
+    std::string protocol, protoparam, obfs, obfsparam; //ssr
+    std::string user; //socks
     for(unsigned int i = 0; i < yamlnode["Proxy"].size(); i++)
     {
         yamlnode["Proxy"][i]["type"] >> proxytype;
         yamlnode["Proxy"][i]["name"] >> ps;
         yamlnode["Proxy"][i]["server"] >> server;
-        port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<string>() : custom_port;
+        port = custom_port == "" ? yamlnode["Proxy"][i]["port"].as<std::string>() : custom_port;
         if(proxytype == "vmess")
         {
             group = V2RAY_DEFAULT_GROUP;
@@ -659,10 +660,10 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             yamlnode["Proxy"][i]["uuid"] >> id;
             yamlnode["Proxy"][i]["alterId"] >> aid;
             yamlnode["Proxy"][i]["cipher"] >> cipher;
-            net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<string>() : "tcp";
-            path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<string>() : "/";
+            net = yamlnode["Proxy"][i]["network"].IsDefined() ? yamlnode["Proxy"][i]["network"].as<std::string>() : "tcp";
+            path = yamlnode["Proxy"][i]["ws-path"].IsDefined() ? yamlnode["Proxy"][i]["ws-path"].as<std::string>() : "/";
             if(yamlnode["Proxy"][i]["tls"].IsDefined())
-                tls = yamlnode["Proxy"][i]["tls"].as<string>() == "true" ? "tls" : "";
+                tls = yamlnode["Proxy"][i]["tls"].as<std::string>() == "true" ? "tls" : "";
             else
                 tls = "";
             if(yamlnode["Proxy"][i]["ws-headers"].IsDefined())
@@ -682,7 +683,7 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             yamlnode["Proxy"][i]["password"] >> password;
             if(yamlnode["Proxy"][i]["plugin"].IsDefined())
             {
-                if(yamlnode["Proxy"][i]["plugin"].as<string>() == "obfs")
+                if(yamlnode["Proxy"][i]["plugin"].as<std::string>() == "obfs")
                 {
                     plugin = "simple-obfs";
                     if(yamlnode["Proxy"][i]["plugin-opts"].IsDefined())
@@ -717,11 +718,11 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             else if(strFind(cipher, "AEAD"))
             {
                 cipher = replace_all_distinct(replace_all_distinct(cipher, "AEAD_", ""), "_", "-");
-                transform(cipher.begin(), cipher.end(), cipher.begin(), ::tolower);
+                std::transform(cipher.begin(), cipher.end(), cipher.begin(), ::tolower);
             }
 
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-            node.proxyStr = ssConstruct(server, port, password, cipher, plugin, pluginopts, ps, local_port, libev);
+            node.proxyStr = ssConstruct(server, port, password, cipher, plugin, pluginopts, ps, local_port, ss_libev);
         }
         else if(proxytype == "socks")
         {
@@ -730,10 +731,25 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
             if(yamlnode["Proxy"][i]["username"].IsDefined() && yamlnode["Proxy"][i]["password"].IsDefined())
             {
                 yamlnode["Proxy"][i]["username"] >> user;
-                yamlnode["Proxy"][i]["password"] >> pass;
+                yamlnode["Proxy"][i]["password"] >> password;
             }
+
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-            node.proxyStr = "user=" + user + "&pass=" + pass;
+            node.proxyStr = "user=" + user + "&pass=" + password;
+        }
+        else if(proxytype == "ssr")
+        {
+            group = SSR_DEFAULT_GROUP;
+
+            yamlnode["Proxy"][i]["cipher"] >> cipher;
+            yamlnode["Proxy"][i]["password"] >> password;
+            yamlnode["Proxy"][i]["protocol"] >> protocol;
+            yamlnode["Proxy"][i]["protocolparam"] >> protoparam;
+            yamlnode["Proxy"][i]["obfs"] >> obfs;
+            yamlnode["Proxy"][i]["obfsparam"] >> obfsparam;
+
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
+            node.proxyStr = ssrConstruct(group, ps, base64_encode(ps), server, port, protocol, cipher, obfs, password, obfsparam, protoparam, local_port, ssr_libev);
         }
         else
             continue;
@@ -749,11 +765,11 @@ void explodeClash(Node yamlnode, string custom_port, int local_port, vector<node
     return;
 }
 
-void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node)
+void explodeQuan(std::string quan, std::string custom_port, int local_port, nodeInfo *node)
 {
-    string strTemp, itemName, itemVal;
-    string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
-    vector<string> configs, vArray;
+    std::string strTemp, itemName, itemVal;
+    std::string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
+    std::vector<std::string> configs, vArray;
     strTemp = regReplace(quan, "(.*?) = (.*)", "$1,$2");
     configs = split(strTemp, ",");
     if(configs[1] == "vmess")
@@ -782,7 +798,7 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
                 path = replace_all_distinct(itemVal, "\"", "");
             else if(itemName == "obfs-header")
             {
-                vector<string> headers = split(replace_all_distinct(replace_all_distinct(itemVal, "\"", ""), "[Rr][Nn]", "|"), "|");
+                std::vector<std::string> headers = split(replace_all_distinct(replace_all_distinct(itemVal, "\"", ""), "[Rr][Nn]", "|"), "|");
                 for(unsigned int j = 0; j < headers.size(); j++)
                 {
                     if(strFind(headers[j], "Host: "))
@@ -804,13 +820,13 @@ void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node
     }
 }
 
-bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeInfo> *nodes, bool libev)
+bool explodeSurge(std::string surge, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes, bool libev)
 {
-    string line, remarks, server, port, method, username, password, plugin, pluginopts, pluginopts_mode, pluginopts_host = "cloudfront.net", mod_url, mod_md5;
-    string id, net, tls, host, path;
-    stringstream data;
-    vector<string> configs, vArray, headers, header;
-    multimap<string, string> proxies;
+    std::string line, remarks, server, port, method, username, password, plugin, pluginopts, pluginopts_mode, pluginopts_host = "cloudfront.net", mod_url, mod_md5;
+    std::string id, net, tls, host, path;
+    std::stringstream data;
+    std::vector<std::string> configs, vArray, headers, header;
+    std::multimap<std::string, std::string> proxies;
     nodeInfo node;
     unsigned int i, index = nodes->size();
     INIReader ini;
@@ -842,7 +858,7 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
                 else
                 {
                     mod_md5 = getMD5(webGet(mod_url)); //retrieve module and calculate MD5
-                    parsedMD5.insert(pair<string, string>(mod_url, mod_md5)); //save unrecognized module MD5 to map
+                    parsedMD5.insert(std::pair<std::string, std::string>(mod_url, mod_md5)); //save unrecognized module MD5 to map
                 }
 
                 if(mod_md5 == modSSMD5) //is SSEncrypt module
@@ -981,14 +997,14 @@ bool explodeSurge(string surge, string custom_port, int local_port, vector<nodeI
     return true;
 }
 
-void explodeSSTap(string sstap, string custom_port, int local_port, vector<nodeInfo> *nodes, bool ss_libev, bool ssr_libev)
+void explodeSSTap(std::string sstap, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes, bool ss_libev, bool ssr_libev)
 {
     Document json;
     nodeInfo node;
-    string configType, group, remarks, server, port;
-    string cipher;
-    string user, pass;
-    string protocol, protoparam, obfs, obfsparam;
+    std::string configType, group, remarks, server, port;
+    std::string cipher;
+    std::string user, pass;
+    std::string protocol, protoparam, obfs, obfsparam;
     json.Parse(sstap.data());
 
     for(unsigned int i = 0; i < json["configs"].Size(); i++)
@@ -1037,11 +1053,11 @@ void explodeSSTap(string sstap, string custom_port, int local_port, vector<nodeI
     }
 }
 
-int explodeLog(string log, vector<nodeInfo> *nodes)
+int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
 {
     INIReader ini;
-    vector<string> nodeList, vArray;
-    string strTemp;
+    std::vector<std::string> nodeList, vArray;
+    std::string strTemp;
     int index;
     nodeInfo node;
     ini.Parse(log);
@@ -1096,10 +1112,82 @@ int explodeLog(string log, vector<nodeInfo> *nodes)
     return 0;
 }
 
-bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *include_remarks)
+void explodeNetch(std::string netch, bool ss_libev, bool ssr_libev, std::string custom_port, int local_port, nodeInfo *node)
+{
+    Document json;
+    std::string type, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, path, tls;
+    netch = base64_decode(netch.substr(8));
+
+    json.Parse(netch.data());
+    json["Type"] >> type;
+    json["Remark"] >> remark;
+    json["Hostname"] >> address;
+    json["Port"] >> port;
+    method = GetMember(json, "EncryptMethod");
+    password = GetMember(json, "Password");
+    if(remark == "")
+        remark = address + ":" + port;
+    if(type == "SS")
+    {
+        plugin = GetMember(json, "Plugin");
+        pluginopts = GetMember(json, "PluginOption");
+        node->group = SS_DEFAULT_GROUP;
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+        node->proxyStr = ssConstruct(address, port, password, method, plugin, pluginopts, remark, local_port, ss_libev);
+    }
+    else if(type == "SSR")
+    {
+        protocol = GetMember(json, "Protocol");
+        obfs = GetMember(json, "OBFS");
+        if(find(ss_ciphers.begin(), ss_ciphers.end(), method) != ss_ciphers.end() && (obfs == "" || obfs == "plain") && (protocol == "" || protocol == "origin"))
+        {
+            plugin = GetMember(json, "Plugin");
+            pluginopts = GetMember(json, "PluginOption");
+            node->group = SS_DEFAULT_GROUP;
+            node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+            node->proxyStr = ssConstruct(address, port, password, method, plugin, pluginopts, remark, local_port, ss_libev);
+        }
+        else
+        {
+            protoparam = GetMember(json, "ProtocolParam");
+            obfsparam = GetMember(json, "OBFSParam");
+            node->group = SSR_DEFAULT_GROUP;
+            node->linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
+            node->proxyStr = ssrConstruct(SSR_DEFAULT_GROUP, remark, base64_encode(remark), address, port, protocol, method, obfs, password, obfsparam, protoparam, local_port, ssr_libev);
+        }
+    }
+    else if(type == "VMess")
+    {
+        id = GetMember(json, "UserID");
+        aid = GetMember(json, "AlterID");
+        transprot = GetMember(json, "TransferProtocol");
+        faketype = GetMember(json, "FakeType");
+        host = GetMember(json, "Host");
+        path = GetMember(json, "Path");
+        tls = GetMember(json, "TLSSecure") == "true" ? "tls" : "";
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+        node->group = V2RAY_DEFAULT_GROUP;
+        node->proxyStr = vmessConstruct(address, port, faketype, id, aid, transprot, method, path, host, tls, local_port);
+    }
+    else if(type == "Socks5")
+    {
+        username = GetMember(json, "Username");
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+        node->group = SOCKS_DEFAULT_GROUP;
+        node->proxyStr = "user=" + username + "&pass=" + password;
+    }
+    else
+        return;
+
+    node->remarks = remark;
+    node->server = address;
+    node->port = stoi(port);
+}
+
+bool chkIgnore(nodeInfo *node, std::vector<std::string> *exclude_remarks, std::vector<std::string> *include_remarks)
 {
     bool excluded = false, included = false;
-    string remarks = UTF8ToGBK(node->remarks);
+    std::string remarks = UTF8ToGBK(node->remarks);
     writeLog(LOG_TYPE_INFO, "Comparing exclude remarks...");
     for(auto &x : *exclude_remarks)
     {
@@ -1123,10 +1211,10 @@ bool chkIgnore(nodeInfo *node, vector<string> *exclude_remarks, vector<string> *
     return excluded || !included;
 }
 
-int explodeConf(string filepath, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
+int explodeConf(std::string filepath, std::string custom_port, int local_port, bool sslibev, bool ssrlibev, std::vector<nodeInfo> *nodes, std::vector<std::string> *exclude_remarks, std::vector<std::string> *include_remarks)
 {
-    ifstream infile;
-    stringstream contentstrm;
+    std::ifstream infile;
+    std::stringstream contentstrm;
     infile.open(filepath);
 
     contentstrm << infile.rdbuf();
@@ -1135,11 +1223,11 @@ int explodeConf(string filepath, string custom_port, int local_port, bool sslibe
     return explodeConfContent(contentstrm.str(), custom_port, local_port, sslibev, ssrlibev, nodes, exclude_remarks, include_remarks);
 }
 
-int explodeConfContent(string content, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
+int explodeConfContent(std::string content, std::string custom_port, int local_port, bool sslibev, bool ssrlibev, std::vector<nodeInfo> *nodes, std::vector<std::string> *exclude_remarks, std::vector<std::string> *include_remarks)
 {
     unsigned int index = 0;
     int filetype = -1;
-    vector<nodeInfo>::iterator iter;
+    std::vector<nodeInfo>::iterator iter;
 
     if(strFind(content, "\"version\""))
         filetype = SPEEDTEST_MESSAGE_FOUNDSS;
@@ -1200,7 +1288,7 @@ int explodeConfContent(string content, string custom_port, int local_port, bool 
     return SPEEDTEST_ERROR_NONE;
 }
 
-void explode(string link, bool sslibev, bool ssrlibev, string custom_port, int local_port, nodeInfo *node)
+void explode(std::string link, bool sslibev, bool ssrlibev, std::string custom_port, int local_port, nodeInfo *node)
 {
     if(strFind(link, "ssr://"))
         explodeSSR(link, sslibev, ssrlibev, custom_port, local_port, node);
@@ -1210,12 +1298,14 @@ void explode(string link, bool sslibev, bool ssrlibev, string custom_port, int l
         explodeSS(link, sslibev, custom_port, local_port, node);
     else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
         explodeSocks(link, custom_port, node);
+    else if(strFind(link, "Netch://"))
+        explodeNetch(link, sslibev, ssrlibev, custom_port, local_port, node);
 }
 
-void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int local_port, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks)
+void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes, std::vector<std::string> *exclude_remarks, std::vector<std::string> *include_remarks)
 {
-    stringstream strstream;
-    string strLink;
+    std::stringstream strstream;
+    std::string strLink;
     nodeInfo node;
 
     //try to parse as surge configuration
@@ -1238,12 +1328,12 @@ void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int
             Node yamlnode = Load(sub);
             if(yamlnode.size() && yamlnode["Proxy"])
             {
-                explodeClash(yamlnode, custom_port, local_port, nodes, sslibev);
+                explodeClash(yamlnode, custom_port, local_port, nodes, sslibev, ssrlibev);
                 return;
             }
         }
     }
-    catch (exception &e)
+    catch (std::exception &e)
     {
         //ignore
     }

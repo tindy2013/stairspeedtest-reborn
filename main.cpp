@@ -28,8 +28,8 @@
 #include "ini_reader.h"
 #include "multithread_test.h"
 
-using namespace std;
-using namespace chrono;
+using namespace std::chrono;
+using namespace std::__cxx11;
 
 #define MAX_FILE_SIZE 100 * 1024 * 1024
 #define BUF_SIZE 8192
@@ -38,23 +38,23 @@ using namespace chrono;
 bool rpcmode = false;
 bool multilink = false;
 int socksport = 65432;
-string socksaddr = "127.0.0.1";
-string custom_group;
-string pngpath;
+std::string socksaddr = "127.0.0.1";
+std::string custom_group;
+std::string pngpath;
 
 bool ss_libev = true;
 bool ssr_libev = true;
-string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe";
-string def_upload_target = "http://losangeles.speed.googlefiber.net:3004/upload?time=0";
-vector<downloadLink> downloadFiles;
-vector<linkMatchRule> matchRules;
-vector<string> exclude_remarks, include_remarks, dict, trans;
-vector<nodeInfo> allNodes;
-vector<color> custom_color_groups;
-vector<int> custom_color_bounds;
-string speedtest_mode = "all";
-string override_conf_port = "";
-string export_color_style = "rainbow";
+std::string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe";
+std::string def_upload_target = "http://losangeles.speed.googlefiber.net:3004/upload?time=0";
+std::vector<downloadLink> downloadFiles;
+std::vector<linkMatchRule> matchRules;
+string_array exclude_remarks, include_remarks, dict, trans;
+std::vector<nodeInfo> allNodes;
+std::vector<color> custom_color_groups;
+std::vector<int> custom_color_bounds;
+std::string speedtest_mode = "all";
+std::string override_conf_port = "";
+std::string export_color_style = "rainbow";
 int def_thread_count = 4;
 bool export_with_maxspeed = false;
 bool export_as_new_style = true;
@@ -62,7 +62,7 @@ bool test_site_ping = true;
 bool test_upload = false;
 bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
-string export_sort_method = "none";
+std::string export_sort_method = "none";
 
 int avail_status[4] = {0, 0, 0, 0};
 unsigned int node_count = 0;
@@ -71,7 +71,7 @@ int curGroupID = 0;
 //declarations
 
 int tcping(nodeInfo *node);
-void getTestFile(nodeInfo *node, socks5Proxy proxy, vector<downloadLink> *downloadFiles, vector<linkMatchRule> *matchRules, string defaultTestFile);
+void getTestFile(nodeInfo *node, socks5Proxy proxy, std::vector<downloadLink> *downloadFiles, std::vector<linkMatchRule> *matchRules, std::string defaultTestFile);
 
 //original codes
 
@@ -108,26 +108,26 @@ int _getch()
 }
 
 
-void SetConsoleTitle(string title)
+void SetConsoleTitle(std::string title)
 {
-    system(string("echo -n \"\\033]0;" + title + "\\007\"").data());
+    system(std::string("echo -ne \"\\033]0;" + title + "\\007\"\r").data());
 }
 
 #endif // _WIN32
 
 void clearTrans()
 {
-    eraseElements(&dict);
-    eraseElements(&trans);
+    eraseElements(dict);
+    eraseElements(trans);
 }
 
-void addTrans(string dictval, string transval)
+void addTrans(std::string dictval, std::string transval)
 {
     dict.push_back(dictval);
     trans.push_back(transval);
 }
 
-void copyNodes(vector<nodeInfo> *source, vector<nodeInfo> *dest)
+void copyNodes(std::vector<nodeInfo> *source, std::vector<nodeInfo> *dest)
 {
     for(auto &x : *source)
     {
@@ -135,7 +135,7 @@ void copyNodes(vector<nodeInfo> *source, vector<nodeInfo> *dest)
     }
 }
 
-void copyNodesWithGroupID(vector<nodeInfo> *source, vector<nodeInfo> *dest, int groupID)
+void copyNodesWithGroupID(std::vector<nodeInfo> *source, std::vector<nodeInfo> *dest, int groupID)
 {
     for(auto &x : *source)
     {
@@ -147,13 +147,13 @@ void copyNodesWithGroupID(vector<nodeInfo> *source, vector<nodeInfo> *dest, int 
 void clientCheck()
 {
     #ifdef _WIN32
-    string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
-    string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
-    string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
+    std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
+    std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
+    std::string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
     #else
-    string v2core_path = "tools/clients/v2ray";
-    string ssr_libev_path = "tools/clients/ssr-local";
-    string ss_libev_path = "tools/clients/ss-local";
+    std::string v2core_path = "tools/clients/v2ray";
+    std::string ssr_libev_path = "tools/clients/ssr-local";
+    std::string ss_libev_path = "tools/clients/ss-local";
     #endif // _WIN32
 
     if(fileExist(v2core_path))
@@ -188,19 +188,19 @@ void clientCheck()
     }
 }
 
-int runClient(int client, string runpath)
+int runClient(int client, std::string runpath)
 {
 #ifdef _WIN32
-    string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -config config.json";
-    string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -c config.json";
+    std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -config config.json";
+    std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -c config.json";
 
-    string ss_libev_dir = "tools\\clients\\shadowsocks-libev\\";
-    string ss_libev_path = ss_libev_dir + "ss-libev.exe -c ..\\..\\..\\config.json";
+    std::string ss_libev_dir = "tools\\clients\\shadowsocks-libev\\";
+    std::string ss_libev_path = ss_libev_dir + "ss-libev.exe -c ..\\..\\..\\config.json";
 
-    string ssr_win_dir = "tools\\clients\\shadowsocksr-win\\";
-    string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
-    string ss_win_dir = "tools\\clients\\shadowsocks-win\\";
-    string ss_win_path = ss_win_dir + "shadowsocks-win.exe";
+    std::string ssr_win_dir = "tools\\clients\\shadowsocksr-win\\";
+    std::string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
+    std::string ss_win_dir = "tools\\clients\\shadowsocks-win\\";
+    std::string ss_win_path = ss_win_dir + "shadowsocks-win.exe";
 
     switch(client)
     {
@@ -236,11 +236,11 @@ int runClient(int client, string runpath)
         break;
     }
 #else
-    string v2core_path = "tools/clients/v2ray -config config.json";
-    string ssr_libev_path = "tools/clients/ssr-local -c config.json";
+    std::string v2core_path = "tools/clients/v2ray -config config.json";
+    std::string ssr_libev_path = "tools/clients/ssr-local -c config.json";
 
-    string ss_libev_dir = "tools/clients/";
-    string ss_libev_path = "ss-local -c ../../config.json";
+    std::string ss_libev_dir = "tools/clients/";
+    std::string ss_libev_path = "ss-local -c ../../config.json";
 
     switch(client)
     {
@@ -267,11 +267,11 @@ int killClient(int client)
 #ifdef _WIN32
     killByHandle();
     /*
-    string v2core_name = "v2-core.exe";
-    string ss_libev_name = "ss-libev.exe";
-    string ssr_libev_name = "ssr-libev.exe";
-    string ss_win_name = "shadowsocks-win.exe";
-    string ssr_win_name = "shadowsocksr-win.exe";
+    std::string v2core_name = "v2-core.exe";
+    std::string ss_libev_name = "ss-libev.exe";
+    std::string ssr_libev_name = "ssr-libev.exe";
+    std::string ss_win_name = "shadowsocks-win.exe";
+    std::string ssr_win_name = "shadowsocksr-win.exe";
 
     switch(client)
     {
@@ -306,9 +306,9 @@ int killClient(int client)
     }
     */
 #else
-    string v2core_name = "v2ray";
-    string ss_libev_name = "ss-local";
-    string ssr_libev_name = "ssr-local";
+    std::string v2core_name = "v2ray";
+    std::string ss_libev_name = "ss-local";
+    std::string ssr_libev_name = "ssr-local";
 
     switch(client)
     {
@@ -329,24 +329,24 @@ int killClient(int client)
     return 0;
 }
 
-void readConf(string path)
+void readConf(std::string path)
 {
     downloadLink link;
     linkMatchRule rule;
     color tmpColor;
     unsigned int i;
-    vector<string> vChild, vArray;
+    string_array vChild, vArray;
     INIReader ini;
-    string strTemp;
+    std::string strTemp;
 
     ini.do_utf8_to_gbk = true;
     ini.ParseFile("pref.ini");
 
     ini.EnterSection("common");
     if(ini.ItemPrefixExist("exclude_remark"))
-        ini.GetAll("exclude_remark", &exclude_remarks);
+        ini.GetAll("exclude_remark", exclude_remarks);
     if(ini.ItemPrefixExist("include_remark"))
-        ini.GetAll("include_remark", &include_remarks);
+        ini.GetAll("include_remark", include_remarks);
 
     ini.EnterSection("advanced");
     if(ini.ItemExist("speedtest_mode"))
@@ -422,8 +422,8 @@ void readConf(string path)
     ini.EnterSection("rules");
     if(ini.ItemPrefixExist("test_file_urls"))
     {
-        eraseElements(&vArray);
-        ini.GetAll("test_file_urls", &vArray);
+        eraseElements(vArray);
+        ini.GetAll("test_file_urls", vArray);
         for(auto &x : vArray)
         {
             vChild = split(x, "|");
@@ -437,14 +437,14 @@ void readConf(string path)
     }
     if(ini.ItemPrefixExist("rules"))
     {
-        eraseElements(&vArray);
-        ini.GetAll("rules", &vArray);
+        eraseElements(vArray);
+        ini.GetAll("rules", vArray);
         for(auto &x : vArray)
         {
             vChild = split(x, "|");
             if(vChild.size() >= 3)
             {
-                eraseElements(&rule.rules);
+                eraseElements(rule.rules);
                 rule.mode = vChild[0];
                 for(i = 1; i < vChild.size() - 1; i++)
                 {
@@ -464,7 +464,7 @@ void readConf(string path)
 
 void signalHandler(int signum)
 {
-    cerr << "Interrupt signal (" << signum << ") received.\n";
+    std::cerr << "Interrupt signal (" << signum << ") received.\n";
 
     /*
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
@@ -490,20 +490,20 @@ void chkArg(int argc, char* argv[])
 /*
 void exportHTML()
 {
-    string htmpath = replace_all_distinct(resultPath, ".log", ".htm");
-    //string pngname = replace_all_distinct(replace_all_distinct(resultpath, ".log", ".png"), "results\\", "");
-    //string resultname = replace_all_distinct(resultpath, "results\\", "");
-    //string htmname = replace_all_distinct(htmpath, "results\\", "");
-    //string rendercmd = "..\\tools\\misc\\phantomjs.exe ..\\tools\\misc\\render_alt.js " + htmname + " " + pngname + " " + export_sort_method;
+    std::string htmpath = replace_all_distinct(resultPath, ".log", ".htm");
+    //std::string pngname = replace_all_distinct(replace_all_distinct(resultpath, ".log", ".png"), "results\\", "");
+    //std::string resultname = replace_all_distinct(resultpath, "results\\", "");
+    //std::string htmname = replace_all_distinct(htmpath, "results\\", "");
+    //std::string rendercmd = "..\\tools\\misc\\phantomjs.exe ..\\tools\\misc\\render_alt.js " + htmname + " " + pngname + " " + export_sort_method;
     exportResult(htmpath, "tools\\misc\\util.js", "tools\\misc\\style.css", export_with_maxspeed);
     //runprogram(rendercmd, "results", true);
 }
 */
 
-void saveResult(vector<nodeInfo> *nodes)
+void saveResult(std::vector<nodeInfo> *nodes)
 {
     INIReader ini;
-    string data;
+    std::string data;
 
     ini.SetCurrentSection("Basic");
     ini.Set("Tester", "Stair Speedtest Reborn " VERSION);
@@ -545,11 +545,12 @@ void saveResult(vector<nodeInfo> *nodes)
 int singleTest(nodeInfo *node)
 {
     int retVal = 0;
-    string logdata = "", testserver, username, password;
+    std::string logdata = "", testserver, username, password;
     int testport;
     socks5Proxy proxy;
     node->ulTarget = def_upload_target; //for now only use default
 
+    auto start = steady_clock::now();
     if(node->proxyStr == "LOG") //import from result
     {
         if(!rpcmode)
@@ -612,6 +613,9 @@ int singleTest(nodeInfo *node)
         {
             writeLog(LOG_TYPE_ERROR, "Node address resolve error.");
             printMsg(SPEEDTEST_ERROR_NORESOLVE, node, rpcmode);
+            auto end = steady_clock::now();
+            auto duration = duration_cast<seconds>(end - start);
+            node->duration = duration.count();
             return SPEEDTEST_ERROR_NORESOLVE;
         }
         if(node->pkLoss == "100.00%")
@@ -619,6 +623,9 @@ int singleTest(nodeInfo *node)
             writeLog(LOG_TYPE_ERROR, "Cannot connect to this node.");
             printMsg(SPEEDTEST_ERROR_NOCONNECTION, node, rpcmode);
             killClient(node->linkType);
+            auto end = steady_clock::now();
+            auto duration = duration_cast<seconds>(end - start);
+            node->duration = duration.count();
             return SPEEDTEST_ERROR_NOCONNECTION;
         }
         for(auto &x : node->rawPing)
@@ -694,6 +701,9 @@ int singleTest(nodeInfo *node)
                 printMsg(SPEEDTEST_ERROR_NOSPEED, node, rpcmode);
                 printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
                 killClient(node->linkType);
+                auto end = steady_clock::now();
+                auto duration = duration_cast<seconds>(end - start);
+                node->duration = duration.count();
                 return SPEEDTEST_ERROR_NOSPEED;
             }
         }
@@ -710,15 +720,17 @@ int singleTest(nodeInfo *node)
     printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
     node->online = true;
     killClient(node->linkType);
+    auto end = steady_clock::now();
+    auto duration = duration_cast<seconds>(end - start);
+    node->duration = duration.count();
     return SPEEDTEST_ERROR_NONE;
 }
 
-void batchTest(vector<nodeInfo> *nodes)
+void batchTest(std::vector<nodeInfo> *nodes)
 {
     nodeInfo node;
     unsigned int onlines = 0;
     long long tottraffic = 0;
-    auto start_time = steady_clock::now();
 
     node_count = nodes->size();
     writeLog(LOG_TYPE_INFO, "Total node(s) found: " + to_string(node_count));
@@ -755,14 +767,11 @@ void batchTest(vector<nodeInfo> *nodes)
         writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + to_string(node_count) + "/" + to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
         //exportHTML();
         saveResult(nodes);
-        if(!multilink || (multilink && !multilink_export_as_one_image))
+        if(!multilink || (multilink && multilink_export_as_one_image))
         {
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
-            auto end_time = steady_clock::now();
-            auto duration = duration_cast<seconds>(end_time - start_time);
-            int deltatime = duration.count();
-            pngpath = exportRender(resultPath, *nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
+            pngpath = exportRender(resultPath, *nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
             {
                 clearTrans();
@@ -779,7 +788,7 @@ void batchTest(vector<nodeInfo> *nodes)
     }
 }
 
-void rewriteNodeID(vector<nodeInfo> *nodes)
+void rewriteNodeID(std::vector<nodeInfo> *nodes)
 {
     int index = 0;
     for(auto &x : *nodes)
@@ -791,7 +800,7 @@ void rewriteNodeID(vector<nodeInfo> *nodes)
     }
 }
 
-void rewriteNodeGroupID(vector<nodeInfo> *nodes, int groupID)
+void rewriteNodeGroupID(std::vector<nodeInfo> *nodes, int groupID)
 {
     for(auto &x : *nodes)
     {
@@ -799,12 +808,12 @@ void rewriteNodeGroupID(vector<nodeInfo> *nodes, int groupID)
     }
 }
 
-void addNodes(string link, bool multilink)
+void addNodes(std::string link, bool multilink)
 {
     int linkType = -1;
-    vector<nodeInfo> nodes;
+    std::vector<nodeInfo> nodes;
     nodeInfo node;
-    string strSub, strInput, fileContent, strProxy;
+    std::string strSub, strInput, fileContent, strProxy;
 
     writeLog(LOG_TYPE_INFO, "Received Link.");
     if(strFind(link, "vmess://"))
@@ -817,6 +826,8 @@ void addNodes(string link, bool multilink)
         linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
     else if(strFind(link, "http://") || strFind(link, "https://") || strFind(link, "surge:///install-config"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSUB;
+    else if(strFind(link, "Netch://"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDNETCH;
     else if(link == "data:upload")
         linkType = SPEEDTEST_MESSAGE_FOUNDUPD;
     else if(fileExist(link))
@@ -829,7 +840,7 @@ void addNodes(string link, bool multilink)
         if(!rpcmode && !multilink)
         {
             printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
-            getline(cin, strInput);
+            getline(std::cin, strInput);
             if(strInput.size())
             {
                 custom_group = GBKToUTF8(strInput);
@@ -872,7 +883,7 @@ void addNodes(string link, bool multilink)
         if(!rpcmode && !multilink)
         {
             printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
-            getline(cin, strInput);
+            getline(std::cin, strInput);
             if(strInput.size())
             {
                 custom_group = GBKToUTF8(strInput);
@@ -894,12 +905,10 @@ void addNodes(string link, bool multilink)
         break;
     case SPEEDTEST_MESSAGE_FOUNDUPD:
         printMsgDirect(SPEEDTEST_MESSAGE_FOUNDUPD, rpcmode);
-        cin.clear();
+        std::cin.clear();
         //now we should ready to receive a large amount of data from stdin
-        getline(cin, fileContent);
-        //writeLog(LOG_TYPE_RAW, fileContent);
+        getline(std::cin, fileContent);
         fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
-        writeLog(LOG_TYPE_RAW, fileContent);
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
         if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
@@ -958,12 +967,12 @@ int main(int argc, char* argv[])
         return 0;
     #endif // _WIN32
     */
-    vector<nodeInfo> nodes;
+    std::vector<nodeInfo> nodes;
     nodeInfo node;
-    string link;
-    string curPNGPath, curPNGPathPrefix;
-    cout << fixed;
-    cout << setprecision(2);
+    std::string link;
+    std::string curPNGPath, curPNGPathPrefix;
+    std::cout << std::fixed;
+    std::cout << std::setprecision(2);
     signal(SIGINT, signalHandler);
 
     chkArg(argc, argv);
@@ -996,11 +1005,11 @@ int main(int argc, char* argv[])
     writeLog(LOG_TYPE_INFO, "Init completed.");
     //intro message
     printMsgDirect(SPEEDTEST_MESSAGE_WELCOME, rpcmode);
-    getline(cin, link);
+    getline(std::cin, link);
     writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));
     if(rpcmode)
     {
-        vector<string> webargs = split(link, "^");
+        string_array webargs = split(link, "^");
         if(webargs.size() == 6)
         {
             link = webargs[0];
@@ -1019,7 +1028,7 @@ int main(int argc, char* argv[])
     {
         multilink = true;
         printMsgDirect(SPEEDTEST_MESSAGE_MULTILINK, rpcmode);
-        vector<string> linkList = split(link, "|");
+        string_array linkList = split(link, "|");
         for(auto &x : linkList)
         {
             addNodes(x, multilink);
@@ -1031,8 +1040,6 @@ int main(int argc, char* argv[])
         addNodes(link, multilink);
     }
     rewriteNodeID(&allNodes); //reset all index
-    //set a timer for new style export image
-    auto start_time = steady_clock::now();
     if(allNodes.size() > 1) //group or multi-link
     {
         batchTest(&allNodes);
@@ -1043,10 +1050,7 @@ int main(int argc, char* argv[])
                 printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
                 writeLog(LOG_TYPE_INFO, "Now exporting result...");
                 curPNGPath = replace_all_distinct(resultPath, ".log", "") + "-multilink-all.png";
-                auto end_time = chrono::steady_clock::now();
-                auto duration = duration_cast<seconds>(end_time - start_time);
-                int deltatime = duration.count();
-                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
+                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
                 {
                     clearTrans();
                     addTrans("?picpath?", pngpath);
@@ -1062,14 +1066,11 @@ int main(int argc, char* argv[])
             }
             else
             {
-                auto end_time = chrono::steady_clock::now();
-                auto duration = duration_cast<seconds>(end_time - start_time);
-                int deltatime = duration.count();
                 printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
                 curPNGPathPrefix = replace_all_distinct(resultPath, ".log", "");
                 for(int i = 0; i < curGroupID; i++)
                 {
-                    vector<nodeInfo>().swap(nodes);
+                    eraseElements(nodes);
                     copyNodesWithGroupID(&allNodes, &nodes, i);
                     if(!nodes.size())
                         break;
@@ -1082,7 +1083,7 @@ int main(int argc, char* argv[])
                         }
                         writeLog(LOG_TYPE_INFO, "Now exporting result for group " + to_string(i + 1) + "...");
                         curPNGPath = curPNGPathPrefix + "-multilink-group" + to_string(i + 1) + ".png";
-                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
+                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
                         {
                             clearTrans();
                             addTrans("?id?", to_string(i + 1));
@@ -1110,10 +1111,7 @@ int main(int argc, char* argv[])
             printMsgDirect(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
             curPNGPath = "results" PATH_SLASH + getTime(1) + ".png";
-            auto end_time = chrono::steady_clock::now();
-            auto duration = duration_cast<seconds>(end_time - start_time);
-            int deltatime = duration.count();
-            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, deltatime);
+            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
             {
                 clearTrans();
                 addTrans("?picpath?", pngpath);

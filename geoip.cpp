@@ -8,10 +8,10 @@
 
 using namespace rapidjson;
 
-geoIPInfo getGeoIPInfo(string ip, string proxy)
+geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
 {
     writeLog(LOG_TYPE_GEOIP, "GeoIP parse begin.");
-    string strRet, address = ip;
+    std::string strRet, address = ip;
     geoIPInfo info;
     Document json;
 
@@ -82,7 +82,7 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
     return info;
 }
 
-geoIPInfo getGeoIPInfo(string ip, socks5Proxy proxy)
+geoIPInfo getGeoIPInfo(std::string ip, socks5Proxy proxy)
 {
     return getGeoIPInfo(ip, buildSocks5ProxyString(proxy));
 }

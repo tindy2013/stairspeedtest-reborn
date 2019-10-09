@@ -11,8 +11,7 @@
 #include "socket.h"
 #include "misc.h"
 
-using namespace std;
-using namespace chrono;
+using namespace std::chrono;
 
 int def_timeout = 2000;
 
@@ -81,7 +80,7 @@ int Recv(SOCKET sHost, char* data, int len, int flags)
 #endif // _WIN32
 }
 
-int getNetworkType(string addr)
+int getNetworkType(std::string addr)
 {
     if(isIPv4(addr))
         return AF_INET;
@@ -91,7 +90,7 @@ int getNetworkType(string addr)
         return AF_UNSPEC;
 }
 
-int socks5_do_auth_userpass(SOCKET sHost, string user, string pass)
+int socks5_do_auth_userpass(SOCKET sHost, std::string user, std::string pass)
 {
     char buf[1024], *ptr;
     //char* pass = NULL;
@@ -190,7 +189,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     return ret;
 }
 
-int startConnect(SOCKET sHost, string addr, int port)
+int startConnect(SOCKET sHost, std::string addr, int port)
 {
     int retVal = -1;
     struct sockaddr_in servAddr = {};
@@ -212,13 +211,13 @@ int startConnect(SOCKET sHost, string addr, int port)
     return retVal;
 }
 
-int send_simple(SOCKET sHost, string data)
+int send_simple(SOCKET sHost, std::string data)
 {
     unsigned int retVal = Send(sHost, data.data(), data.size(), 0);
     return retVal;
 }
 
-int simpleSend(string addr, int port, string data)
+int simpleSend(std::string addr, int port, std::string data)
 {
     SOCKET sHost = socket(getNetworkType(addr), SOCK_STREAM, IPPROTO_IP);
     setTimeout(sHost, 1000);
@@ -243,20 +242,20 @@ int simpleSend(string addr, int port, string data)
     }
 }
 
-string hostnameToIPAddr(string host)
+std::string hostnameToIPAddr(std::string host)
 {
     //old function
 /*
     struct in_addr inaddr;
     hostent *h = gethostbyname(host.data());
     if(h == NULL)
-        return string();
+        return std::string();
     inaddr.s_addr = *(u_long*)h->h_addr_list[0];
     return inet_ntoa(inaddr);
 */
     //new function
     int retVal;
-    string retAddr;
+    std::string retAddr;
     char cAddr[128];
     struct sockaddr_in *target;
     struct sockaddr_in6 *target6;
@@ -265,7 +264,7 @@ string hostnameToIPAddr(string host)
     if(retVal != 0)
     {
         freeaddrinfo(retAddrInfo);
-        return string();
+        return std::string();
     }
 
 
@@ -289,10 +288,10 @@ string hostnameToIPAddr(string host)
         }
     }
     freeaddrinfo(retAddrInfo);
-    return string();
+    return std::string();
 }
 
-int connectSocks5(SOCKET sHost, string username, string password)
+int connectSocks5(SOCKET sHost, std::string username, std::string password)
 {
     char buf[BUF_SIZE], bufRecv[BUF_SIZE];
     //ZeroMemory(buf, BUF_SIZE);
@@ -308,7 +307,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
     if ((bufRecv[0] != 5) ||                       // ver5 response
             ((unsigned char)buf[1] == 0xFF))  	// check auth method
     {
-        cerr<<"socks5: connect not accepted"<<endl;
+        std::cerr << "socks5: connect not accepted" << std::endl;
         return -1;
     }
     int auth_method = bufRecv[1];
@@ -316,7 +315,7 @@ int connectSocks5(SOCKET sHost, string username, string password)
     switch (auth_method)
     {
     case SOCKS5_AUTH_REJECT:
-        cerr<<"socks5: no acceptable authentication method\n"<<endl;
+        std::cerr << "socks5: no acceptable authentication method\n" << std::endl;
         return -1;                              // fail
 
     case SOCKS5_AUTH_NOAUTH:
@@ -334,13 +333,13 @@ int connectSocks5(SOCKET sHost, string username, string password)
     }
     if ( auth_result != 0 )
     {
-        cerr<<"socks5: authentication failed."<<endl;
+        std::cerr << "socks5: authentication failed." << std::endl;
         return -1;
     }
     return 0;
 }
 
-int connectThruSocks(SOCKET sHost, string host, int port)
+int connectThruSocks(SOCKET sHost, std::string host, int port)
 {
     char buf[BUF_SIZE];//bufRecv[BUF_SIZE];
     ZeroMemory(buf, BUF_SIZE);
@@ -389,7 +388,7 @@ int connectThruSocks(SOCKET sHost, string host, int port)
     Recv(sHost, buf, 4, 0);
     if(buf[1] != SOCKS5_REP_SUCCEEDED)     // check reply code
     {
-        cerr<<"socks5: got error response from SOCKS server"<<endl;
+        std::cerr << "socks5: got error response from SOCKS server" << std::endl;
         return -1;
     }
     ptr = buf + 4;

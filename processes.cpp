@@ -30,7 +30,7 @@ JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits = {};
 FILE *pPipe;
 #endif // _WIN32
 
-int chkProgram(string command)
+int chkProgram(std::string command)
 {
     /*
     char psBuffer[128];
@@ -55,14 +55,14 @@ int chkProgram(string command)
 }
 
 
-bool runProgram(string command, string runpath, bool wait)
+bool runProgram(std::string command, std::string runpath, bool wait)
 {
 #ifdef _WIN32
     BOOL retval = false;
     STARTUPINFO si = {};
     PROCESS_INFORMATION pi = {};
     char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
-    string path;
+    std::string path;
     job = CreateJobObject(NULL, NULL);
     job_limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
@@ -73,14 +73,14 @@ bool runProgram(string command, string runpath, bool wait)
     else //is a relative path
     {
         GetCurrentDirectory(512, curdir);
-        path = string(curdir) + "\\";
+        path = std::string(curdir) + "\\";
         if(runpath != "")
             path += runpath + "\\";
     }
     cmdstr = const_cast<char*>(command.data());
     pathstr = const_cast<char*>(path.data());
-    string prgname = path + command.substr(0, command.find(" "));
-    string prgargs = command.substr(command.find(" ") + 1);
+    std::string prgname = path + command.substr(0, command.find(" "));
+    std::string prgargs = command.substr(command.find(" ") + 1);
     retval = CreateProcess(NULL, cmdstr, NULL, NULL, false, CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB, NULL, pathstr, &si, &pi);
 
     AssignProcessToJobObject(job, pi.hProcess);
@@ -96,12 +96,12 @@ bool runProgram(string command, string runpath, bool wait)
 
 #else
     /*
-    string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
+    std::string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
     total_path += command;
     pPipe = popen(total_path.data(), "r");
     */
     //char curdir[1024] = {};
-    //char* const* argp = accumulate(next(args.begin()), args.end(), args[0], [](string a, string b){return a + b;}).c_str();
+    //char* const* argp = accumulate(next(args.begin()), args.end(), args[0], [](std::string a, std::string b){return a + b;}).c_str();
     //char* argp = command.substr(command.find(" ") + 1).data();
     //command = command.substr(0, command.find(" "));
     //getcwd(curdir, 1024);
@@ -110,11 +110,11 @@ bool runProgram(string command, string runpath, bool wait)
     //chdir(curdir);
 
 
-    vector<string> args = split(command, " ");
+    vector<std::string> args = split(command, " ");
     posix_spawn_file_actions_t file_actions;
     const char* cargs[4] = {"sh", "-c", command.data(), NULL};
     //command = args[0];
-    //transform(next(args.begin()), args.end(), &cargs[0], mem_fun_ref(&string::c_str));
+    //transform(next(args.begin()), args.end(), &cargs[0], mem_fun_ref(&std::string::c_str));
     //cargs[args.size() - 1] = nullptr;
     posix_spawn_file_actions_init(&file_actions);
     posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
@@ -142,7 +142,7 @@ void killByHandle()
 
 
 /*
-void runprogram(string command, string runpath, bool wait)
+void runprogram(std::string command, std::string runpath, bool wait)
 {
 #ifdef _WIN32
     STARTUPINFO si;
@@ -154,7 +154,7 @@ void runprogram(string command, string runpath, bool wait)
     si.wShowWindow=true;
     cmdstr=const_cast<char*>(command.data());
     GetCurrentDirectory(512,curdir);
-    runpath=string(curdir) + "\\"+runpath+"\\";
+    runpath=std::string(curdir) + "\\"+runpath+"\\";
     pathstr=const_cast<char*>(runpath.data());
     SHELLEXECUTEINFO ShExecInfo = { 0 };
     ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -179,7 +179,7 @@ void runprogram(string command, string runpath, bool wait)
 }
 */
 
-bool killProgram(string program)
+bool killProgram(std::string program)
 {
 #ifdef _WIN32
     /*

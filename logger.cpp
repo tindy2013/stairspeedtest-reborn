@@ -15,10 +15,8 @@
 #include <sys/stat.h>
 #endif // _WIN32
 
-using namespace std;
-
-string curtime, result_content;
-string resultPath, logPath;
+std::string curtime, result_content;
+std::string resultPath, logPath;
 
 int makeDir(const char *path)
 {
@@ -29,11 +27,11 @@ int makeDir(const char *path)
 #endif // _WIN32
 }
 
-string getTime(int type)
+std::string getTime(int type)
 {
     time_t lt;
     char tmpbuf[32], cMillis[7];
-    string format;
+    std::string format;
     timeval tv;
     gettimeofday(&tv, NULL);
     snprintf(cMillis, 7, "%.6ld", (long)tv.tv_usec);
@@ -45,21 +43,21 @@ string getTime(int type)
         format = "%Y%m%d-%H%M%S";
         break;
     case 2:
-        format = "%Y/%m/%d %a %H:%M:%S." + string(cMillis);
+        format = "%Y/%m/%d %a %H:%M:%S." + std::string(cMillis);
         break;
     case 3:
         format = "%Y-%m-%d %H:%M:%S";
         break;
     }
     strftime(tmpbuf, 32, format.data(), local);
-    return string(tmpbuf);
+    return std::string(tmpbuf);
 }
 
 void logInit(bool rpcmode)
 {
     curtime = getTime(1);
     logPath = "logs" PATH_SLASH + curtime + ".log";
-    string log_header = "Stair Speedtest " VERSION " started in ";
+    std::string log_header = "Stair Speedtest " VERSION " started in ";
     if(rpcmode)
         log_header += "GUI mode.";
     else
@@ -73,9 +71,9 @@ void resultInit()
     resultPath = "results" PATH_SLASH + curtime + ".log";
 }
 
-void writeLog(int type, string content)
+void writeLog(int type, std::string content)
 {
-    string timestr = "[" + getTime(2) + "]", typestr = "[UNKNOWN]";
+    std::string timestr = "[" + getTime(2) + "]", typestr = "[UNKNOWN]";
     switch(type)
     {
     case LOG_TYPE_ERROR:
@@ -137,7 +135,7 @@ void resultInit(bool export_with_maxspeed)
 
 void writeResult(nodeInfo *node, bool export_with_maxspeed)
 {
-    string content = node->group + "," + node->remarks + "," + node->pkLoss + "," + node->avgPing + "," + node->avgSpeed;
+    std::string content = node->group + "," + node->remarks + "," + node->pkLoss + "," + node->avgPing + "," + node->avgSpeed;
     if(export_with_maxspeed)
         content += "," + node->maxSpeed;
     result_content += content + "\n";
@@ -145,7 +143,7 @@ void writeResult(nodeInfo *node, bool export_with_maxspeed)
     writeToFile(resultPath, content, false);
 }
 
-void resultEOF(string traffic, int worknodes, int totnodes)
+void resultEOF(std::string traffic, int worknodes, int totnodes)
 {
     result_content += "Traffic used : " + traffic + ". Working Node(s) : [" + to_string(worknodes) + "/" + to_string(totnodes) + "]\n";
     result_content += "Generated at " + getTime(3) + "\n";
@@ -153,12 +151,12 @@ void resultEOF(string traffic, int worknodes, int totnodes)
     writeToFile(resultPath,result_content,true);
 }
 
-void exportResult(string outpath, string utiljspath, string stylepath, bool export_with_maxspeed)
+void exportResult(std::string outpath, std::string utiljspath, std::string stylepath, bool export_with_maxspeed)
 {
     if(utiljspath == "")
         return;
-    string strInput;
-    vector<string> params;
+    std::string strInput;
+    vector<std::string> params;
     ifstream inputjs, inputstyle;
     ofstream outfile;
     stringstream result_content_stream;

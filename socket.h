@@ -41,27 +41,25 @@ typedef sockaddr *LPSOCKADDR;
 
 #define BUF_SIZE 8192
 
-using namespace std;
-
-int getNetworkType(string addr);
+int getNetworkType(std::string addr);
 int Send(SOCKET sHost, const char* data, int len, int flags);
 int Recv(SOCKET sHost, char* data, int len, int flags);
-int socks5_do_auth_userpass(SOCKET sHost, string user, string pass);
+int socks5_do_auth_userpass(SOCKET sHost, std::string user, std::string pass);
 int setTimeout(SOCKET s, int timeout);
-int startConnect(SOCKET sHost, string addr, int port);
-int simpleSend(string addr, int port, string data);
-int send_simple(SOCKET sHost, string data);
-string hostnameToIPAddr(string host);
-int connectSocks5(SOCKET sHost, string username, string password);
-int connectThruSocks(SOCKET sHost, string host, int port);
+int startConnect(SOCKET sHost, std::string addr, int port);
+int simpleSend(std::string addr, int port, std::string data);
+int send_simple(SOCKET sHost, std::string data);
+std::string hostnameToIPAddr(std::string host);
+int connectSocks5(SOCKET sHost, std::string username, std::string password);
+int connectThruSocks(SOCKET sHost, std::string host, int port);
 int checkPort(int startport);
 
 struct socks5Proxy
 {
-    string address;
+    std::string address;
     int port;
-    string username;
-    string password;
+    std::string username;
+    std::string password;
 };
 
 #endif // SOCKET_H_INCLUDED

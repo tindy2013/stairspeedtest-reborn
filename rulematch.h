@@ -4,19 +4,17 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 struct downloadLink
 {
-    string url;
-    string tag;
+    std::string url;
+    std::string tag;
 };
 
 struct linkMatchRule
 {
-    string mode;
-    vector<string> rules;
-    string tag;
+    std::string mode;
+    std::vector<std::string> rules;
+    std::string tag;
 };
 
 #endif // RULEMATCH_H_INCLUDED

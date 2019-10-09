@@ -16,14 +16,12 @@
 #include "misc.h"
 #include "socket.h"
 
-using namespace std;
-
-string webGet(string url, string proxy = "");
-string httpGet(string host, string addr, string uri);
-string httpsGet(string host, string addr, string uri);
-long curlPost(string url, string data, string proxy);
-int websitePing(nodeInfo *node, string url, string local_addr, int local_port, string user, string pass);
-string buildSocks5ProxyString(string addr, int port, string username, string password);
-string buildSocks5ProxyString(socks5Proxy proxy);
+std::string webGet(std::string url, std::string proxy = "");
+std::string httpGet(std::string host, std::string addr, std::string uri);
+std::string httpsGet(std::string host, std::string addr, std::string uri);
+long curlPost(std::string url, std::string data, std::string proxy);
+int websitePing(nodeInfo *node, std::string url, std::string local_addr, int local_port, std::string user, std::string pass);
+std::string buildSocks5ProxyString(std::string addr, int port, std::string username, std::string password);
+std::string buildSocks5ProxyString(socks5Proxy proxy);
 
 #endif // WEBGET_H_INCLUDED
