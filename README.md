@@ -70,9 +70,11 @@ Supported proxy types:
 
  |Proxy|Client|Config Parser|
  |:-:|:-:|:-:|
- |SSR|ShadowsocksR-libev|ShadowsocksR|
- |SS|Shadowsocks-libev|Shadowsocks \| ShadowsocksD \| Clash \| Surge (experimental) |
- |V2RAY|V2Ray-Core|V2RayN \| Quantumult \| Clash
+ |SSR|ShadowsocksR-libev|ShadowsocksR \| SSTap \| Netch GSF |
+ |SS|Shadowsocks-libev|Shadowsocks \| ShadowsocksD \| Shadowsocks Android \| SSTap \| Clash \| Surge 2 \| Surge 3+ \| Netch GSF |
+ |V2RAY|V2Ray-Core|V2RayN \| Quantumult \| Clash \| Surge 4 \| Netch GSF |
+ |SOCKS5|-|Telegram \| SSTap \| Clash \| Surge 2+ \| Netch GSF
+ 
 ## Known Bugs
 * There is a multi-thread exit problem when running on MacOS, the total file download testing time will exceed 10s.
 ## TODO
