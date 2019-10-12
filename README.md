@@ -52,7 +52,7 @@ build.bat
 ./build.macos.sh  
 ```
 ## Usage
-* Run "stairspeedtest" for CLI speedtest, run "webgui" for Web GUI speedtest. **Currently Web GUI only supports on Windows.**
+* Run "stairspeedtest" for CLI speedtest, run "webgui" for Web GUI speedtest.
 * Results for subscribe link tests will be saved to a log file in "results" folder.
 * The result will be exported into a PNG file with the result log. An interactive HTML file with test results will also be generated with the PNG file. In this HTML, you can sort by name, ping, packet loss or speed.
 * You can customize some settings by editing "pref.ini".
@@ -78,4 +78,4 @@ Supported proxy types:
 ## Known Bugs
 * There is a multi-thread exit problem when running on MacOS, the total file download testing time will exceed 10s.
 ## TODO
-* Web GUI support on all platform
+* Nothing yet
