@@ -2,7 +2,6 @@
 #include <algorithm>
 
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
 
 #include "misc.h"
 #include "printout.h"
@@ -217,10 +216,7 @@ void explodeVmessConf(std::string content, std::string custom_port, int local_po
             newinbound.AddMember("protocol", "socks", json.GetAllocator());
             inbounds.Clear();
             inbounds.PushBack(newinbound, json.GetAllocator());
-            StringBuffer sb;
-            Writer<StringBuffer> writer_json(sb);
-            json.Accept(writer_json);
-            node.proxyStr = sb.GetString();
+            node.proxyStr = SerializeObject(json);
             node.group = V2RAY_DEFAULT_GROUP;
             node.remarks = add + ":" + port;
             node.server = add;
@@ -438,15 +434,12 @@ void explodeSSConf(std::string content, std::string custom_port, int local_port,
         port = GetMember(json, "server_port");
         json["local_port"].SetInt(local_port);
         json["local_address"].SetString("127.0.0.1");
-        StringBuffer sb;
-        Writer<StringBuffer> writer_json(sb);
-        json.Accept(writer_json);
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
         node.group = SS_DEFAULT_GROUP;
         node.remarks = server + ":" + port;
         node.server = server;
         node.port = stoi(port);
-        node.proxyStr = sb.GetString();
+        node.proxyStr = SerializeObject(json);
         nodes->push_back(node);
         return;
     }
@@ -555,15 +548,12 @@ void explodeSSRConf(std::string content, std::string custom_port, int local_port
         port = GetMember(json, "server_port");
         json["local_port"].SetInt(local_port);
         json["local_address"].SetString("127.0.0.1");
-        StringBuffer sb;
-        Writer<StringBuffer> writer_json(sb);
-        json.Accept(writer_json);
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
         node.group = SSR_DEFAULT_GROUP;
         node.remarks = server + ":" + port;
         node.server = server;
         node.port = stoi(port);
-        node.proxyStr = sb.GetString();
+        node.proxyStr = SerializeObject(json);
         nodes->push_back(node);
         return;
     }
@@ -636,6 +626,133 @@ void explodeSocks(std::string link, std::string custom_port, nodeInfo *node)
     node->server = server;
     node->port = stoi(port);
     node->proxyStr = "user=" + username + "&pass=" + password;
+}
+
+void explodeQuan(std::string quan, std::string custom_port, int local_port, nodeInfo *node)
+{
+    std::string strTemp, itemName, itemVal;
+    std::string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
+    std::vector<std::string> configs, vArray;
+    strTemp = regReplace(quan, "(.*?) = (.*)", "$1,$2");
+    configs = split(strTemp, ",");
+    if(configs[1] == "vmess")
+    {
+        ps = trim(configs[0]);
+        add = trim(configs[2]);
+        port = trim(configs[3]);
+        cipher = trim(configs[4]);
+        id = trim(replace_all_distinct(configs[5], "\"", ""));
+
+        //read link
+        for(unsigned int i = 6; i < configs.size(); i++)
+        {
+            vArray = split(configs[i], "=");
+            if(vArray.size() < 2)
+                continue;
+            itemName = trim(vArray[0]);
+            itemVal = trim(vArray[1]);
+            if(itemName == "group")
+                group = itemVal;
+            else if(itemName == "over-tls")
+                tls = itemVal == "true" ? "tls" : "";
+            else if(itemName == "tls-host")
+                host = itemVal;
+            else if(itemName == "obfs-path")
+                path = replace_all_distinct(itemVal, "\"", "");
+            else if(itemName == "obfs-header")
+            {
+                std::vector<std::string> headers = split(replace_all_distinct(replace_all_distinct(itemVal, "\"", ""), "[Rr][Nn]", "|"), "|");
+                for(unsigned int j = 0; j < headers.size(); j++)
+                {
+                    if(strFind(headers[j], "Host: "))
+                        host = headers[j].substr(6);
+                }
+            }
+            else if(itemName == "obfs" && itemVal == "ws")
+                net = "ws";
+        }
+        if(path == "")
+            path = "/";
+
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+        node->group = group;
+        node->remarks = ps;
+        node->server = add;
+        node->port = stoi(port);
+        node->proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
+    }
+}
+
+void explodeNetch(std::string netch, bool ss_libev, bool ssr_libev, std::string custom_port, int local_port, nodeInfo *node)
+{
+    Document json;
+    std::string type, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, path, tls;
+    netch = base64_decode(netch.substr(8));
+
+    json.Parse(netch.data());
+    json["Type"] >> type;
+    json["Remark"] >> remark;
+    json["Hostname"] >> address;
+    json["Port"] >> port;
+    method = GetMember(json, "EncryptMethod");
+    password = GetMember(json, "Password");
+    if(remark == "")
+        remark = address + ":" + port;
+    if(type == "SS")
+    {
+        plugin = GetMember(json, "Plugin");
+        pluginopts = GetMember(json, "PluginOption");
+        node->group = SS_DEFAULT_GROUP;
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+        node->proxyStr = ssConstruct(address, port, password, method, plugin, pluginopts, remark, local_port, ss_libev);
+    }
+    else if(type == "SSR")
+    {
+        protocol = GetMember(json, "Protocol");
+        obfs = GetMember(json, "OBFS");
+        if(find(ss_ciphers.begin(), ss_ciphers.end(), method) != ss_ciphers.end() && (obfs == "" || obfs == "plain") && (protocol == "" || protocol == "origin"))
+        {
+            plugin = GetMember(json, "Plugin");
+            pluginopts = GetMember(json, "PluginOption");
+            node->group = SS_DEFAULT_GROUP;
+            node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+            node->proxyStr = ssConstruct(address, port, password, method, plugin, pluginopts, remark, local_port, ss_libev);
+        }
+        else
+        {
+            protoparam = GetMember(json, "ProtocolParam");
+            obfsparam = GetMember(json, "OBFSParam");
+            node->group = SSR_DEFAULT_GROUP;
+            node->linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
+            node->proxyStr = ssrConstruct(SSR_DEFAULT_GROUP, remark, base64_encode(remark), address, port, protocol, method, obfs, password, obfsparam, protoparam, local_port, ssr_libev);
+        }
+    }
+    else if(type == "VMess")
+    {
+        id = GetMember(json, "UserID");
+        aid = GetMember(json, "AlterID");
+        transprot = GetMember(json, "TransferProtocol");
+        faketype = GetMember(json, "FakeType");
+        host = GetMember(json, "Host");
+        path = GetMember(json, "Path");
+        tls = GetMember(json, "TLSSecure") == "true" ? "tls" : "";
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+        node->group = V2RAY_DEFAULT_GROUP;
+        node->proxyStr = vmessConstruct(address, port, faketype, id, aid, transprot, method, path, host, tls, local_port);
+    }
+    else if(type == "Socks5")
+    {
+        username = GetMember(json, "Username");
+        node->linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
+        node->group = SOCKS_DEFAULT_GROUP;
+        node->proxyStr = "user=" + username + "&pass=" + password;
+    }
+    else
+        return;
+
+    node->remarks = remark;
+    node->server = address;
+    node->port = stoi(port);
 }
 
 void explodeClash(Node yamlnode, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes, bool ss_libev, bool ssr_libev)
@@ -763,61 +880,6 @@ void explodeClash(Node yamlnode, std::string custom_port, int local_port, std::v
         index++;
     }
     return;
-}
-
-void explodeQuan(std::string quan, std::string custom_port, int local_port, nodeInfo *node)
-{
-    std::string strTemp, itemName, itemVal;
-    std::string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher = "auto", type = "none", id, aid = "0", net = "tcp", path, host, tls;
-    std::vector<std::string> configs, vArray;
-    strTemp = regReplace(quan, "(.*?) = (.*)", "$1,$2");
-    configs = split(strTemp, ",");
-    if(configs[1] == "vmess")
-    {
-        ps = trim(configs[0]);
-        add = trim(configs[2]);
-        port = trim(configs[3]);
-        cipher = trim(configs[4]);
-        id = trim(replace_all_distinct(configs[5], "\"", ""));
-
-        //read link
-        for(unsigned int i = 6; i < configs.size(); i++)
-        {
-            vArray = split(configs[i], "=");
-            if(vArray.size() < 2)
-                continue;
-            itemName = trim(vArray[0]);
-            itemVal = trim(vArray[1]);
-            if(itemName == "group")
-                group = itemVal;
-            else if(itemName == "over-tls")
-                tls = itemVal == "true" ? "tls" : "";
-            else if(itemName == "tls-host")
-                host = itemVal;
-            else if(itemName == "obfs-path")
-                path = replace_all_distinct(itemVal, "\"", "");
-            else if(itemName == "obfs-header")
-            {
-                std::vector<std::string> headers = split(replace_all_distinct(replace_all_distinct(itemVal, "\"", ""), "[Rr][Nn]", "|"), "|");
-                for(unsigned int j = 0; j < headers.size(); j++)
-                {
-                    if(strFind(headers[j], "Host: "))
-                        host = headers[j].substr(6);
-                }
-            }
-            else if(itemName == "obfs" && itemVal == "ws")
-                net = "ws";
-        }
-        if(path == "")
-            path = "/";
-
-        node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-        node->group = group;
-        node->remarks = ps;
-        node->server = add;
-        node->port = stoi(port);
-        node->proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
-    }
 }
 
 bool explodeSurge(std::string surge, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes, bool libev)
@@ -1053,6 +1115,23 @@ void explodeSSTap(std::string sstap, std::string custom_port, int local_port, st
     }
 }
 
+void explodeNetchConf(std::string netch, bool ss_libev, bool ssr_libev, std::string custom_port, int local_port, std::vector<nodeInfo> *nodes)
+{
+    Document json;
+    nodeInfo node;
+
+    json.Parse(netch.data());
+
+    if(!json.HasMember("Server"))
+        return;
+
+    for(unsigned int i = 0; i < json["Server"].Size(); i++)
+    {
+        explodeNetch("Netch://" + base64_encode(SerializeObject(json["Server"][i])), ss_libev, ssr_libev, custom_port, local_port, &node);
+        nodes->push_back(node);
+    }
+}
+
 int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
 {
     INIReader ini;
@@ -1082,27 +1161,9 @@ int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
         node.maxSpeed = ini.Get("MaxSpeed");
         node.online = ini.GetBool("Online");
         node.pkLoss = ini.Get("PkLoss");
-        vArray = split(ini.Get("RawPing"), ",");
-        index = 0;
-        for(auto &y : vArray)
-        {
-            node.rawPing[index] = stoi(y);
-            index++;
-        }
-        vArray = split(ini.Get("RawSitePing"), ",");
-        index = 0;
-        for(auto &y : vArray)
-        {
-            node.rawSitePing[index] = stoi(y);
-            index++;
-        }
-        vArray = split(ini.Get("RawSpeed"), ",");
-        index = 0;
-        for(auto &y : vArray)
-        {
-            node.rawSpeed[index] = stoi(y);
-            index++;
-        }
+        ini.GetIntArray("RawPing", ",", node.rawPing);
+        ini.GetIntArray("RawSitePing", ",", node.rawSitePing);
+        ini.GetIntArray("RawSpeed", ",", node.rawSpeed);
         node.sitePing = ini.Get("SitePing");
         node.totalRecvBytes = stoi(ini.Get("UsedTraffic"));
         node.ulSpeed = ini.Get("ULSpeed");
@@ -1110,78 +1171,6 @@ int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
     }
 
     return 0;
-}
-
-void explodeNetch(std::string netch, bool ss_libev, bool ssr_libev, std::string custom_port, int local_port, nodeInfo *node)
-{
-    Document json;
-    std::string type, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, path, tls;
-    netch = base64_decode(netch.substr(8));
-
-    json.Parse(netch.data());
-    json["Type"] >> type;
-    json["Remark"] >> remark;
-    json["Hostname"] >> address;
-    json["Port"] >> port;
-    method = GetMember(json, "EncryptMethod");
-    password = GetMember(json, "Password");
-    if(remark == "")
-        remark = address + ":" + port;
-    if(type == "SS")
-    {
-        plugin = GetMember(json, "Plugin");
-        pluginopts = GetMember(json, "PluginOption");
-        node->group = SS_DEFAULT_GROUP;
-        node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-        node->proxyStr = ssConstruct(address, port, password, method, plugin, pluginopts, remark, local_port, ss_libev);
-    }
-    else if(type == "SSR")
-    {
-        protocol = GetMember(json, "Protocol");
-        obfs = GetMember(json, "OBFS");
-        if(find(ss_ciphers.begin(), ss_ciphers.end(), method) != ss_ciphers.end() && (obfs == "" || obfs == "plain") && (protocol == "" || protocol == "origin"))
-        {
-            plugin = GetMember(json, "Plugin");
-            pluginopts = GetMember(json, "PluginOption");
-            node->group = SS_DEFAULT_GROUP;
-            node->linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-            node->proxyStr = ssConstruct(address, port, password, method, plugin, pluginopts, remark, local_port, ss_libev);
-        }
-        else
-        {
-            protoparam = GetMember(json, "ProtocolParam");
-            obfsparam = GetMember(json, "OBFSParam");
-            node->group = SSR_DEFAULT_GROUP;
-            node->linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
-            node->proxyStr = ssrConstruct(SSR_DEFAULT_GROUP, remark, base64_encode(remark), address, port, protocol, method, obfs, password, obfsparam, protoparam, local_port, ssr_libev);
-        }
-    }
-    else if(type == "VMess")
-    {
-        id = GetMember(json, "UserID");
-        aid = GetMember(json, "AlterID");
-        transprot = GetMember(json, "TransferProtocol");
-        faketype = GetMember(json, "FakeType");
-        host = GetMember(json, "Host");
-        path = GetMember(json, "Path");
-        tls = GetMember(json, "TLSSecure") == "true" ? "tls" : "";
-        node->linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-        node->group = V2RAY_DEFAULT_GROUP;
-        node->proxyStr = vmessConstruct(address, port, faketype, id, aid, transprot, method, path, host, tls, local_port);
-    }
-    else if(type == "Socks5")
-    {
-        username = GetMember(json, "Username");
-        node->linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-        node->group = SOCKS_DEFAULT_GROUP;
-        node->proxyStr = "user=" + username + "&pass=" + password;
-    }
-    else
-        return;
-
-    node->remarks = remark;
-    node->server = address;
-    node->port = stoi(port);
 }
 
 bool chkIgnore(nodeInfo *node, std::vector<std::string> *exclude_remarks, std::vector<std::string> *include_remarks)
@@ -1241,6 +1230,8 @@ int explodeConfContent(std::string content, std::string custom_port, int local_p
         filetype = SPEEDTEST_MESSAGE_FOUNDSSTAP;
     else if(strFind(content, "\"local_address\"") && strFind(content, "\"local_port\""))
         filetype = SPEEDTEST_MESSAGE_FOUNDSSR; //use ssr config parser
+    else if(strFind(content, "\"ModeFileNameType\""))
+        filetype = SPEEDTEST_MESSAGE_FOUNDNETCH;
 
     switch(filetype)
     {
@@ -1258,6 +1249,9 @@ int explodeConfContent(std::string content, std::string custom_port, int local_p
         break;
     case SPEEDTEST_MESSAGE_FOUNDSSTAP:
         explodeSSTap(content, custom_port, local_port, nodes, sslibev, ssrlibev);
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDNETCH:
+        explodeNetchConf(content, sslibev, ssrlibev, custom_port, local_port, nodes);
         break;
     default:
         //try to parse as a local subscription

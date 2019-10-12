@@ -522,21 +522,9 @@ void saveResult(std::vector<nodeInfo> *nodes)
         ini.SetLong("GroupID", x.groupID);
         ini.SetLong("ID", x.id);
         ini.SetBool("Online", x.online);
-        for(auto &y : x.rawPing)
-            data += to_string(y) + ",";
-        data = data.substr(0, data.size() - 1);
-        ini.Set("RawPing", data);
-        data = "";
-        for(auto &y : x.rawSitePing)
-            data += to_string(y) + ",";
-        data = data.substr(0, data.size() - 1);
-        ini.Set("RawSitePing", data);
-        data = "";
-        for(auto &y : x.rawSpeed)
-            data += to_string(y) + ",";
-        data = data.substr(0, data.size() - 1);
-        ini.Set("RawSpeed", data);
-        data = "";
+        ini.SetArray("RawPing", ",", x.rawPing);
+        ini.SetArray("RawSitePing", ",", x.rawSitePing);
+        ini.SetArray("RawSpeed", ",", x.rawSpeed);
     }
 
     ini.ToFile(resultPath);
@@ -815,6 +803,7 @@ void addNodes(std::string link, bool multilink)
     nodeInfo node;
     std::string strSub, strInput, fileContent, strProxy;
 
+    link = replace_all_distinct(link, "\"", "");
     writeLog(LOG_TYPE_INFO, "Received Link.");
     if(strFind(link, "vmess://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;

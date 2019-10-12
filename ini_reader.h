@@ -419,6 +419,29 @@ public:
     }
 
     /**
+    * @brief Retrieve a string style array with specific separator and write into integer array.
+    */
+    template <typename T> void GetIntArray(std::string section, std::string itemName, std::string separator, T &Array)
+    {
+        string_array vArray;
+        unsigned int index, UBound = sizeof(Array) / sizeof(Array[0]);
+        vArray = split(Get(section, itemName), separator);
+        for(index = 0; index < vArray.size() && index < UBound; index++)
+            Array[index] = stoi(vArray[index]);
+        for(; index < UBound; index++)
+            Array[index] = 0;
+    }
+
+    /**
+    * @brief Retrieve a string style array with specific separator and write into integer array.
+    */
+    template <typename T> void GetIntArray(std::string itemName, std::string separator, T &Array)
+    {
+        if(current_section != "")
+            GetIntArray(current_section, itemName, separator, Array);
+    }
+
+    /**
     *  @brief Add a std::string value with given values.
     */
     int Set(std::string section, std::string itemName, std::string itemVal)
@@ -502,6 +525,29 @@ public:
         return SetLong(current_section, itemName, itemVal);
     }
 
+    /**
+    *  @brief Add an array with the given separator.
+    */
+    template <typename T> int SetArray(std::string section, std::string itemName, std::string separator, T &Array)
+    {
+        std::string data;
+        for(auto &x : Array)
+            data += std::__cxx11::to_string(x) + separator;
+        data = data.substr(0, data.size() - separator.size());
+        return Set(section, itemName, data);
+    }
+
+    /**
+    *  @brief Add an array with the given separator.
+    */
+    template <typename T> int SetArray(std::string itemName, std::string separator, T &Array)
+    {
+        return current_section == "" ? -1 : SetArray(current_section, itemName, separator, Array);
+    }
+
+    /**
+    *  @brief Erase all items with the given name.
+    */
     int Erase(std::string section, std::string itemName)
     {
         int retVal;
@@ -516,11 +562,17 @@ public:
         return retVal;
     }
 
+    /**
+    *  @brief Erase all items with the given name.
+    */
     int Erase(std::string itemName)
     {
         return current_section != "" ? Erase(current_section, itemName) : -1;
     }
 
+    /**
+    *  @brief Erase the first item with the given name.
+    */
     int EraseFirst(std::string section, std::string itemName)
     {
         std::multimap<std::string, std::string> &mapTemp = ini_content.at(section);
@@ -540,6 +592,9 @@ public:
         }
     }
 
+    /**
+    *  @brief Erase the first item with the given name.
+    */
     int EraseFirst(std::string itemName)
     {
         return current_section != "" ? EraseFirst(current_section, itemName) : -1;
