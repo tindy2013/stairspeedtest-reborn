@@ -10,7 +10,7 @@ using namespace std;
 
 const int times_to_ping = 3;
 
-void draw_progress_sping(int progress, int values[3])
+void draw_progress_sping(int progress, int *values)
 {
     cerr<<"\r[";
     for(int i = 0; i <= progress; i++)

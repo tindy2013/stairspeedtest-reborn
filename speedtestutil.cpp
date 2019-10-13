@@ -893,9 +893,13 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
     unsigned int i, index = nodes->size();
     INIReader ini;
 
+    /*
     if(!strFind(surge, "[Proxy]"))
         return false;
+    */
 
+    ini.store_isolated_line = true;
+    ini.SetIsolatedItemsSection("Proxy");
     ini.IncludeSection("Proxy");
     ini.Parse(surge);
 
@@ -908,7 +912,7 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
     {
         remarks = x.first;
         configs = split(x.second, ",");
-        if(configs[0] == "direct")
+        if(configs.size() < 2 || configs[0] == "direct")
             continue;
         else if(configs[0] == "custom") //surge 2 style custom proxy
         {
@@ -1156,8 +1160,8 @@ int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
         node.remarks = vArray[1];
         node.avgPing = ini.Get("AvgPing");
         node.avgSpeed = ini.Get("AvgSpeed");
-        node.groupID = stoi(ini.Get("GroupID"));
-        node.id = stoi(ini.Get("ID"));
+        node.groupID = ini.GetInt("GroupID");
+        node.id = ini.GetInt("ID");
         node.maxSpeed = ini.Get("MaxSpeed");
         node.online = ini.GetBool("Online");
         node.pkLoss = ini.Get("PkLoss");
@@ -1165,7 +1169,7 @@ int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
         ini.GetIntArray("RawSitePing", ",", node.rawSitePing);
         ini.GetIntArray("RawSpeed", ",", node.rawSpeed);
         node.sitePing = ini.Get("SitePing");
-        node.totalRecvBytes = stoi(ini.Get("UsedTraffic"));
+        node.totalRecvBytes = ini.GetInt("UsedTraffic");
         node.ulSpeed = ini.Get("ULSpeed");
         nodes->push_back(node);
     }
@@ -1361,6 +1365,5 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom
         node.id = index;
         nodes->push_back(node);
         index++;
-        //nodes->insert(nodes->end(), node);
     }
 }

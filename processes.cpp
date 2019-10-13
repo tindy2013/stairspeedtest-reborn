@@ -25,7 +25,6 @@ typedef pid_t HANDLE;
 HANDLE hProc = 0;
 #ifdef _WIN32
 HANDLE job = 0;
-JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits = {};
 #else
 FILE *pPipe;
 #endif // _WIN32
@@ -61,6 +60,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     BOOL retval = false;
     STARTUPINFO si = {};
     PROCESS_INFORMATION pi = {};
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits = {};
     char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
     std::string path;
     job = CreateJobObject(NULL, NULL);
@@ -79,8 +79,6 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     }
     cmdstr = const_cast<char*>(command.data());
     pathstr = const_cast<char*>(path.data());
-    std::string prgname = path + command.substr(0, command.find(" "));
-    std::string prgargs = command.substr(command.find(" ") + 1);
     retval = CreateProcess(NULL, cmdstr, NULL, NULL, false, CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB, NULL, pathstr, &si, &pi);
 
     AssignProcessToJobObject(job, pi.hProcess);
@@ -95,31 +93,16 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     return retval;
 
 #else
-    /*
-    std::string total_path = runpath == "" ? "" : runpath + PATH_SLASH;
-    total_path += command;
-    pPipe = popen(total_path.data(), "r");
-    */
-    //char curdir[1024] = {};
-    //char* const* argp = accumulate(next(args.begin()), args.end(), args[0], [](std::string a, std::string b){return a + b;}).c_str();
-    //char* argp = command.substr(command.find(" ") + 1).data();
-    //command = command.substr(0, command.find(" "));
-    //getcwd(curdir, 1024);
-    //chdir(runpath.data());
-    //pPipe = popen(command.data(), "r");
-    //chdir(curdir);
-
-
-    vector<std::string> args = split(command, " ");
+    char curdir[1024] = {};
     posix_spawn_file_actions_t file_actions;
     const char* cargs[4] = {"sh", "-c", command.data(), NULL};
-    //command = args[0];
-    //transform(next(args.begin()), args.end(), &cargs[0], mem_fun_ref(&std::string::c_str));
-    //cargs[args.size() - 1] = nullptr;
     posix_spawn_file_actions_init(&file_actions);
     posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
     posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
+    getcwd(curdir, 1024);
+    chdir(runpath.data());
     posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), environ);
+    chdir(curdir);
     return true;
 #endif // _WIN32
 

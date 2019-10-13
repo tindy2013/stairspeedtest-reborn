@@ -25,7 +25,7 @@ const int times_to_ping = 10, fail_limit = 3;
 
 //for use of multi-thread socket test
 typedef std::lock_guard<std::mutex> guarded_mutex;
-long long received_bytes = 0;
+int received_bytes = 0;
 int launched = 0, still_running = 0, buffer_size = 4096;
 bool EXIT_FLAG = false;
 std::mutex received_mutex, thread_count_mutex, launched_mutex, exit_flag_mutex;
@@ -84,7 +84,7 @@ static inline void append_recv_bytes(int received)
     received_bytes += received;
 }
 
-static inline void draw_progress_dl(int progress, long long this_bytes)
+static inline void draw_progress_dl(int progress, int this_bytes)
 {
     std::cerr<<"\r[";
     for(int j = 0; j < progress; j++)
@@ -118,13 +118,13 @@ static inline void draw_progress_icon(int progress)
     }
 }
 
-static inline void draw_progress_ul(int progress, long long this_bytes)
+static inline void draw_progress_ul(int progress, int this_bytes)
 {
     draw_progress_icon(progress);
     std::cerr<<" "<<speedCalc(this_bytes);
 }
 
-static inline void draw_progress_gping(int progress, int values[10])
+static inline void draw_progress_gping(int progress, int *values)
 {
     std::cerr<<"\r[";
     for(int i = 0; i <= progress; i++)
@@ -379,7 +379,7 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
 
     writeLog(LOG_TYPE_FILEDL, "All threads launched. Start accumulating data.");
     auto start = steady_clock::now();
-    long long transferred_bytes = 0, last_bytes = 0, this_bytes = 0, max_speed = 0;
+    int transferred_bytes = 0, last_bytes = 0, this_bytes = 0, max_speed = 0;
     for(i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
@@ -470,7 +470,7 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
 
     writeLog(LOG_TYPE_FILEUL, "Worker threads launched. Start accumulating data.");
     auto start = steady_clock::now();
-    long long transferred_bytes = 0, this_bytes = 0;
+    int transferred_bytes = 0, this_bytes = 0;
     for(i = 1; i < 11; i++)
     {
         sleep(1000); //accumulate data

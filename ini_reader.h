@@ -27,6 +27,8 @@ private:
     std::string cached_section;
     string_multimap cached_section_content;
 
+    std::string isolated_items_section;
+
     bool chkIgnore(std::string section)
     {
         bool excluded = false, included = false;
@@ -53,6 +55,11 @@ public:
     * These line will store as the name "{NONAME}".
     */
     bool store_any_line = false;
+
+    /**
+    *  @brief Save isolated items before any section define.
+    */
+    bool store_isolated_line = false;
 
     /**
     *  @brief Initialize the reader.
@@ -93,6 +100,14 @@ public:
     }
 
     /**
+    *  @brief Set isolated items to given section.
+    */
+    void SetIsolatedItemsSection(std::string section)
+    {
+        isolated_items_section = section;
+    }
+
+    /**
     *  @brief Parse INI content into mapped data structure.
     * If exclude sections are set, these sections will not be stored.
     * If include sections are set, only these sections will be stored.
@@ -110,6 +125,8 @@ public:
         if(do_utf8_to_gbk)
             content = UTF8ToGBK(content); //do conversion if flag is set
 
+        if(store_isolated_line)
+            curSection = isolated_items_section; //items before any section define will be store in this section
         strStrm<<content;
         while(getline(strStrm, strLine, delimiter)) //get one line of content
         {
@@ -394,6 +411,22 @@ public:
     bool GetBool(std::string itemName)
     {
         return current_section != "" ? Get(current_section, itemName) == "true" : false;
+    }
+
+    /**
+    * @brief Retrieve one integer item value with the exact same name in the given section.
+    */
+    int GetInt(std::string section, std::string itemName)
+    {
+        return stoi(Get(section, itemName));
+    }
+
+    /**
+    * @brief Retrieve one integer item value with the exact same name in current section.
+    */
+    int GetInt(std::string itemName)
+    {
+        return GetInt(current_section, itemName);
     }
 
     /**
