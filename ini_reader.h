@@ -62,6 +62,11 @@ public:
     bool store_isolated_line = false;
 
     /**
+    *  @brief Allow a section title to appear multiple times.
+    */
+    bool allow_multi_section_titles = false;
+
+    /**
     *  @brief Initialize the reader.
     */
     INIReader()
@@ -117,7 +122,7 @@ public:
         bool inExcludedSection = false;
         std::string strLine, thisSection, curSection, itemName, itemVal;
         std::string regSection = "^\\[(.*?)\\]$", regItem = "^(.*?)=(.*?)$";
-        string_multimap itemGroup;
+        string_multimap itemGroup, existItemGroup;
         std::stringstream strStrm;
         char delimiter = count(content.begin(), content.end(), '\n') <= 1 ? '\r' : '\n';
 
@@ -151,7 +156,18 @@ public:
                 if(curSection != "" && itemGroup.size() != 0) //just finished reading a section
                 {
                     if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
-                        return -1;
+                    {
+                        if(allow_multi_section_titles)
+                        {
+                            eraseElements(existItemGroup);
+                            existItemGroup = ini_content.at(curSection); //get the old items
+                            for(auto &x : existItemGroup)
+                                itemGroup.insert(x); //insert them all into new section
+                            ini_content.erase(curSection); //remove the old section
+                        }
+                        else
+                            return -1;
+                    }
                     ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert previous section to content map
                     read_sections.push_back(curSection); //add to read sections list
                 }
@@ -168,7 +184,18 @@ public:
         if(curSection != "" && itemGroup.size() != 0) //final section
         {
             if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
+            {
+                if(allow_multi_section_titles)
+                {
+                    eraseElements(existItemGroup);
+                    existItemGroup = ini_content.at(curSection); //get the old items
+                    for(auto &x : existItemGroup)
+                        itemGroup.insert(x); //insert them all into new section
+                    ini_content.erase(curSection); //remove the old section
+                }
+                else
                     return -1;
+            }
             ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert this section to content map
             read_sections.push_back(curSection); //add to read sections list
         }
@@ -314,7 +341,7 @@ public:
     /**
     *  @brief Retrieve all items in the given section.
     */
-    int GetItems(std::string section, std::multimap<std::string, std::string> *data)
+    int GetItems(std::string section, std::multimap<std::string, std::string> &data)
     {
         if(!parsed || !SectionExist(section))
             return -1;
@@ -325,14 +352,14 @@ public:
             cached_section_content = ini_content.at(section);
         }
 
-        *data = cached_section_content;
+        data = cached_section_content;
         return 0;
     }
 
     /**
     *  @brief Retrieve all items in current section.
     */
-    int GetItems(string_multimap *data)
+    int GetItems(string_multimap &data)
     {
         return current_section != "" ? GetItems(current_section, data) : -1;
     }
@@ -347,7 +374,7 @@ public:
 
         string_multimap mapTemp;
 
-        if(GetItems(section, &mapTemp) != 0)
+        if(GetItems(section, mapTemp) != 0)
             return -1;
 
         for(auto &x : mapTemp)
@@ -377,7 +404,7 @@ public:
 
         string_multimap mapTemp;
 
-        if(GetItems(section, &mapTemp) != 0)
+        if(GetItems(section, mapTemp) != 0)
             return std::string();
 
         for(auto &x : mapTemp)
@@ -481,6 +508,9 @@ public:
     {
         string_multimap mapTemp;
         std::string value;
+
+        if(!section.size())
+            return -1;
 
         if(!parsed)
             parsed = true;

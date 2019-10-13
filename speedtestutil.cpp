@@ -906,7 +906,7 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
     if(!ini.SectionExist("Proxy"))
         return false;
     ini.EnterSection("Proxy");
-    ini.GetItems(&proxies);
+    ini.GetItems(proxies);
 
     for(auto &x : proxies)
     {
