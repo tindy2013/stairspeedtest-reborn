@@ -81,7 +81,7 @@ int _getch()
 {
     int ch;
     #ifdef _MACOS
-    ch = cin.get();
+    ch = std::cin.get();
     #else
     struct termios tm, tm_old;
     int fd = 0;
@@ -98,7 +98,7 @@ int _getch()
         return -1;
     }
 
-    ch = cin.get();
+    ch = std::cin.get();
     if (tcsetattr(fd, TCSANOW, &tm_old) < 0)
     {
         return -1;
@@ -110,7 +110,7 @@ int _getch()
 
 void SetConsoleTitle(std::string title)
 {
-    system(std::string("echo -ne \"\\033]0;" + title + "\\007\"\r").data());
+    system(std::string("echo \"\\033]0;" + title + "\\007\\c\"").data());
 }
 
 #endif // _WIN32
@@ -1130,7 +1130,7 @@ int main(int argc, char* argv[])
     //stop socket library before exit
     WSACleanup();
 #else
-    cout<<endl;
+    std::cout<<std::endl;
 #endif // _WIN32
     return 0;
 }

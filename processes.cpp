@@ -101,7 +101,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
     getcwd(curdir, 1024);
     chdir(runpath.data());
-    posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), environ);
+    posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), NULL);
     chdir(curdir);
     return true;
 #endif // _WIN32

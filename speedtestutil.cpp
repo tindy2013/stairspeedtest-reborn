@@ -1141,7 +1141,6 @@ int explodeLog(std::string log, std::vector<nodeInfo> *nodes)
     INIReader ini;
     std::vector<std::string> nodeList, vArray;
     std::string strTemp;
-    int index;
     nodeInfo node;
     ini.Parse(log);
 

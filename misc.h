@@ -92,6 +92,21 @@ template <typename T> static inline void eraseElements(T &target)
     T().swap(target);
 }
 
+#ifdef _MACOS
+namespace std
+{
+    namespace __cxx11
+    {
+        template <typename T> std::string to_string(const T& n)
+        {
+            std::ostringstream ss;
+            ss << n ;
+            return ss.str();
+        }
+    }
+}
+#endif // _MACOS
+
 #ifdef _WIN32
 void StringToWstring(std::wstring& szDst, std::string str);
 #endif // _WIN32

@@ -362,12 +362,12 @@ std::string trim(const std::string& str)
 
 std::string getUrlArg(std::string url, std::string request)
 {
-    smatch result;
-    if (regex_search(url.cbegin(), url.cend(), result, regex(request + "=(.*?)&")))
+    std::smatch result;
+    if (regex_search(url.cbegin(), url.cend(), result, std::regex(request + "=(.*?)&")))
     {
         return result[1];
     }
-    else if (regex_search(url.cbegin(), url.cend(), result, regex(request + "=(.*)")))
+    else if (regex_search(url.cbegin(), url.cend(), result, std::regex(request + "=(.*)")))
     {
         return result[1];
     }
@@ -391,21 +391,21 @@ std::string replace_all_distinct(std::string str, std::string old_value, std::st
 
 bool regFind(std::string src, std::string target)
 {
-    regex reg(target);
+    std::regex reg(target);
     return regex_search(src, reg);
 }
 
 std::string regReplace(std::string src, std::string match, std::string rep)
 {
     std::string result = "";
-    regex reg(match);
+    std::regex reg(match);
     regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
     return result;
 }
 
 bool regMatch(std::string src, std::string match)
 {
-    regex reg(match);
+    std::regex reg(match);
     return regex_match(src, reg);
 }
 
