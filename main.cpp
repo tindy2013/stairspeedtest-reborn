@@ -10,9 +10,7 @@
 #ifdef _WIN32
 #include <conio.h>
 #else
-#ifndef _MACOS
-#include <termio.h>
-#endif // _MACOS
+#include <termios.h>
 #endif // _WIN32
 
 #include "socket.h"
@@ -80,9 +78,6 @@ void getTestFile(nodeInfo *node, socks5Proxy proxy, std::vector<downloadLink> *d
 int _getch()
 {
     int ch;
-    #ifdef _MACOS
-    ch = std::cin.get();
-    #else
     struct termios tm, tm_old;
     int fd = 0;
 
@@ -103,7 +98,6 @@ int _getch()
     {
         return -1;
     }
-    #endif // _MACOS
     return ch;
 }
 
