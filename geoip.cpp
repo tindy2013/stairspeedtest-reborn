@@ -48,6 +48,7 @@ geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
         return info;
     }
 
+    writeLog(LOG_TYPE_GEOIP, "Fetched GeoIP data: " + strRet);
     writeLog(LOG_TYPE_GEOIP, "Parsing GeoIP result.");
     json.Parse(strRet.data());
     if(json.HasParseError())

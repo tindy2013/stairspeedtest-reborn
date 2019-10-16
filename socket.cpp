@@ -256,7 +256,7 @@ std::string hostnameToIPAddr(std::string host)
     //new function
     int retVal;
     std::string retAddr;
-    char cAddr[128];
+    char cAddr[128] = {};
     struct sockaddr_in *target;
     struct sockaddr_in6 *target6;
     struct addrinfo hint = {}, *retAddrInfo, *cur;
@@ -274,21 +274,18 @@ std::string hostnameToIPAddr(std::string host)
         {
             target = reinterpret_cast<struct sockaddr_in *>(cur->ai_addr);
             inet_ntop(AF_INET, &target->sin_addr, cAddr, sizeof(cAddr));
-            retAddr.assign(cAddr);
-            freeaddrinfo(retAddrInfo);
-            return retAddr;
+            break;
         }
         else if(cur->ai_family == AF_INET6)
         {
             target6 = reinterpret_cast<struct sockaddr_in6 *>(cur->ai_addr);
             inet_ntop(AF_INET6, &target6->sin6_addr, cAddr, sizeof(cAddr));
-            retAddr.assign(cAddr);
-            freeaddrinfo(retAddrInfo);
-            return retAddr;
+            break;
         }
     }
+    retAddr.assign(cAddr);
     freeaddrinfo(retAddrInfo);
-    return std::string();
+    return retAddr;
 }
 
 int connectSocks5(SOCKET sHost, std::string username, std::string password)
@@ -405,6 +402,23 @@ int connectThruSocks(SOCKET sHost, std::string host, int port)
         Recv(sHost, ptr, 16 + 2, 0);
         break;
     }
+    return 0;
+}
+
+int connectThruHTTP(SOCKET sHost, std::string username, std::string password, std::string dsthost, int dstport)
+{
+    char bufRecv[BUF_SIZE] = {};
+    std::string request = "CONNECT " + dsthost + ":" + std::__cxx11::to_string(dstport) + " HTTP/1.1\r\n";
+    std::string authstr = "Authorization: Basic " + base64_encode(username + ":" + password) + "\r\n";
+    if(username != "" && password != "")
+        request += authstr;
+    request += "\r\n";
+
+    Send(sHost, request.data(), request.size(), 0);
+    Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
+    if(!strFind(std::string(bufRecv), "HTTP/1.1 200"))
+        return -1;
+
     return 0;
 }
 

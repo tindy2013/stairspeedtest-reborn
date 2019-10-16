@@ -46,7 +46,7 @@ std::string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90
 std::string def_upload_target = "http://losangeles.speed.googlefiber.net:3004/upload?time=0";
 std::vector<downloadLink> downloadFiles;
 std::vector<linkMatchRule> matchRules;
-string_array exclude_remarks, include_remarks, dict, trans;
+string_array custom_exclude_remarks, custom_include_remarks, dict, trans;
 std::vector<nodeInfo> allNodes;
 std::vector<color> custom_color_groups;
 std::vector<int> custom_color_bounds;
@@ -338,9 +338,9 @@ void readConf(std::string path)
 
     ini.EnterSection("common");
     if(ini.ItemPrefixExist("exclude_remark"))
-        ini.GetAll("exclude_remark", exclude_remarks);
+        ini.GetAll("exclude_remark", custom_exclude_remarks);
     if(ini.ItemPrefixExist("include_remark"))
-        ini.GetAll("include_remark", include_remarks);
+        ini.GetAll("include_remark", custom_include_remarks);
 
     ini.EnterSection("advanced");
     if(ini.ItemExist("speedtest_mode"))
@@ -454,6 +454,8 @@ void readConf(std::string path)
         colorgroup.swap(custom_color_groups);
         bounds.swap(custom_color_bounds);
     }
+
+    remarksInit(custom_exclude_remarks, custom_include_remarks);
 }
 
 void signalHandler(int signum)
@@ -851,7 +853,7 @@ void addNodes(std::string link, bool multilink)
         if(strSub.size())
         {
             writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
-            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks);
+            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, nodes);
             rewriteNodeGroupID(&nodes, curGroupID);
             copyNodes(&nodes, &allNodes);
         }
@@ -875,7 +877,7 @@ void addNodes(std::string link, bool multilink)
         }
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
@@ -894,7 +896,7 @@ void addNodes(std::string link, bool multilink)
         fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, &nodes, &exclude_remarks, &include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
@@ -910,7 +912,7 @@ void addNodes(std::string link, bool multilink)
         {
             node_count = 1;
             printMsg(linkType, &node, rpcmode);
-            explode(link, ss_libev, ssr_libev, override_conf_port, socksport, &node);
+            explode(link, ss_libev, ssr_libev, override_conf_port, socksport, node);
             if(custom_group.size() != 0)
                 node.group = custom_group;
             if(node.server == "")

@@ -506,7 +506,6 @@ public:
     */
     int Set(std::string section, std::string itemName, std::string itemVal)
     {
-        string_multimap mapTemp;
         std::string value;
 
         if(!section.size())
@@ -517,12 +516,12 @@ public:
 
         if(SectionExist(section))
         {
-            mapTemp = ini_content.at(section);
+            string_multimap &mapTemp = ini_content.at(section);
             mapTemp.insert(std::pair<std::string, std::string>(itemName, itemVal));
-            ini_content[section] = mapTemp;
         }
         else
         {
+            string_multimap mapTemp;
             mapTemp.insert(std::pair<std::string, std::string>(itemName, itemVal));
             ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(section, mapTemp));
         }
@@ -583,7 +582,7 @@ public:
     /**
     *  @brief Add a long value with given values.
     */
-    int SetLong(std::string itemName, double itemVal)
+    int SetLong(std::string itemName, long itemVal)
     {
         return SetLong(current_section, itemName, itemVal);
     }
