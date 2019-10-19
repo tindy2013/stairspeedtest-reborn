@@ -127,7 +127,7 @@ public:
         char delimiter = count(content.begin(), content.end(), '\n') <= 1 ? '\r' : '\n';
 
         EraseAll(); //first erase all data
-        if(do_utf8_to_gbk)
+        if(do_utf8_to_gbk && is_str_utf8(content))
             content = UTF8ToGBK(content); //do conversion if flag is set
 
         if(store_isolated_line)

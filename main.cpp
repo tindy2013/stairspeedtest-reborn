@@ -801,7 +801,7 @@ void addNodes(std::string link, bool multilink)
 
     link = replace_all_distinct(link, "\"", "");
     writeLog(LOG_TYPE_INFO, "Received Link.");
-    if(strFind(link, "vmess://"))
+    if(strFind(link, "vmess://") || strFind(link, "vmess1://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
     else if(strFind(link, "ss://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSS;
@@ -1120,6 +1120,8 @@ int main(int argc, char* argv[])
     logEOF();
     printMsgDirect(SPEEDTEST_MESSAGE_EOF, rpcmode);
     sleep(1);
+    std::cin.clear();
+    std::cin.ignore();
     if(!rpcmode)
         _getch();
 #ifdef _WIN32

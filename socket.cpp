@@ -144,7 +144,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
         tm.tv_usec = def_timeout * 1000;
         FD_ZERO(&set);
         FD_SET(sockfd, &set);
-        if(select(sockfd+1, NULL, &set, NULL, &tm) > 0)
+        if(select(sockfd + 1, NULL, &set, NULL, &tm) > 0)
         {
             getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*)&error, (socklen_t *)&len);
             if(error == 0)
@@ -213,8 +213,7 @@ int startConnect(SOCKET sHost, std::string addr, int port)
 
 int send_simple(SOCKET sHost, std::string data)
 {
-    unsigned int retVal = Send(sHost, data.data(), data.size(), 0);
-    return retVal;
+    return Send(sHost, data.data(), data.size(), 0);
 }
 
 int simpleSend(std::string addr, int port, std::string data)
@@ -266,7 +265,6 @@ std::string hostnameToIPAddr(std::string host)
         freeaddrinfo(retAddrInfo);
         return std::string();
     }
-
 
     for(cur = retAddrInfo; cur != NULL; cur=cur->ai_next)
     {
@@ -379,7 +377,7 @@ int connectThruSocks(SOCKET sHost, std::string host, int port)
     }
     ptr += len;
 
-    PUT_BYTE(ptr++, dest_port>>8);     // DST.PORT
+    PUT_BYTE(ptr++, dest_port >> 8);     // DST.PORT
     PUT_BYTE(ptr++, dest_port & 0xFF);
     Send(sHost, buf, ptr - buf, 0);
     Recv(sHost, buf, 4, 0);

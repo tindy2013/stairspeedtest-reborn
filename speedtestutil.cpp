@@ -36,7 +36,7 @@ std::string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
 
 //remake from speedtestutil
 
-template <typename T> void operator >> (const YAML::Node& node,  T& i)
+template <typename T> void operator >> (const YAML::Node& node, T& i)
 {
     i = node.as<T>();
 };
@@ -144,8 +144,17 @@ void explodeVmess(std::string vmess, std::string custom_port, int local_port, no
     std::string version, ps, add, port, type, id, aid, net, path, host, tls;
     Document jsondata;
     std::vector<std::string> vArray;
-    vmess = vmess.substr(8);
-    vmess = base64_decode(vmess);
+    if(regMatch(vmess, "vmess://(.*?)\\?(.*)")) //kitsunebi style link
+    {
+        explodeKitsunebi(vmess, custom_port, local_port, node);
+        return;
+    }
+    else if(regMatch(vmess, "vmess1://(.*?)\\?(.*)")) // new kitsunebi style link
+    {
+        explodeKitsunebiNew(vmess, custom_port, local_port, node);
+        return;
+    }
+    vmess = urlsafe_base64_decode(regReplace(vmess, "(vmess|vmess1)://", ""));
     if(regMatch(vmess, "(.*?) = (.*)"))
     {
         explodeQuan(vmess, custom_port, local_port, node);
@@ -330,7 +339,7 @@ void explodeSS(std::string ss, bool libev, std::string custom_port, int local_po
         plugin = plugins.substr(0, plugins.find(";"));
         pluginopts = plugins.substr(plugins.find(";") + 1);
         if(getUrlArg(addition, "group") != "")
-            group = base64_decode(getUrlArg(addition, "group"));
+            group = urlsafe_base64_decode(getUrlArg(addition, "group"));
         ss = ss.substr(0, ss.find("?"));
     }
     if(strFind(ss, "@"))
@@ -370,8 +379,10 @@ void explodeSSD(std::string link, bool libev, std::string custom_port, int local
     unsigned int index = nodes.size();
     std::string group, port, method, password, server, remarks;
     std::string plugin, pluginopts;
-    link = base64_decode(link.substr(6));
+    link = urlsafe_base64_decode(link.substr(6));
     jsondata.Parse(link.c_str());
+    if(!jsondata.HasMember("servers"))
+        return;
     for(unsigned int i = 0; i < jsondata["servers"].Size(); i++)
     {
         jsondata["airport"] >> group;
@@ -547,7 +558,7 @@ void explodeSSR(std::string ssr, bool ss_libev, bool ssr_libev, std::string cust
     protocol = strcfg[2];
     method = strcfg[3];
     obfs = strcfg[4];
-    password = base64_decode(strcfg[5]);
+    password = urlsafe_base64_decode(strcfg[5]);
 
     if(group == "")
         group = SSR_DEFAULT_GROUP;
@@ -660,12 +671,12 @@ void explodeSocks(std::string link, std::string custom_port, nodeInfo &node)
             remarks = UrlDecode(link.substr(link.find("#") + 1));
             link = link.substr(0, link.find("#"));
         }
-        link = base64_decode(link.substr(8));
+        link = urlsafe_base64_decode(link.substr(8));
         arguments = split(link, ":");
         server = arguments[0];
         port = arguments[1];
     }
-    else if(strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
+    else if(strFind(link, "https://t.me/socks") || strFind(link, "tg://socks")) //telegram style socks link
     {
         server = getUrlArg(link, "server");
         port = getUrlArg(link, "port");
@@ -748,7 +759,7 @@ void explodeNetch(std::string netch, bool ss_libev, bool ssr_libev, std::string 
 {
     Document json;
     std::string type, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, path, tls;
-    netch = base64_decode(netch.substr(8));
+    netch = urlsafe_base64_decode(netch.substr(8));
 
     json.Parse(netch.data());
     json["Type"] >> type;
@@ -813,7 +824,7 @@ void explodeNetch(std::string netch, bool ss_libev, bool ssr_libev, std::string 
 
     node.remarks = remark;
     node.server = address;
-    node.port = stoi(port);
+    node.port = (unsigned short)stoi(port);
 }
 
 void explodeClash(Node yamlnode, std::string custom_port, int local_port, std::vector<nodeInfo> &nodes, bool ss_libev, bool ssr_libev)
@@ -931,6 +942,7 @@ void explodeClash(Node yamlnode, std::string custom_port, int local_port, std::v
         }
         else
             continue;
+
         node.group = group;
         node.remarks = ps;
 
@@ -949,6 +961,82 @@ void explodeClash(Node yamlnode, std::string custom_port, int local_port, std::v
         index++;
     }
     return;
+}
+
+void explodeKitsunebi(std::string kit, std::string custom_port, int local_port, nodeInfo &node)
+{
+    std::string ps, add, port, type, id, aid, net = "tcp", path, host, tls, cipher, remarks;
+    std::string addition;
+    string_array userinfo;
+    kit = replace_all_distinct(kit, "vmess://", "");
+
+    addition = kit.substr(kit.find("?") + 1);
+    kit = kit.substr(0, kit.find("?"));
+
+    userinfo = split(regReplace(urlsafe_base64_decode(kit), "(.*?):(.*?)@(.*):(.*)", "$1,$2,$3,$4"), ",");
+    cipher = userinfo[0];
+    id = userinfo[1];
+    add = userinfo[2];
+    port = userinfo[3];
+    remarks = UrlDecode(getUrlArg(addition, "remark"));
+    net = getUrlArg(addition, "network");
+    aid = getUrlArg(addition, "aid");
+    tls = getUrlArg(addition, "tls") == "1" ? "tls" : "";
+    host = getUrlArg(addition, "wsHost");
+    path = getUrlArg(addition, "wspath");
+
+    if(remarks == "")
+        remarks = add + ":" + port;
+
+    node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+    node.group = V2RAY_DEFAULT_GROUP;
+    node.remarks = remarks;
+    node.server = add;
+    node.port = stoi(port);
+    node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
+}
+
+void explodeKitsunebiNew(std::string kit, std::string custom_port, int local_port, nodeInfo &node)
+{
+    std::string ps, add, port, type, id, aid = "0", net = "tcp", path, host, tls, cipher = "auto", remarks;
+    std::string addition;
+    string_array userinfo;
+    kit = replace_all_distinct(kit, "vmess1://", "");
+
+    if(strFind(kit, "#"))
+    {
+        remarks = kit.substr(kit.find("#") + 1);
+        kit = kit.substr(0, kit.find("#"));
+    }
+
+    addition = kit.substr(kit.find("?") + 1);
+    kit = kit.substr(0, kit.find("?"));
+
+    userinfo = split(regReplace(kit, "(.*?)@(.*):(.*)", "$1,$2,$3"), ",");
+    id = userinfo[0];
+    add = userinfo[1];
+    if(strFind(userinfo[2], "/"))
+    {
+        port = userinfo[2].substr(0, userinfo[2].find("/"));
+        path = userinfo[2].substr(userinfo[2].find("/"));
+    }
+    else
+    {
+        port = userinfo[2];
+    }
+    net = getUrlArg(addition, "network");
+    tls = getUrlArg(addition, "tls") == "true" ? "tls" : "";
+    host = getUrlArg(addition, "ws.host");
+
+    if(remarks == "")
+        remarks = add + ":" + port;
+
+    node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
+    node.group = V2RAY_DEFAULT_GROUP;
+    node.remarks = remarks;
+    node.server = add;
+    node.port = stoi(port);
+    node.proxyStr = vmessConstruct(add, port, type, id, aid, net, cipher, path, host, tls, local_port);
 }
 
 bool explodeSurge(std::string surge, std::string custom_port, int local_port, std::vector<nodeInfo> &nodes, bool libev)
@@ -1391,7 +1479,7 @@ void explode(std::string link, bool sslibev, bool ssrlibev, std::string custom_p
 {
     if(strFind(link, "ssr://"))
         explodeSSR(link, sslibev, ssrlibev, custom_port, local_port, node);
-    else if(strFind(link, "vmess://"))
+    else if(strFind(link, "vmess://") || strFind(link, "vmess1://"))
         explodeVmess(link, custom_port, local_port, node);
     else if(strFind(link, "ss://"))
         explodeSS(link, sslibev, custom_port, local_port, node);
@@ -1445,7 +1533,7 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom
     }
 
     //try to parse as normal subscription
-    sub = base64_decode(sub);
+    sub = urlsafe_base64_decode(sub);
     strstream << sub;
     unsigned int index = nodes.size();
     char delimiter = split(sub, "\n").size() <= 1 ? split(sub, "\r").size() <= 1 ? ' ' : '\r' : '\n';

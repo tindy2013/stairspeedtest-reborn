@@ -63,6 +63,7 @@ std::string GBKToUTF8(std::string str_src);
 std::string trim(const std::string& str);
 std::string getSystemProxy();
 std::string rand_str(const int len);
+bool is_str_utf8(std::string data);
 
 void sleep(int interval);
 bool regFind(std::string src, std::string target);

@@ -291,9 +291,9 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bo
     {
         export_as_new_style = true;
         font = "tools" PATH_SLASH "misc" PATH_SLASH "SourceHanSansCN-Medium.otf";
-        fontsize = 10;
-        height_line = 24;
-        text_y_offset = 6;
+        fontsize = 13;
+        height_line = 30;
+        text_y_offset = 7;
         border_red = 0.5;
         border_green = 0.5;
         border_blue = 0.5;
@@ -458,7 +458,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bo
         if(i > 0)
             plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         else
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(group_widths[i], group_width), this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(group_widths[i], group_width) - (export_as_ssrspeed ? 4 : 0), this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
@@ -504,7 +504,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bo
             png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
         }
         //average speed
-        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + 3 : this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
         if(export_with_maxSpeed) //see if we want to draw max speed
         {
             j++;
@@ -518,7 +518,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bo
                 png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
             }
             //max speed
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + 3 : this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
         }
         line_index++; //one line completed,  moving up
         png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
