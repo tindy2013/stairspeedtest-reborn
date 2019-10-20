@@ -6,6 +6,7 @@
 
 #include "misc.h"
 #include "logger.h"
+#include "nodeinfo.h"
 
 #define MAX_NODES_COUNT 1024
 

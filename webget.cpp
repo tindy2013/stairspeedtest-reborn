@@ -5,23 +5,24 @@
 
 #include "webget.h"
 #include "logger.h"
+#include "socket.h"
 
-using namespace std;
+using namespace std::__cxx11;
 
 const int times_to_ping = 3;
 
 void draw_progress_sping(int progress, int *values)
 {
-    cerr<<"\r[";
+    std::cerr<<"\r[";
     for(int i = 0; i <= progress; i++)
     {
-        cerr<<(values[i] == 0 ? "*" : "-");
+        std::cerr<<(values[i] == 0 ? "*" : "-");
     }
     if(progress == times_to_ping - 1)
     {
-        cerr<<"]";
+        std::cerr<<"]";
     }
-    cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
+    std::cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
 }
 
 std::string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
@@ -108,12 +109,12 @@ std::string httpsGet(std::string host, std::string addr, std::string uri)
     }
     if((sHost = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        cerr<<"socket error "<<errno<<endl;
+        std::cerr<<"socket error "<<errno<<std::endl;
         return std::string();
     }
     if(startConnect(sHost, addr, 443) != 0)
     {
-        cerr<<"Connect err "<<errno<<endl;
+        std::cerr<<"Connect err "<<errno<<std::endl;
         return std::string();
     }
 
@@ -129,7 +130,7 @@ std::string httpsGet(std::string host, std::string addr, std::string uri)
                     "Host: " + host + "\r\n"
                     "User-Agent: " + user_agent_str + "\r\n"
                     "Accept: */*\r\n\r\n";
-        cerr<<data<<endl;
+        std::cerr<<data<<std::endl;
         SSL_write(ssl, data.data(), data.size());
         int len;
         char tmpbuf[BUF_SIZE];
@@ -214,11 +215,6 @@ std::string buildSocks5ProxyString(std::string addr, int port, std::string usern
     return proxystr;
 }
 
-std::string buildSocks5ProxyString(socks5Proxy proxy)
-{
-    return buildSocks5ProxyString(proxy.address, proxy.port, proxy.username, proxy.password);
-}
-
 std::string webGet(std::string url, std::string proxy)
 {
     return curlGet(url, proxy);
@@ -235,11 +231,6 @@ std::string webGet(std::string url, std::string proxy)
 
     if(https) return httpsGet(host, addr, uri); else return httpGet(host, addr, uri);
     */
-}
-
-std::string webGet(std::string url, socks5Proxy proxy)
-{
-    return curlGet(url, buildSocks5ProxyString(proxy));
 }
 
 double getLoadPageTime(std::string url, long timeout, std::string proxy)
@@ -299,7 +290,7 @@ int websitePing(nodeInfo *node, std::string url, std::string local_addr, int loc
         draw_progress_sping(loop_times - 1, node->rawSitePing);
         sleep(200);
     }
-    cerr<<endl;
+    std::cerr<<std::endl;
     if(succeedcounter)
     {
         char strtmp[16] = {};

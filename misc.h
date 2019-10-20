@@ -11,38 +11,7 @@
 #define PATH_SLASH "//"
 #endif // _WIN32
 
-#include "geoip.h"
-
 typedef std::vector<std::string> string_array;
-
-struct nodeInfo
-{
-    int linkType = -1;
-    int id = 0;
-    int groupID = 0;
-    bool online = false;
-    std::string group;
-    std::string remarks;
-    std::string server;
-    int port = 0;
-    std::string proxyStr;
-    long long rawSpeed[20] = {};
-    long long totalRecvBytes = 0;
-    int duration = 0;
-    std::string avgSpeed = "N/A";
-    std::string maxSpeed = "N/A";
-    std::string ulSpeed = "N/A";
-    std::string pkLoss = "100.00%";
-    int rawPing[6] = {};
-    std::string avgPing = "0.00";
-    int rawSitePing[10] = {};
-    std::string sitePing = "0.00";
-    std::string traffic;
-    geoIPInfo inboundGeoIP;
-    geoIPInfo outboundGeoIP;
-    std::string testFile;
-    std::string ulTarget;
-};
 
 static const std::string base64_chars =
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -70,13 +39,13 @@ bool regFind(std::string src, std::string target);
 std::string regReplace(std::string src, std::string match, std::string rep);
 bool regMatch(std::string src, std::string match);
 std::string speedCalc(double speed);
-std::string grabContent(std::string raw);
 std::string getMD5(std::string data);
 bool isIPv4(std::string address);
 bool isIPv6(std::string address);
 void urlParse(std::string url, std::string &host, std::string &path, int &port, bool &isTLS);
+void removeUTF8BOM(std::string &data);
 
-std::string fileGet(std::string path);
+std::string fileGet(std::string path, bool binary = true);
 int fileWrite(std::string path, std::string content, bool overwrite);
 bool fileExist(std::string path);
 bool fileCopy(std::string source,std::string dest);

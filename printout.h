@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
+
 #include "misc.h"
+#include "nodeinfo.h"
 
 #define SPEEDTEST_ERROR_NONE 0
 #define SPEEDTEST_ERROR_UNDEFINED 100

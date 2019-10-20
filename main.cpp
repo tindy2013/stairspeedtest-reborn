@@ -25,6 +25,7 @@
 #include "version.h"
 #include "ini_reader.h"
 #include "multithread_test.h"
+#include "nodeinfo.h"
 
 using namespace std::chrono;
 using namespace std::__cxx11;
@@ -60,6 +61,7 @@ bool test_site_ping = true;
 bool test_upload = false;
 bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
+bool verbose = false;
 std::string export_sort_method = "none";
 
 int avail_status[4] = {0, 0, 0, 0};
@@ -69,7 +71,7 @@ int curGroupID = 0;
 //declarations
 
 int tcping(nodeInfo *node);
-void getTestFile(nodeInfo *node, socks5Proxy proxy, std::vector<downloadLink> *downloadFiles, std::vector<linkMatchRule> *matchRules, std::string defaultTestFile);
+void getTestFile(nodeInfo *node, std::string proxy, std::vector<downloadLink> *downloadFiles, std::vector<linkMatchRule> *matchRules, std::string defaultTestFile);
 
 //original codes
 
@@ -529,9 +531,8 @@ void saveResult(std::vector<nodeInfo> *nodes)
 int singleTest(nodeInfo *node)
 {
     int retVal = 0;
-    std::string logdata = "", testserver, username, password;
+    std::string logdata = "", testserver, username, password, proxy;
     int testport;
-    socks5Proxy proxy;
     node->ulTarget = def_upload_target; //for now only use default
 
     auto start = steady_clock::now();
@@ -572,10 +573,7 @@ int singleTest(nodeInfo *node)
         if(node->linkType != -1 && avail_status[node->linkType] == 1)
             runClient(node->linkType, "");
     }
-    proxy.address = testserver;
-    proxy.port = testport;
-    proxy.username = username;
-    proxy.password = password;
+    proxy = buildSocks5ProxyString(testserver, testport, username, password);
 
     //printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
     if(!rpcmode)

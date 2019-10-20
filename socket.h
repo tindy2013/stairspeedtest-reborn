@@ -55,12 +55,4 @@ int connectThruSocks(SOCKET sHost, std::string host, int port);
 int connectThruHTTP(SOCKET sHost, std::string username, std::string password, std::string dsthost, int dstport);
 int checkPort(int startport);
 
-struct socks5Proxy
-{
-    std::string address;
-    int port;
-    std::string username;
-    std::string password;
-};
-
 #endif // SOCKET_H_INCLUDED

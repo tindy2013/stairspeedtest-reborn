@@ -13,6 +13,7 @@
 #include "logger.h"
 #include "printout.h"
 #include "webget.h"
+#include "nodeinfo.h"
 
 using namespace std::chrono;
 using namespace std::__cxx11;

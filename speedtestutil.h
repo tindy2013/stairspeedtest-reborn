@@ -5,6 +5,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "misc.h"
+#include "nodeinfo.h"
 
 std::string vmessConstruct(std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string tls, int local_port);
 std::string ssrConstruct(std::string group, std::string remarks, std::string remarks_base64, std::string server, std::string port, std::string protocol, std::string method, std::string obfs, std::string password, std::string obfsparam, std::string protoparam, int local_port, bool libev);

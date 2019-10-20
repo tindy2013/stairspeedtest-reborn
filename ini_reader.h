@@ -52,19 +52,19 @@ public:
 
     /**
     *  @brief Set this flag to true so any line within the section will be stored even it doesn't follow the "name=value" format.
-    * These line will store as the name "{NONAME}".
+    * These lines will store as the name "{NONAME}".
     */
     bool store_any_line = false;
 
     /**
-    *  @brief Save isolated items before any section define.
+    *  @brief Save isolated items before any section definitions.
     */
     bool store_isolated_line = false;
 
     /**
     *  @brief Allow a section title to appear multiple times.
     */
-    bool allow_multi_section_titles = false;
+    bool allow_dup_section_titles = false;
 
     /**
     *  @brief Initialize the reader.
@@ -119,6 +119,12 @@ public:
     */
     int Parse(std::string content) //parse content into mapped data
     {
+        if(!content.size()) //empty content
+            return -1;
+
+        //remove UTF-8 BOM
+        removeUTF8BOM(content);
+
         bool inExcludedSection = false;
         std::string strLine, thisSection, curSection, itemName, itemVal;
         std::string regSection = "^\\[(.*?)\\]$", regItem = "^(.*?)=(.*?)$";
@@ -157,7 +163,7 @@ public:
                 {
                     if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
                     {
-                        if(allow_multi_section_titles)
+                        if(allow_dup_section_titles)
                         {
                             eraseElements(existItemGroup);
                             existItemGroup = ini_content.at(curSection); //get the old items
@@ -166,7 +172,7 @@ public:
                             ini_content.erase(curSection); //remove the old section
                         }
                         else
-                            return -1;
+                            return -1; //not allowed, stop
                     }
                     ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert previous section to content map
                     read_sections.push_back(curSection); //add to read sections list
@@ -185,7 +191,7 @@ public:
         {
             if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
             {
-                if(allow_multi_section_titles)
+                if(allow_dup_section_titles)
                 {
                     eraseElements(existItemGroup);
                     existItemGroup = ini_content.at(curSection); //get the old items
@@ -194,7 +200,7 @@ public:
                     ini_content.erase(curSection); //remove the old section
                 }
                 else
-                    return -1;
+                    return -1; //not allowed, stop
             }
             ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert this section to content map
             read_sections.push_back(curSection); //add to read sections list
@@ -208,7 +214,9 @@ public:
     */
     int ParseFile(std::string filePath)
     {
-        return Parse(fileGet(filePath));
+        if(!fileExist(filePath))
+            return -1;
+        return Parse(fileGet(filePath, false));
     }
 
     /**

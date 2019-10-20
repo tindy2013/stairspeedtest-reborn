@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include "socket.h"
-
 struct geoIPInfo
 {
     std::string ip;
@@ -23,6 +21,5 @@ struct geoIPInfo
 };
 
 geoIPInfo getGeoIPInfo(std::string ip, std::string proxy);
-geoIPInfo getGeoIPInfo(std::string ip, socks5Proxy proxy);
 
 #endif // GEOIP_H_INCLUDED

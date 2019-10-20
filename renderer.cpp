@@ -7,6 +7,7 @@
 
 #include "renderer.h"
 #include "version.h"
+#include "nodeinfo.h"
 
 using namespace std::chrono;
 using namespace std::__cxx11;

@@ -4,8 +4,9 @@
 #include "geoip.h"
 #include "misc.h"
 #include "logger.h"
+#include "nodeinfo.h"
 
-void getTestFile(nodeInfo *node, socks5Proxy proxy, std::vector<downloadLink> *downloadFiles, std::vector<linkMatchRule> *matchRules, std::string defaultTestFile)
+void getTestFile(nodeInfo *node, std::string proxy, std::vector<downloadLink> *downloadFiles, std::vector<linkMatchRule> *matchRules, std::string defaultTestFile)
 {
     writeLog(LOG_TYPE_RULES, "Rule match started.");
     std::string def_test_file = defaultTestFile;

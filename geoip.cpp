@@ -5,6 +5,7 @@
 #include "misc.h"
 #include "logger.h"
 #include "rapidjson_extra.h"
+#include "socket.h"
 
 using namespace rapidjson;
 
@@ -81,9 +82,4 @@ geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
 
     writeLog(LOG_TYPE_GEOIP, "Parse GeoIP complete. Leaving.");
     return info;
-}
-
-geoIPInfo getGeoIPInfo(std::string ip, socks5Proxy proxy)
-{
-    return getGeoIPInfo(ip, buildSocks5ProxyString(proxy));
 }

@@ -445,18 +445,6 @@ std::string urlsafe_base64_decode(std::string encoded_string)
     return base64_decode(urlsafe_base64_reverse(encoded_string));
 }
 
-std::string grabContent(std::string raw)
-{
-    /*
-    std::string strTmp="";
-    vector<std::string> content;
-    content=split(raw,"\r\n\r\n");
-    for(unsigned int i=1;i<content.size();i++) strTmp+=content[i];
-    */
-    return regReplace(raw.substr(raw.find("\r\n\r\n") + 4), "^\\d*?\\r\\n(.*)\\r\\n\\d", "$1");
-    //return raw;
-}
-
 std::string getMD5(std::string data)
 {
     MD5_CTX ctx;
@@ -478,12 +466,13 @@ std::string getMD5(std::string data)
     return result;
 }
 
-std::string fileGet(std::string path)
+std::string fileGet(std::string path, bool binary)
 {
     std::ifstream infile;
     std::stringstream strstrm;
+    std::ios::openmode mode = binary ? std::ios::binary : std::ios::in;
 
-    infile.open(path, std::ios::binary);
+    infile.open(path, mode);
     if(infile)
     {
         strstrm<<infile.rdbuf();
@@ -548,12 +537,10 @@ bool isIPv4(std::string address)
 
 bool isIPv6(std::string address)
 {
-    int ret;
     std::vector<std::string> regLists = {"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$", "^((?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::((?:([0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{1,4})?)$", "^(::(?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5})|((?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5}::)$"};
     for(unsigned int i = 0; i < regLists.size(); i++)
     {
-        ret = regMatch(address, regLists[i]);
-        if(ret)
+        if(regMatch(address, regLists[i]))
             return true;
     }
     return false;
@@ -683,4 +670,11 @@ bool is_str_utf8(std::string data)
         return true;
     }
     return true;
+}
+
+void removeUTF8BOM(std::string &data)
+{
+    int BOM[3] = {0xef, 0xbb, 0xbf};
+    if(data.compare(0, 3, (char*)BOM))
+        data = data.substr(3);
 }
