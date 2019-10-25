@@ -41,6 +41,11 @@ std::string socksaddr = "127.0.0.1";
 std::string custom_group;
 std::string pngpath;
 
+//for use of web server
+bool webserver_mode = false;
+std::string listen_address = "127.0.0.1";
+int listen_port = 10870, cur_node_id = -1;
+
 bool ss_libev = true;
 bool ssr_libev = true;
 std::string def_test_file = "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe";
@@ -72,6 +77,7 @@ int curGroupID = 0;
 
 int tcping(nodeInfo *node);
 void getTestFile(nodeInfo *node, std::string proxy, std::vector<downloadLink> *downloadFiles, std::vector<linkMatchRule> *matchRules, std::string defaultTestFile);
+void ssrspeed_webserver_routine(std::string listen_address, int listen_port);
 
 //original codes
 
@@ -142,15 +148,15 @@ void copyNodesWithGroupID(std::vector<nodeInfo> *source, std::vector<nodeInfo> *
 
 void clientCheck()
 {
-    #ifdef _WIN32
+#ifdef _WIN32
     std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
     std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
     std::string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
-    #else
+#else
     std::string v2core_path = "tools/clients/v2ray";
     std::string ssr_libev_path = "tools/clients/ssr-local";
     std::string ss_libev_path = "tools/clients/ss-local";
-    #endif // _WIN32
+#endif // _WIN32
 
     if(fileExist(v2core_path))
     {
@@ -408,7 +414,7 @@ void readConf(std::string path)
         {
             for(i = 0; i < vChild.size() - 1; i++)
             {
-                   custom_color_bounds.push_back(stoi(vChild[i]));
+                custom_color_bounds.push_back(stoi(vChild[i]));
             }
         }
     }
@@ -457,6 +463,14 @@ void readConf(std::string path)
         bounds.swap(custom_color_bounds);
     }
 
+    ini.EnterSection("webserver");
+    if(ini.ItemExist("webserver_mode"))
+        webserver_mode = ini.GetBool("webserver_mode");
+    if(ini.ItemExist("listen_address"))
+        listen_address = ini.Get("listen_address");
+    if(ini.ItemExist("listen_port"))
+        listen_port = ini.GetInt("listen_port");
+
     remarksInit(custom_exclude_remarks, custom_include_remarks);
 }
 
@@ -482,6 +496,8 @@ void chkArg(int argc, char* argv[])
     {
         if(!strcmp(argv[i], "/rpc"))
             rpcmode = true;
+        if(!strcmp(argv[i], "/web"))
+            webserver_mode = true;
     }
 }
 
@@ -534,6 +550,7 @@ int singleTest(nodeInfo *node)
     std::string logdata = "", testserver, username, password, proxy;
     int testport;
     node->ulTarget = def_upload_target; //for now only use default
+    cur_node_id = node->id;
 
     auto start = steady_clock::now();
     if(node->proxyStr == "LOG") //import from result
@@ -713,6 +730,7 @@ void batchTest(std::vector<nodeInfo> *nodes)
     nodeInfo node;
     unsigned int onlines = 0;
     long long tottraffic = 0;
+    cur_node_id = -1;
 
     node_count = nodes->size();
     writeLog(LOG_TYPE_INFO, "Total node(s) found: " + to_string(node_count));
@@ -768,6 +786,7 @@ void batchTest(std::vector<nodeInfo> *nodes)
             }
         }
     }
+    cur_node_id = -1;
 }
 
 void rewriteNodeID(std::vector<nodeInfo> *nodes)
@@ -820,7 +839,7 @@ void addNodes(std::string link, bool multilink)
     {
     case SPEEDTEST_MESSAGE_FOUNDSUB:
         printMsgDirect(SPEEDTEST_MESSAGE_FOUNDSUB, rpcmode);
-        if(!rpcmode && !multilink)
+        if(!rpcmode && !multilink && !webserver_mode)
         {
             printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(std::cin, strInput);
@@ -959,6 +978,7 @@ int main(int argc, char* argv[])
     signal(SIGINT, signalHandler);
 
     chkArg(argc, argv);
+
     makeDir("logs");
     makeDir("results");
     logInit(rpcmode);
@@ -987,6 +1007,11 @@ int main(int argc, char* argv[])
     writeLog(LOG_TYPE_INFO, "Using local port: " + to_string(socksport));
     writeLog(LOG_TYPE_INFO, "Init completed.");
     //intro message
+    if(webserver_mode)
+    {
+        ssrspeed_webserver_routine(listen_address, listen_port);
+        return 0;
+    }
     printMsgDirect(SPEEDTEST_MESSAGE_WELCOME, rpcmode);
     getline(std::cin, link);
     writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));

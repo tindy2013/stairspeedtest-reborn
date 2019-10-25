@@ -14,9 +14,9 @@
 typedef std::vector<std::string> string_array;
 
 static const std::string base64_chars =
-             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-             "abcdefghijklmnopqrstuvwxyz"
-             "0123456789+/";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
 
 std::string UrlDecode(const std::string& str);
 std::string base64_decode(std::string encoded_string);
@@ -65,15 +65,15 @@ template <typename T> static inline void eraseElements(T &target)
 #ifdef _MACOS
 namespace std
 {
-    namespace __cxx11
-    {
-        template <typename T> std::string to_string(const T& n)
-        {
-            std::ostringstream ss;
-            ss << n ;
-            return ss.str();
-        }
-    }
+namespace __cxx11
+{
+template <typename T> std::string to_string(const T& n)
+{
+    std::ostringstream ss;
+    ss << n ;
+    return ss.str();
+}
+}
 }
 #endif // _MACOS
 

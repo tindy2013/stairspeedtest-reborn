@@ -33,7 +33,7 @@ private:
     {
         bool excluded = false, included = false;
         if(count(exclude_sections.begin(), exclude_sections.end(), section) > 0)
-                excluded = true;
+            excluded = true;
         if(include_sections.size() != 0)
         {
             if(count(include_sections.begin(), include_sections.end(), section) > 0)
@@ -175,7 +175,7 @@ public:
                             return -1; //not allowed, stop
                     }
                     ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert previous section to content map
-                    read_sections.push_back(curSection); //add to read sections list
+                    read_sections.emplace_back(curSection); //add to read sections list
                 }
                 eraseElements(itemGroup); //reset section storage
                 curSection = thisSection; //start a new section
@@ -203,7 +203,7 @@ public:
                     return -1; //not allowed, stop
             }
             ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert this section to content map
-            read_sections.push_back(curSection); //add to read sections list
+            read_sections.emplace_back(curSection); //add to read sections list
         }
         parsed = true;
         return 0; //all done

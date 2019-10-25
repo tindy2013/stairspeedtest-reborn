@@ -117,7 +117,7 @@ static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, s
     }
     total_width = cntNumber * widNumber + widDot;
     //if(strFind(text, "."))
-        //total_width += widDot;
+    //total_width += widDot;
 
     if(strFind(text, "%"))
         total_width += widPercent;
@@ -285,7 +285,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bo
     //extra value for aligning to the center
     const int enableCenterAlign = export_as_new_style ? 1 : 0;
     const int center_align_offset_side = center_align_offset / 2;
-    #define calcCenterOffset(item, total) ((((total - item) / 2) - center_align_offset_side) * enableCenterAlign)
+#define calcCenterOffset(item, total) ((((total - item) / 2) - center_align_offset_side) * enableCenterAlign)
 
     //SSRSpeed style
     if(export_as_ssrspeed)

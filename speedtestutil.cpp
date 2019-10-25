@@ -562,6 +562,9 @@ void explodeSSR(std::string ssr, bool ss_libev, bool ssr_libev, std::string cust
 
     if(group == "")
         group = SSR_DEFAULT_GROUP;
+    //else
+    //group = replace_all_distinct(replace_all_distinct(group, "\r", ""), "\n", "");
+
     if(remarks == "")
     {
         remarks = server + ":" + port;
@@ -626,8 +629,6 @@ void explodeSSRConf(std::string content, std::string custom_port, int local_port
             port = custom_port;
         else
             json["configs"][i]["server_port"] >> port;
-        if(remarks == "")
-            remarks = server + ":" + port;
 
         json["configs"][i]["remarks_base64"] >> remarks_base64;
         json["configs"][i]["password"] >> password;
@@ -637,6 +638,19 @@ void explodeSSRConf(std::string content, std::string custom_port, int local_port
         json["configs"][i]["protocolparam"] >> protoparam;
         json["configs"][i]["obfs"] >> obfs;
         json["configs"][i]["obfsparam"] >> obfsparam;
+
+        if(remarks_base64 != "")
+        {
+            remarks = base64_decode(remarks_base64);
+        }
+        else
+        {
+            if(remarks == "")
+            {
+                remarks = server + ":" + port;
+            }
+            remarks_base64 = base64_encode(remarks);
+        }
 
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
         node.group = group;
@@ -1206,6 +1220,31 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
             node.linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
             node.group = V2RAY_DEFAULT_GROUP;
             node.proxyStr = vmessConstruct(server, port, "", id, "0", net, method, path, host, tls, local_port);
+        }
+        else if(remarks == "shadowsocks") //quantumult style ss link
+        {
+            server = trim(configs[0].substr(0, configs[0].rfind(":")));
+            port = custom_port == "" ? trim(configs[0].substr(configs[0].rfind(":") + 1)) : custom_port;
+            plugin = remarks = "";
+
+            for(i = 1; i < configs.size(); i++)
+            {
+                vArray = split(trim(configs[i]), "=");
+                if(vArray.size() != 2)
+                    continue;
+                else if(vArray[0] == "method")
+                    method = vArray[1];
+                else if(vArray[0] == "password")
+                    password = vArray[1];
+                else if(vArray[0] == "tag")
+                    remarks = vArray[1];
+            }
+            if(remarks == "")
+                remarks = server + ":" + port;
+
+            node.linkType = SPEEDTEST_MESSAGE_FOUNDSS;
+            node.group = SS_DEFAULT_GROUP;
+            node.proxyStr = ssConstruct(server, port, password, method, plugin, pluginopts, remarks, local_port, libev);
         }
         else
             continue;

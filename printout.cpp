@@ -11,7 +11,8 @@ struct LOOKUP_ITEM
     std::string info;
 };
 
-LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
+LOOKUP_ITEM SPEEDTEST_MESSAGES[] =
+{
     {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
     {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nIf you want to test more than one link, separate them with '|'.\nLink: "},
     {SPEEDTEST_MESSAGE_MULTILINK, "Multiple link provided, parsing all nodes.\n\n"},
@@ -55,7 +56,8 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {-1, ""}
 };
 
-LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
+LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] =
+{
     {SPEEDTEST_MESSAGE_WELCOME, "{\"info\":\"started\"}\n"},
     {SPEEDTEST_MESSAGE_EOF, "{\"info\":\"eof\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "{\"info\":\"foundvmess\"}\n"},
@@ -104,7 +106,8 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
 std::string lookUp(int index, LOOKUP_ITEM *items)
 {
     int i = 0;
-    while (0 <= items[i].index) {
+    while (0 <= items[i].index)
+    {
         if (items[i].index == index)
             return items[i].info;
         i++;
@@ -117,7 +120,9 @@ std::string lookUp(int index, bool rpcmode)
     if(rpcmode)
     {
         return lookUp(index, SPEEDTEST_MESSAGES_RPC);
-    } else {
+    }
+    else
+    {
         return lookUp(index, SPEEDTEST_MESSAGES);
     }
 }

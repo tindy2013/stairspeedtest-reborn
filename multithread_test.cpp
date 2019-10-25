@@ -147,8 +147,8 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     int retVal, cur_len/*, recv_len = 0*/;
     SOCKET sHost;
     std::string request = "GET " + uri + " HTTP/1.1\r\n"
-                    "Host: " + host + "\r\n"
-                    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
+                          "Host: " + host + "\r\n"
+                          "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
 
     sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
@@ -253,8 +253,8 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     int retVal, cur_len;
     SOCKET sHost;
     std::string request = "POST " + uri + " HTTP/1.1\r\n"
-                    "Content-Length: 134217728\r\n"
-                    "Host: " + host + "\r\n\r\n";
+                          "Content-Length: 134217728\r\n"
+                          "Host: " + host + "\r\n\r\n";
     std::string post_data;
 
     sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
@@ -550,8 +550,8 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
     bool useTLS = false;
     urlParse(target, host, uri, port, useTLS);
     std::string request = "GET " + uri + " HTTP/1.1\r\n"
-                    "Host: " + host + "\r\n"
-                    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
+                          "Host: " + host + "\r\n"
+                          "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
 
 
     writeLog(LOG_TYPE_GPING, "Website ping started. Target: '" + target + "' . Proxy: '" + localaddr + ":" + to_string(localport) + "' .");

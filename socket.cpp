@@ -162,7 +162,10 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
 #else
     struct sigaction act, oldact;
-    act.sa_handler = [](int signo){return;};
+    act.sa_handler = [](int signo)
+    {
+        return;
+    };
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGALRM);
     act.sa_flags = SA_INTERRUPT;
@@ -244,14 +247,14 @@ int simpleSend(std::string addr, int port, std::string data)
 std::string hostnameToIPAddr(std::string host)
 {
     //old function
-/*
-    struct in_addr inaddr;
-    hostent *h = gethostbyname(host.data());
-    if(h == NULL)
-        return std::string();
-    inaddr.s_addr = *(u_long*)h->h_addr_list[0];
-    return inet_ntoa(inaddr);
-*/
+    /*
+        struct in_addr inaddr;
+        hostent *h = gethostbyname(host.data());
+        if(h == NULL)
+            return std::string();
+        inaddr.s_addr = *(u_long*)h->h_addr_list[0];
+        return inet_ntoa(inaddr);
+    */
     //new function
     int retVal;
     std::string retAddr;

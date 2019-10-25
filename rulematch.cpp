@@ -19,7 +19,7 @@ void getTestFile(nodeInfo *node, std::string proxy, std::vector<downloadLink> *d
     writeLog(LOG_TYPE_RULES, "Fetching inbound GeoIP info.");
     node->outboundGeoIP = getGeoIPInfo("", proxy);
     //if(node->outboundGeoIP.organization == "") //something went wrong, try again
-        //node->outboundGeoIP = getGeoIPInfo("", proxy);
+    //node->outboundGeoIP = getGeoIPInfo("", proxy);
 
     //scan the URLs first to find the default one
     writeLog(LOG_TYPE_RULES, "Searching default rule.");

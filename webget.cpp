@@ -39,11 +39,11 @@ static int writer(char *data, size_t size, size_t nmemb, std::string *writerData
 
 static size_t writer_dummy(void *ptr, size_t size, size_t nmemb, void *data)
 {
-  /* we are not interested in the downloaded bytes itself,
-     so we only return the size we would have saved ... */
-  (void)ptr;  /* unused */
-  (void)data; /* unused */
-  return (size_t)(size * nmemb);
+    /* we are not interested in the downloaded bytes itself,
+       so we only return the size we would have saved ... */
+    (void)ptr;  /* unused */
+    (void)data; /* unused */
+    return (size_t)(size * nmemb);
 }
 
 std::string httpGet(std::string host, std::string addr, std::string uri)
@@ -59,9 +59,9 @@ std::string httpGet(std::string host, std::string addr, std::string uri)
     startConnect(sHost, addr, 80);
 
     std::string content = "GET " + uri + " HTTP/1.1\r\n"
-                   "Host: " + host + "\r\n"
-                   "User-Agent: " + user_agent_str + "\r\n"
-                   "Accept: */*\r\n\r\n";
+                          "Host: " + host + "\r\n"
+                          "User-Agent: " + user_agent_str + "\r\n"
+                          "Accept: */*\r\n\r\n";
 
     setTimeout(sHost, 1000);
     retVal = send_simple(sHost, content);
@@ -127,9 +127,9 @@ std::string httpsGet(std::string host, std::string addr, std::string uri)
     {
         //cerr<<"connected with "<<SSL_get_cipher(ssl)<<" encryption."<<endl;
         std::string data = "GET " + uri + " HTTP/1.1\r\n"
-                    "Host: " + host + "\r\n"
-                    "User-Agent: " + user_agent_str + "\r\n"
-                    "Accept: */*\r\n\r\n";
+                           "Host: " + host + "\r\n"
+                           "User-Agent: " + user_agent_str + "\r\n"
+                           "Accept: */*\r\n\r\n";
         std::cerr<<data<<std::endl;
         SSL_write(ssl, data.data(), data.size());
         int len;
@@ -251,7 +251,8 @@ double getLoadPageTime(std::string url, long timeout, std::string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
     res = curl_easy_perform(curl_handle);
-    if(CURLE_OK == res) {
+    if(CURLE_OK == res)
+    {
         double val;
         res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME, &val);
         if(val > 0.0)
