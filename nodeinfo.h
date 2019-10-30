@@ -8,8 +8,8 @@
 struct nodeInfo
 {
     int linkType = -1;
-    int id = 0;
-    int groupID = 0;
+    int id = -1;
+    int groupID = -1;
     bool online = false;
     std::string group;
     std::string remarks;

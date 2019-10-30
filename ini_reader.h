@@ -5,8 +5,6 @@
 #include <vector>
 #include <algorithm>
 
-#include "misc.h"
-
 #define MAX_LINE_LENGTH 4096
 
 typedef std::map<std::string, std::multimap<std::string, std::string>> ini_data_struct;
@@ -93,7 +91,7 @@ public:
     */
     void ExcludeSection(std::string section)
     {
-        exclude_sections.push_back(section);
+        exclude_sections.emplace_back(section);
     }
 
     /**
@@ -101,7 +99,7 @@ public:
     */
     void IncludeSection(std::string section)
     {
-        include_sections.push_back(section);
+        include_sections.emplace_back(section);
     }
 
     /**
@@ -127,9 +125,9 @@ public:
 
         bool inExcludedSection = false;
         std::string strLine, thisSection, curSection, itemName, itemVal;
-        std::string regSection = "^\\[(.*?)\\]$", regItem = "^(.*?)=(.*?)$";
         string_multimap itemGroup, existItemGroup;
         std::stringstream strStrm;
+        unsigned int lineSize = 0, epos = 0;
         char delimiter = count(content.begin(), content.end(), '\n') <= 1 ? '\r' : '\n';
 
         EraseAll(); //first erase all data
@@ -141,40 +139,46 @@ public:
         strStrm<<content;
         while(getline(strStrm, strLine, delimiter)) //get one line of content
         {
-            strLine = replace_all_distinct(strLine, "\r", ""); //remove line break
-            if(!strLine.size() || strLine.size() > MAX_LINE_LENGTH || strLine.find(";") == 0 || strLine.find("#") == 0) //empty lines, lines longer than MAX_LINE_LENGTH and comments are ignored
+            lineSize = strLine.size();
+            if(!lineSize || lineSize > MAX_LINE_LENGTH || strLine[0] == ';' || strLine[0] == '#') //empty lines, lines longer than MAX_LINE_LENGTH and comments are ignored
                 continue;
-            if(regMatch(strLine, regItem)) //is an item
+            if(strLine[lineSize - 1] == '\r') //remove line break
+            {
+                strLine.replace(lineSize - 1, 0, "");
+                lineSize--;
+            }
+            epos = strLine.find("=");
+            if(epos != strLine.npos) //is an item
             {
                 if(inExcludedSection) //this section is excluded
                     continue;
                 if(!curSection.size()) //not in any section
                     return -1;
-                itemName = trim(regReplace(strLine, regItem, "$1"));
-                itemVal = trim(regReplace(strLine, regItem, "$2"));
-                itemGroup.insert(std::pair<std::string, std::string>(itemName, itemVal)); //insert to current section
+                itemName = trim(strLine.substr(0, epos));
+                itemVal = trim(strLine.substr(epos + 1));
+                itemGroup.emplace(itemName, itemVal); //insert to current section
             }
-            else if(regMatch(strLine, regSection)) //is a section title
+            else if(strLine[0] == '[' && strLine[lineSize - 1] == ']') //is a section title
             {
-                thisSection = regReplace(strLine, regSection, "$1"); //save section title
+                thisSection = strLine.substr(1, lineSize - 2); //save section title
                 inExcludedSection = chkIgnore(thisSection); //check if this section is excluded
 
-                if(curSection != "" && itemGroup.size() != 0) //just finished reading a section
+                if(curSection.size() && itemGroup.size()) //just finished reading a section
                 {
-                    if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
+                    if(ini_content.count(curSection)) //a section with the same name has been inserted
                     {
                         if(allow_dup_section_titles)
                         {
                             eraseElements(existItemGroup);
                             existItemGroup = ini_content.at(curSection); //get the old items
                             for(auto &x : existItemGroup)
-                                itemGroup.insert(x); //insert them all into new section
+                                itemGroup.emplace(x); //insert them all into new section
                             ini_content.erase(curSection); //remove the old section
                         }
                         else
                             return -1; //not allowed, stop
                     }
-                    ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert previous section to content map
+                    ini_content.emplace(curSection, itemGroup); //insert previous section to content map
                     read_sections.emplace_back(curSection); //add to read sections list
                 }
                 eraseElements(itemGroup); //reset section storage
@@ -182,27 +186,27 @@ public:
             }
             else if(store_any_line && !inExcludedSection && curSection.size()) //store a line without name
             {
-                itemGroup.insert(std::pair<std::string, std::string>("{NONAME}", strLine));
+                itemGroup.emplace("{NONAME}", strLine);
             }
-            if(include_sections.size() != 0 && include_sections == read_sections) //all included sections has been read
+            if(include_sections.size() && include_sections == read_sections) //all included sections has been read
                 break; //exit now
         }
-        if(curSection != "" && itemGroup.size() != 0) //final section
+        if(curSection.size() && itemGroup.size()) //final section
         {
-            if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
+            if(ini_content.count(curSection)) //a section with the same name has been inserted
             {
                 if(allow_dup_section_titles)
                 {
                     eraseElements(existItemGroup);
                     existItemGroup = ini_content.at(curSection); //get the old items
                     for(auto &x : existItemGroup)
-                        itemGroup.insert(x); //insert them all into new section
+                        itemGroup.emplace(x); //insert them all into new section
                     ini_content.erase(curSection); //remove the old section
                 }
                 else
                     return -1; //not allowed, stop
             }
-            ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(curSection, itemGroup)); //insert this section to content map
+            ini_content.emplace(curSection, itemGroup); //insert this section to content map
             read_sections.emplace_back(curSection); //add to read sections list
         }
         parsed = true;
@@ -244,7 +248,7 @@ public:
 
         for(auto &x : ini_content)
         {
-            retData.push_back(x.first);
+            retData.emplace_back(x.first);
         }
 
         return retData;
@@ -292,7 +296,7 @@ public:
     */
     bool ItemExist(std::string itemName)
     {
-        return current_section != "" ? ItemExist(current_section, itemName) : false;
+        return current_section.size() ? ItemExist(current_section, itemName) : false;
     }
 
     /**
@@ -323,7 +327,7 @@ public:
     */
     bool ItemPrefixExist(std::string itemName)
     {
-        return current_section != "" ? ItemPrefixExist(current_section, itemName) : false;
+        return current_section.size() ? ItemPrefixExist(current_section, itemName) : false;
     }
 
     /**
@@ -369,7 +373,7 @@ public:
     */
     int GetItems(string_multimap &data)
     {
-        return current_section != "" ? GetItems(current_section, data) : -1;
+        return current_section.size() ? GetItems(current_section, data) : -1;
     }
 
     /**
@@ -388,7 +392,7 @@ public:
         for(auto &x : mapTemp)
         {
             if(x.first.find(itemName) == 0)
-                results.push_back(x.second);
+                results.emplace_back(x.second);
         }
 
         return 0;
@@ -399,7 +403,7 @@ public:
     */
     int GetAll(std::string itemName, string_array &results)
     {
-        return current_section != "" ? GetAll(current_section, itemName, results) : -1;
+        return current_section.size() ? GetAll(current_section, itemName, results) : -1;
     }
 
     /**
@@ -429,7 +433,7 @@ public:
     */
     std::string Get(std::string itemName)
     {
-        return current_section != "" ? Get(current_section, itemName) : std::string();
+        return current_section.size() ? Get(current_section, itemName) : std::string();
     }
 
     /**
@@ -445,7 +449,7 @@ public:
     */
     bool GetBool(std::string itemName)
     {
-        return current_section != "" ? Get(current_section, itemName) == "true" : false;
+        return current_section.size() ? Get(current_section, itemName) == "true" : false;
     }
 
     /**
@@ -483,7 +487,7 @@ public:
     */
     std::string GetFirst(std::string itemName)
     {
-        return current_section != "" ? GetFirst(current_section, itemName) : std::string();
+        return current_section.size() ? GetFirst(current_section, itemName) : std::string();
     }
 
     /**
@@ -505,7 +509,7 @@ public:
     */
     template <typename T> void GetIntArray(std::string itemName, std::string separator, T &Array)
     {
-        if(current_section != "")
+        if(current_section.size())
             GetIntArray(current_section, itemName, separator, Array);
     }
 
@@ -612,7 +616,7 @@ public:
     */
     template <typename T> int SetArray(std::string itemName, std::string separator, T &Array)
     {
-        return current_section == "" ? -1 : SetArray(current_section, itemName, separator, Array);
+        return current_section.size() ? SetArray(current_section, itemName, separator, Array) : -1;
     }
 
     /**
@@ -637,7 +641,7 @@ public:
     */
     int Erase(std::string itemName)
     {
-        return current_section != "" ? Erase(current_section, itemName) : -1;
+        return current_section.size() ? Erase(current_section, itemName) : -1;
     }
 
     /**
@@ -645,8 +649,8 @@ public:
     */
     int EraseFirst(std::string section, std::string itemName)
     {
-        std::multimap<std::string, std::string> &mapTemp = ini_content.at(section);
-        std::multimap<std::string, std::string>::iterator iter = mapTemp.find(itemName);
+        string_multimap &mapTemp = ini_content.at(section);
+        string_multimap::iterator iter = mapTemp.find(itemName);
         if(iter != mapTemp.end())
         {
             mapTemp.erase(iter);
@@ -667,7 +671,7 @@ public:
     */
     int EraseFirst(std::string itemName)
     {
-        return current_section != "" ? EraseFirst(current_section, itemName) : -1;
+        return current_section.size() ? EraseFirst(current_section, itemName) : -1;
     }
 
     /**

@@ -3,7 +3,7 @@
 
 typedef std::string (*response_callback)(std::string, std::string); //process arguments and POST data and return served-content
 
-#define CALLBACK_LAMBDA_ARGS std::string argument, std::string postdata
+#define RESPONSE_CALLBACK_ARGS std::string argument, std::string postdata
 
 struct listener_args
 {

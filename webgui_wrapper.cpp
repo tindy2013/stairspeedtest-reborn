@@ -15,6 +15,7 @@
 #include "rapidjson_extra.h"
 #include "printout.h"
 #include "renderer.h"
+#include "speedtestutil.h"
 
 typedef std::lock_guard<std::mutex> guarded_mutex;
 std::mutex start_flag_mutex;
@@ -22,9 +23,9 @@ bool start_flag = false;
 
 //variables from main
 extern std::vector<nodeInfo> allNodes;
-extern int cur_node_id;
-extern std::string speedtest_mode, export_sort_method, export_color_style, custom_group;
-extern bool ssr_libev;
+extern int cur_node_id, socksport;
+extern std::string speedtest_mode, export_sort_method, export_color_style, custom_group, override_conf_port;
+extern bool ssr_libev, ss_libev;
 extern std::vector<color> custom_color_groups;
 extern std::vector<int> custom_color_bounds;
 
@@ -34,8 +35,9 @@ void rewriteNodeID(std::vector<nodeInfo> *nodes);
 void batchTest(std::vector<nodeInfo> *nodes);
 
 //webui variables
-std::vector<nodeInfo> targetNodes;
+std::vector<nodeInfo> targetNodes, testedNodes;
 std::string server_status = "stopped";
+nodeInfo current_node;
 
 bool safe_get_start_flag()
 {
@@ -184,19 +186,28 @@ std::string ssrspeed_generate_results(std::vector<nodeInfo> &nodes)
         if(x.id == cur_node_id)
         {
             node = x;
-            break;
+        }
+        if(x.id == current_node.id)
+        {
+            current_node = x;
         }
     }
     if(node.linkType != -1)
         json_write_node(writer, node);
+    if(current_node.groupID != node.groupID || current_node.id != node.id)
+    {
+        if(current_node.linkType != -1)
+        {
+            testedNodes.push_back(current_node);
+        }
+        current_node = node;
+    }
     writer.EndObject();
 
     writer.Key("results");
     writer.StartArray();
-    for(nodeInfo &x : nodes)
+    for(nodeInfo &x : testedNodes)
     {
-        if(x.id == cur_node_id)
-            continue;
         writer.StartObject();
         json_write_node(writer, x);
         writer.EndObject();
@@ -285,33 +296,35 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
 {
     listener_args args = {listen_address, listen_port, 10, 4};
 
-    append_response("GET", "/status", "text/plain", [](std::string argument, std::string postdata) -> std::string
+    append_response("GET", "/status", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return server_status;
     });
 
-    append_response("GET", "/", "REDIRECT", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("GET", "/", "REDIRECT", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return "https://web.xn--8str30ceuh.site/";
     });
 
-    append_response("GET", "/favicon.ico", "x-icon", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("GET", "/favicon.ico", "x-icon", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return fileGet("tools/gui/favicon.ico");
     });
 
-    append_response("GET", "/getversion", "text/plain", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("GET", "/getversion", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return "{\"main\":\"2.6.3\",\"webapi\":\"0.5.2\"}";
     });
 
-    append_response("GET", "/getcolors", "text/plain", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("GET", "/getcolors", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return ssrspeed_generate_color();
     });
 
-    append_response("POST", "/readsubscriptions", "text/plain;charset=utf-8", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("POST", "/readsubscriptions", "text/plain;charset=utf-8", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
+        if(server_status == "running")
+            return "running";
         rapidjson::Document json;
         std::string suburl;
         json.Parse(postdata.data());
@@ -321,12 +334,21 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
         return ssrspeed_generate_web_configs(allNodes);
     });
 
-    append_response("POST", "/readfileconfig", "text/plain", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("POST", "/readfileconfig", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        return "error";
+        eraseElements(allNodes);
+        if(server_status == "running")
+            return "running";
+        else
+        {
+            if(explodeConfContent(getFormData(postdata), override_conf_port, socksport, ss_libev, ssr_libev, allNodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+                return "error";
+            else
+                return ssrspeed_generate_web_configs(allNodes);
+        }
     });
 
-    append_response("POST", "/start", "text/plain", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("POST", "/start", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         server_status = "running";
         rapidjson::Document json;
@@ -349,13 +371,11 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
         return "done";
     });
 
-    append_response("GET", "/getresults", "text/plain;charset=utf-8", [](CALLBACK_LAMBDA_ARGS) -> std::string
+    append_response("GET", "/getresults", "text/plain;charset=utf-8", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return ssrspeed_generate_results(targetNodes);
     });
 
     std::cerr << "Stair Speedtest " VERSION " Web server running @ http://" << listen_address << ":" << listen_port << std::endl;
     start_web_server_multi(&args);
-    while(true)
-        sleep(10000); //block forever to simulate the single thread version
 }

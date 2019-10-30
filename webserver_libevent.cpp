@@ -10,6 +10,7 @@
 
 #include "misc.h"
 #include "webserver.h"
+#include "socket.h"
 
 struct responseRoute
 {
@@ -139,7 +140,7 @@ int start_web_server(void *argv)
     return 0;
 }
 
-void* httpserver_Dispatch(void *arg)
+void* httpserver_dispatch(void *arg)
 {
     event_base_dispatch((struct event_base*)arg);
     return NULL;
@@ -169,14 +170,8 @@ int httpserver_bindsocket(std::string listen_address, int listen_port, int backl
     if (ret < 0)
         return -1;
 
-#ifdef _WIN32
     unsigned long ul = 1;
     ioctlsocket(nfd, FIONBIO, &ul); //set to non-blocking mode
-#else
-    int flags;
-    if ((flags = fcntl(nfd, F_GETFL, 0)) < 0 || fcntl(nfd, F_SETFL, flags | O_NONBLOCK) < 0) //set to non-blocking mode
-        return -1;
-#endif
 
     return nfd;
 }
@@ -185,10 +180,10 @@ int start_web_server_multi(void *argv)
 {
     struct listener_args *args = (listener_args*)argv;
     std::string listen_address = args->listen_address;
-    int port = args->port, nthreads = 4;
+    int port = args->port, nthreads = args->max_workers;
     int i, ret;
 
-    int nfd = httpserver_bindsocket(listen_address, port, 10240);
+    int nfd = httpserver_bindsocket(listen_address, port, args->max_conn);
     if (nfd < 0)
         return -1;
 
@@ -207,10 +202,12 @@ int start_web_server_multi(void *argv)
 
         evhttp_set_allowed_methods(httpd, EVHTTP_REQ_GET | EVHTTP_REQ_POST | EVHTTP_REQ_OPTIONS);
         evhttp_set_gencb(httpd, OnReq, nullptr);
-        ret = pthread_create(&ths[i], NULL, httpserver_Dispatch, base);
+        ret = pthread_create(&ths[i], NULL, httpserver_dispatch, base);
         if (ret != 0)
             return -1;
     }
+    while(true)
+        sleep(10000);//sleep forever to simulate single thread
 
     return 0;
 }

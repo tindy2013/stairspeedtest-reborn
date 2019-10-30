@@ -571,8 +571,8 @@ void explodeSSR(std::string ssr, bool ss_libev, bool ssr_libev, std::string cust
         remarks_base64 = base64_encode(remarks);
     }
 
-    node.group = group;
-    node.remarks = remarks;
+    node.group = regTrim(group);
+    node.remarks = regTrim(remarks);
     node.server = server;
     node.port = stoi(port);
     if(find(ss_ciphers.begin(), ss_ciphers.end(), method) != ss_ciphers.end() && (obfs == "" || obfs == "plain") && (protocol == "" || protocol == "origin"))
@@ -620,41 +620,49 @@ void explodeSSRConf(std::string content, std::string custom_port, int local_port
     }
     for(unsigned int i = 0; i < json["configs"].Size(); i++)
     {
-        json["configs"][i]["group"] >> group;
+        rapidjson::Value &config = json["configs"][i];
+        if(config.HasMember("Server_Port")) //HMBSbige/SSR-Win style
+        {
+            config["Group"] >> group;
+            config["Remarks_Base64"] >> remarks_base64;
+            remarks = urlsafe_base64_decode(remarks_base64);
+            config["server"] >> server;
+            config["Server_Port"] >> port;
+            config["Password"] >> password;
+            config["Method"] >> method;
+            config["Protocol"] >> protocol;
+            config["ProtocolParam"] >> protoparam;
+            config["obfs"] >> obfs;
+            config["ObfsParam"] >> obfsparam;
+        }
+        else //original style
+        {
+            config["group"] >> group;
+            config["remarks"] >> remarks;
+            config["server"] >> server;
+            config["server_port"] >> port;
+            config["remarks_base64"] >> remarks_base64;
+            config["password"] >> password;
+            config["method"] >> method;
+            config["protocol"] >> protocol;
+            config["protocolparam"] >> protoparam;
+            config["obfs"] >> obfs;
+            config["obfsparam"] >> obfsparam;
+        }
+
         if(group == "")
             group = SSR_DEFAULT_GROUP;
-        json["configs"][i]["remarks"] >> remarks;
-        json["configs"][i]["server"] >> server;
         if(custom_port != "")
             port = custom_port;
-        else
-            json["configs"][i]["server_port"] >> port;
-
-        json["configs"][i]["remarks_base64"] >> remarks_base64;
-        json["configs"][i]["password"] >> password;
-        json["configs"][i]["method"] >> method;
-
-        json["configs"][i]["protocol"] >> protocol;
-        json["configs"][i]["protocolparam"] >> protoparam;
-        json["configs"][i]["obfs"] >> obfs;
-        json["configs"][i]["obfsparam"] >> obfsparam;
-
-        if(remarks_base64 != "")
+        if(remarks == "")
         {
-            remarks = base64_decode(remarks_base64);
-        }
-        else
-        {
-            if(remarks == "")
-            {
-                remarks = server + ":" + port;
-            }
+            remarks = server + ":" + port;
             remarks_base64 = base64_encode(remarks);
         }
 
         node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
-        node.group = group;
-        node.remarks = remarks;
+        node.group = regTrim(group);
+        node.remarks = regTrim(remarks);
 
         if(chkIgnore(node))
         {
@@ -1057,6 +1065,7 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
 {
     std::string line, remarks, server, port, method, username, password, plugin, pluginopts, pluginopts_mode, pluginopts_host = "cloudfront.net", mod_url, mod_md5;
     std::string id, net, tls, host, path;
+    std::string itemName, itemVal;
     std::stringstream data;
     std::vector<std::string> configs, vArray, headers, header;
     std::multimap<std::string, std::string> proxies;
@@ -1111,13 +1120,15 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
                     vArray = split(trim(configs[i]), "=");
                     if(vArray.size() < 2)
                         continue;
-                    else if(vArray[0] == "obfs")
+                    itemName = trim(vArray[0]);
+                    itemVal = trim(vArray[1]);
+                    if(itemName == "obfs")
                     {
                         plugin = "simple-obfs";
-                        pluginopts_mode = vArray[1];
+                        pluginopts_mode = itemVal;
                     }
-                    else if(vArray[0] == "obfs-host")
-                        pluginopts_host = vArray[1];
+                    else if(itemVal == "obfs-host")
+                        pluginopts_host = itemVal;
                 }
                 if(plugin != "")
                 {
@@ -1143,17 +1154,19 @@ bool explodeSurge(std::string surge, std::string custom_port, int local_port, st
                 vArray = split(trim(configs[i]), "=");
                 if(vArray.size() < 2)
                     continue;
-                else if(vArray[0] == "encrypt-method")
-                    method = vArray[1];
-                else if(vArray[0] == "password")
-                    password = vArray[1];
-                else if(vArray[0] == "obfs")
+                itemName = trim(vArray[0]);
+                itemVal = trim(vArray[1]);
+                if(itemName == "encrypt-method")
+                    method = itemVal;
+                else if(itemName == "password")
+                    password = itemVal;
+                else if(itemName == "obfs")
                 {
                     plugin = "simple-obfs";
-                    pluginopts_mode = vArray[1];
+                    pluginopts_mode = itemVal;
                 }
-                else if(vArray[0] == "obfs-host")
-                    pluginopts_host = vArray[1];
+                else if(itemName == "obfs-host")
+                    pluginopts_host = itemVal;
             }
             if(plugin != "")
             {

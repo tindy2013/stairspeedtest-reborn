@@ -32,12 +32,14 @@ std::string GBKToUTF8(std::string str_src);
 std::string trim(const std::string& str);
 std::string getSystemProxy();
 std::string rand_str(const int len);
-bool is_str_utf8(std::string data);
+bool is_str_utf8(std::string &data);
+std::string getFormData(std::string &raw_data);
 
 void sleep(int interval);
 bool regFind(std::string src, std::string target);
 std::string regReplace(std::string src, std::string match, std::string rep);
 bool regMatch(std::string src, std::string match);
+std::string regTrim(std::string str);
 std::string speedCalc(double speed);
 std::string getMD5(std::string data);
 bool isIPv4(std::string address);

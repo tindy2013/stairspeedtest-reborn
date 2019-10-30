@@ -417,6 +417,11 @@ bool regMatch(std::string src, std::string match)
     return regex_match(src, reg);
 }
 
+std::string regTrim(std::string str)
+{
+    return regReplace(str, "^\\s*?(.*)\\s*$", "$1");
+}
+
 std::string speedCalc(double speed)
 {
     if(speed == 0.0)
@@ -608,7 +613,7 @@ void urlParse(std::string url, std::string &host, std::string &path, int &port, 
     }
 }
 
-bool is_str_utf8(std::string data)
+bool is_str_utf8(std::string &data)
 {
     const char *str = data.c_str();
     unsigned int nBytes = 0;
@@ -670,6 +675,70 @@ bool is_str_utf8(std::string data)
         return true;
     }
     return true;
+}
+
+std::string getFormData(std::string &raw_data)
+{
+    std::stringstream strstrm;
+    std::string line;
+
+    std::string boundary;
+    std::string file; /* actual file content */
+
+
+    int i = 0;
+
+    strstrm<<raw_data;
+
+    while (std::getline(strstrm, line))
+    {
+        if(i == 0)
+        {
+            // Get boundary
+            boundary = line.substr(0, line.length() - 1);
+        }
+        else if(line.find(boundary) == 0)
+        {
+            // The end
+            break;
+        }
+        else if(line.length() == 1)
+        {
+            // Time to get raw data
+
+            char c;
+            int bl = boundary.length();
+            bool endfile = false;
+            char buffer[256] = {};
+            while(!endfile)
+            {
+                int j = 0;
+                int k;
+                while(j < 256 && strstrm.get(c) && !endfile)
+                {
+                    buffer[j] = c;
+                    k = 0;
+                    // Verify if we are at the end
+                    while(boundary[bl - 1 - k] == buffer[j - k])
+                    {
+                        if(k >= bl - 1)
+                        {
+                            // We are at the end of the file
+                            endfile = true;
+                            break;
+                        }
+                        k++;
+                    }
+                    j++;
+                }
+                file.append(buffer, j);
+                j = 0;
+            };
+            break;
+        }
+        i++;
+    }
+    return file.substr(0, file.size() - boundary.size());
 }
 
 void removeUTF8BOM(std::string &data)

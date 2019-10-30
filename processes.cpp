@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <signal.h>
 
 #include "misc.h"
 
@@ -58,7 +59,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
 {
 #ifdef _WIN32
     BOOL retval = false;
-    STARTUPINFO si = {};
+    STARTUPINFO si = {sizeof(STARTUPINFO)};
     PROCESS_INFORMATION pi = {};
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits = {};
     char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
@@ -81,6 +82,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     pathstr = const_cast<char*>(path.data());
     retval = CreateProcess(NULL, cmdstr, NULL, NULL, false, CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB, NULL, pathstr, &si, &pi);
 
+    sleep(50); //slow down to prevent some problem
     AssignProcessToJobObject(job, pi.hProcess);
     SetInformationJobObject(job, JobObjectExtendedLimitInformation, &job_limits, sizeof(job_limits));
 
@@ -115,7 +117,6 @@ void killByHandle()
     {
         TerminateProcess(hProc, 0);
         CloseHandle(hProc);
-
     }
     #else
     if(hProc != 0)
