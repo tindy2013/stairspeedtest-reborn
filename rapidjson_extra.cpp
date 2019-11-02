@@ -1,3 +1,5 @@
+#include <rapidjson/writer.h>
+
 #include "rapidjson_extra.h"
 
 void operator >> (const rapidjson::Value& value, std::string& i)
@@ -10,6 +12,8 @@ void operator >> (const rapidjson::Value& value, std::string& i)
         i = std::to_string(value.GetDouble());
     else if(value.IsString())
         i = std::string(value.GetString());
+    else if(value.IsBool())
+        i = value.GetBool() ? "true" : "false";
     else
         i = std::string();
 }
@@ -22,6 +26,8 @@ void operator >> (const rapidjson::Value& value, int& i)
         i = value.GetInt();
     else if(value.IsString())
         i = std::stoi(value.GetString());
+    else if(value.IsBool())
+        i = value.GetBool() ? 1 : 0;
     else
         i = 0;
 }
@@ -39,4 +45,12 @@ void GetMember(const rapidjson::Value& value, std::string member, std::string* t
     std::string retStr = GetMember(value, member);
     if(retStr.size())
         target->assign(retStr);
+}
+
+std::string SerializeObject(const rapidjson::Value& value)
+{
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer_json(sb);
+    value.Accept(writer_json);
+    return sb.GetString();
 }

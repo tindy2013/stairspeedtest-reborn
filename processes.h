@@ -2,40 +2,23 @@
 #define PROCESSES_H_INCLUDED
 
 #include <string>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
-#include "misc.h"
-
-#ifdef _WIN32
-#include <io.h>
-#include <windows.h>
-#include <psapi.h>
-#endif // _WIN32
-
-using namespace std;
-
-int chkProgram(string command);
-#ifdef _WIN32
-bool runProgram(string command, string runpath, bool wait, HANDLE *hProc);
-void killByHandle(HANDLE hProc);
-#else
-bool runProgram(string command,string runpath,bool wait);
-#endif // _WIN32
-bool killProgram(string program);
+int chkProgram(std::string command);
+bool runProgram(std::string command, std::string runpath, bool wait);
+void killByHandle();
+bool killProgram(std::string program);
 /*
 class Runner
 {
 private:
     FILE *pPipe;
-    string sPath;
+    std::string sPath;
     bool killed=false;
     #ifdef _WIN32
     HANDLE hProc;
     #endif // _WIN32
 public:
-    void run(string FilePath)
+    void run(std::string FilePath)
     {
         #ifdef _WIN32
         sPath=FilePath;
@@ -58,7 +41,7 @@ public:
     {
         //build object only
     }
-    Runner(string FilePath)
+    Runner(std::string FilePath)
     {
         run(FilePath);
     }
@@ -67,13 +50,13 @@ public:
         kill();
     }
     #ifndef _WIN32
-    void write(string content)
+    void write(std::string content)
     {
         fwrite(content.data(),content.size(),1,pPipe);
     }
-    string read(int len)
+    std::string read(int len)
     {
-        string retdata;
+        std::string retdata;
         fread(&retdata,len,1,pPipe);
         return retdata;
     }

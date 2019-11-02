@@ -1,0 +1,381 @@
+#include <string>
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <algorithm>
+
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+
+#include "webserver.h"
+#include "misc.h"
+#include "webget.h"
+#include "version.h"
+#include "nodeinfo.h"
+#include "rapidjson_extra.h"
+#include "printout.h"
+#include "renderer.h"
+#include "speedtestutil.h"
+
+typedef std::lock_guard<std::mutex> guarded_mutex;
+std::mutex start_flag_mutex;
+bool start_flag = false;
+
+//variables from main
+extern std::vector<nodeInfo> allNodes;
+extern int cur_node_id, socksport;
+extern std::string speedtest_mode, export_sort_method, export_color_style, custom_group, override_conf_port;
+extern bool ssr_libev, ss_libev;
+extern std::vector<color> custom_color_groups;
+extern std::vector<int> custom_color_bounds;
+
+//functions from main
+void addNodes(std::string link, bool multilink);
+void rewriteNodeID(std::vector<nodeInfo> *nodes);
+void batchTest(std::vector<nodeInfo> *nodes);
+
+//webui variables
+std::vector<nodeInfo> targetNodes, testedNodes;
+std::string server_status = "stopped";
+nodeInfo current_node;
+
+bool safe_get_start_flag()
+{
+    guarded_mutex guard(start_flag_mutex);
+    return start_flag;
+}
+
+void safe_set_start_flag(bool target)
+{
+    guarded_mutex guard(start_flag_mutex);
+    start_flag = target;
+}
+
+nodeInfo find_node(std::string &group, std::string &remarks, std::string &server, int &server_port)
+{
+    for(nodeInfo &x : allNodes)
+    {
+        if(x.group == group && x.remarks == remarks && x.server == server && x.port == server_port)
+            return x;
+    }
+    return nodeInfo();
+}
+
+void ssrspeed_regenerate_node_list(rapidjson::Document &json)
+{
+    nodeInfo node;
+    std::string group, remarks, server;
+    int server_port;
+
+    eraseElements(targetNodes);
+
+    for(unsigned int i = 0; i < json["configs"].Size(); i++)
+    {
+        group = GetMember(json["configs"][i]["config"], "group");
+        remarks = GetMember(json["configs"][i]["config"], "remarks");
+        server = GetMember(json["configs"][i]["config"], "server");
+        server_port = stoi(GetMember(json["configs"][i]["config"], "server_port"));
+        for(nodeInfo &x : allNodes)
+        {
+            if(x.group == group && x.remarks == remarks && x.server == server && x.port == server_port)
+            {
+                targetNodes.push_back(x);
+                break;
+            }
+        }
+    }
+    rewriteNodeID(&targetNodes);
+}
+
+double ssrspeed_get_speed_number(std::string speed)
+{
+    if(speed == "N/A")
+        return 0;
+
+    std::string metric = speed.substr(speed.size() - 2, speed.size());
+    if(metric == "MB")
+        return stof(speed.substr(0, speed.size() - 3)) * 1048576.0;
+    else if(metric == "KB")
+        return stof(speed.substr(0, speed.size() - 3)) * 1024.0;
+    else if(metric == "GB")
+        return stof(speed.substr(0, speed.size() - 3)) * 1073741824.0;
+    else
+        return stof(speed.substr(0, speed.size() - 2));
+}
+
+void json_write_node(rapidjson::Writer<rapidjson::StringBuffer> &writer, nodeInfo &node)
+{
+    int counter = 0, total = 0;
+    writer.Key("group");
+    writer.String(node.group.data());
+    writer.Key("remarks");
+    writer.String(node.remarks.data());
+    writer.Key("loss");
+    writer.Double(stod(node.pkLoss.substr(0, node.pkLoss.size() - 1)) / 100.0);
+    writer.Key("ping");
+    writer.Double(stod(node.avgPing) / 1000.0);
+    writer.Key("gPing");
+    writer.Double(stod(node.sitePing) / 1000.0);
+    writer.Key("rawSocketSpeed");
+    writer.StartArray();
+    for(auto &y : node.rawSpeed)
+    {
+        writer.Int(y);
+    }
+    writer.EndArray();
+    writer.Key("rawTcpPingStatus");
+    writer.StartArray();
+    for(auto &y : node.rawPing)
+    {
+        writer.Double(y / 1000.0);
+    }
+    writer.EndArray();
+    writer.Key("rawGooglePingStatus");
+    writer.StartArray();
+    counter = total = 0;
+    for(auto &y : node.rawSitePing)
+    {
+        total++;
+        writer.Double(y / 1000.0);
+        if(y == 0)
+            counter++;
+    }
+    writer.EndArray();
+    writer.Key("gPingLoss");
+    writer.Double(counter / total * 1.0);
+    writer.Key("webPageSimulation");
+    writer.String("N/A");
+    writer.Key("geoIP");
+    writer.StartObject();
+    writer.Key("inbound");
+    writer.StartObject();
+    writer.Key("address");
+    writer.String(std::string(node.server + ":" + std::__cxx11::to_string(node.port)).data());
+    writer.Key("info");
+    writer.String("N/A");
+    writer.EndObject();
+    writer.Key("outbound");
+    writer.StartObject();
+    writer.Key("address");
+    writer.String(node.outboundGeoIP.ip.data());
+    writer.Key("info");
+    writer.String(std::string((node.outboundGeoIP.country.size() ? node.outboundGeoIP.country : std::string("N/A")) + " " + \
+                              (node.outboundGeoIP.city.size() ? node.outboundGeoIP.city : std::string("N/A")) + ", " + \
+                              (node.outboundGeoIP.organization.size() ? node.outboundGeoIP.organization : std::string("N/A"))).data());
+    writer.EndObject();
+    writer.EndObject();
+    writer.Key("dspeed");
+    writer.Double(ssrspeed_get_speed_number(node.avgSpeed));
+    writer.Key("trafficUsed");
+    writer.Int(node.totalRecvBytes);
+}
+
+std::string ssrspeed_generate_results(std::vector<nodeInfo> &nodes)
+{
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    nodeInfo node;
+
+    writer.StartObject();
+    writer.Key("status");
+    writer.String(server_status.data());
+    writer.Key("current");
+    writer.StartObject();
+    for(nodeInfo &x : nodes)
+    {
+        if(x.id == cur_node_id)
+        {
+            node = x;
+        }
+        if(x.id == current_node.id)
+        {
+            current_node = x;
+        }
+    }
+    if(node.linkType != -1)
+        json_write_node(writer, node);
+    if(current_node.groupID != node.groupID || current_node.id != node.id)
+    {
+        if(current_node.linkType != -1)
+        {
+            testedNodes.push_back(current_node);
+        }
+        current_node = node;
+    }
+    writer.EndObject();
+
+    writer.Key("results");
+    writer.StartArray();
+    for(nodeInfo &x : testedNodes)
+    {
+        writer.StartObject();
+        json_write_node(writer, x);
+        writer.EndObject();
+    }
+    writer.EndArray();
+    writer.EndObject();
+    return sb.GetString();
+}
+
+std::string ssrspeed_generate_web_configs(std::vector<nodeInfo> &nodes)
+{
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    writer.StartArray();
+    for(nodeInfo &x : nodes)
+    {
+        writer.StartObject();
+        writer.Key("type");
+        switch(x.linkType)
+        {
+        case SPEEDTEST_MESSAGE_FOUNDSS:
+            writer.String("Shadowsocks");
+            break;
+        case SPEEDTEST_MESSAGE_FOUNDSSR:
+            writer.String("ShadowsocksR");
+            break;
+        case SPEEDTEST_MESSAGE_FOUNDVMESS:
+            writer.String("V2Ray");
+            break;
+        default:
+            writer.String("Unknown");
+            writer.EndObject();
+            continue;
+        }
+        writer.Key("config");
+        writer.StartObject();
+        writer.Key("group");
+        writer.String(x.group.data());
+        writer.Key("remarks");
+        writer.String(x.remarks.data());
+        writer.Key("server_port");
+        writer.Int(x.port);
+        writer.Key("server");
+        writer.String(x.server.data());
+        writer.EndObject();
+        writer.EndObject();
+    }
+    writer.EndArray();
+    return sb.GetString();
+}
+
+std::string ssrspeed_generate_color()
+{
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    writer.StartArray();
+    writer.StartObject();
+    writer.Key("name");
+    writer.String("original");
+    writer.Key("colors");
+    writer.StartObject();
+    writer.EndObject();
+    writer.EndObject();
+    writer.StartObject();
+    writer.Key("name");
+    writer.String("rainbow");
+    writer.Key("colors");
+    writer.StartObject();
+    writer.EndObject();
+    writer.EndObject();
+    if(custom_color_bounds.size() && custom_color_groups.size())
+    {
+        writer.StartObject();
+        writer.Key("name");
+        writer.String("custom");
+        writer.Key("colors");
+        writer.StartObject();
+        writer.EndObject();
+        writer.EndObject();
+    }
+    writer.EndArray();
+    return sb.GetString();
+}
+
+void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
+{
+    listener_args args = {listen_address, listen_port, 10, 4};
+
+    append_response("GET", "/status", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        return server_status;
+    });
+
+    append_response("GET", "/", "REDIRECT", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        return "https://web.xn--8str30ceuh.site/";
+    });
+
+    append_response("GET", "/favicon.ico", "x-icon", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        return fileGet("tools/gui/favicon.ico");
+    });
+
+    append_response("GET", "/getversion", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        return "{\"main\":\"2.6.3\",\"webapi\":\"0.5.2\"}";
+    });
+
+    append_response("GET", "/getcolors", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        return ssrspeed_generate_color();
+    });
+
+    append_response("POST", "/readsubscriptions", "text/plain;charset=utf-8", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        if(server_status == "running")
+            return "running";
+        rapidjson::Document json;
+        std::string suburl;
+        json.Parse(postdata.data());
+        suburl = GetMember(json, "url");
+        eraseElements(allNodes);
+        addNodes(suburl, false);
+        return ssrspeed_generate_web_configs(allNodes);
+    });
+
+    append_response("POST", "/readfileconfig", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        eraseElements(allNodes);
+        if(server_status == "running")
+            return "running";
+        else
+        {
+            if(explodeConfContent(getFormData(postdata), override_conf_port, socksport, ss_libev, ssr_libev, allNodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+                return "error";
+            else
+                return ssrspeed_generate_web_configs(allNodes);
+        }
+    });
+
+    append_response("POST", "/start", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        server_status = "running";
+        rapidjson::Document json;
+        json.Parse(postdata.data());
+        std::string test_mode = GetMember(json, "testMode"), sort_method = GetMember(json, "sortMethod"), group = GetMember(json, "group"), exp_color = GetMember(json, "colors");
+
+        if(test_mode == "ALL")
+            speedtest_mode = "all";
+        else if(test_mode == "TCP_PING")
+            speedtest_mode = "pingonly";
+        std::transform(sort_method.begin(), sort_method.end(), sort_method.begin(), ::tolower);
+        export_sort_method = replace_all_distinct(sort_method, "reverse_", "r");
+        custom_group = group;
+        if(exp_color != "")
+            export_color_style = exp_color;
+
+        ssrspeed_regenerate_node_list(json);
+        batchTest(&targetNodes);
+        server_status = "stopped";
+        return "done";
+    });
+
+    append_response("GET", "/getresults", "text/plain;charset=utf-8", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    {
+        return ssrspeed_generate_results(targetNodes);
+    });
+
+    std::cerr << "Stair Speedtest " VERSION " Web server running @ http://" << listen_address << ":" << listen_port << std::endl;
+    start_web_server_multi(&args);
+}

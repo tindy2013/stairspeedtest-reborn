@@ -5,18 +5,23 @@
 #include <yaml-cpp/yaml.h>
 
 #include "misc.h"
+#include "nodeinfo.h"
 
-string vmessConstruct(string add, string port, string type, string id, string aid, string net, string cipher, string path, string host, string tls, int local_port);
-string ssrConstruct(string group, string remarks, string remarks_base64, string server, string port, string protocol, string method, string obfs, string password, string obfsparam, string protoparam, int local_port, bool libev);
-string ssConstruct(string server, string port, string password, string method, string plugin, string pluginopts, string remarks, int local_port, bool libev);
-void explodeVmess(string vmess, string custom_port, int local_port, nodeInfo *node);
-void explodeSSR(string ssr, bool libev, string custom_port, int local_port, nodeInfo *node);
-void explodeSS(string ss, bool libev, string custom_port, int local_port, nodeInfo *node);
-void explodeQuan(string quan, string custom_port, int local_port, nodeInfo *node);
-void explode(string link, bool sslibev, bool ssrlibev, string custom_port, int local_port, nodeInfo *node);
-void explodeSSD(string link, bool libev, string custom_port, int local_port, vector<nodeInfo> *nodes);
-void explodeSub(string sub, bool sslibev, bool ssrlibev, string custom_port, int local_port, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks);
-int explodeConf(string filepath, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks);
-int explodeConfContent(string content, string custom_port, int local_port, bool sslibev, bool ssrlibev, vector<nodeInfo> *nodes, vector<string> *exclude_remarks, vector<string> *include_remarks);
+std::string vmessConstruct(std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string tls, int local_port);
+std::string ssrConstruct(std::string group, std::string remarks, std::string remarks_base64, std::string server, std::string port, std::string protocol, std::string method, std::string obfs, std::string password, std::string obfsparam, std::string protoparam, int local_port, bool libev);
+std::string ssConstruct(std::string server, std::string port, std::string password, std::string method, std::string plugin, std::string pluginopts, std::string remarks, int local_port, bool libev);
+void explodeVmess(std::string vmess, std::string custom_port, int local_port, nodeInfo &node);
+void explodeSSR(std::string ssr, bool ss_libev, bool libev, std::string custom_port, int local_port, nodeInfo &node);
+void explodeSS(std::string ss, bool libev, std::string custom_port, int local_port, nodeInfo &node);
+void explodeQuan(std::string quan, std::string custom_port, int local_port, nodeInfo &node);
+void explodeKitsunebi(std::string kit, std::string custom_port, int local_port, nodeInfo &node);
+void explodeKitsunebiNew(std::string kit, std::string custom_port, int local_port, nodeInfo &node);
+void explode(std::string link, bool sslibev, bool ssrlibev, std::string custom_port, int local_port, nodeInfo &node);
+void explodeSSD(std::string link, bool libev, std::string custom_port, int local_port, std::vector<nodeInfo> &nodes);
+void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom_port, int local_port, std::vector<nodeInfo> &nodes);
+int explodeConf(std::string filepath, std::string custom_port, int local_port, bool sslibev, bool ssrlibev, std::vector<nodeInfo> &nodes);
+int explodeConfContent(std::string content, std::string custom_port, int local_port, bool sslibev, bool ssrlibev, std::vector<nodeInfo> &nodes);
+void remarksInit(string_array &exclude, string_array &include);
+bool chkIgnore(nodeInfo &node);
 
 #endif // SPEEDTESTUTIL_H_INCLUDED

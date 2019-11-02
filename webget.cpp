@@ -5,28 +5,29 @@
 
 #include "webget.h"
 #include "logger.h"
+#include "socket.h"
 
-using namespace std;
+using namespace std::__cxx11;
 
 const int times_to_ping = 3;
 
-void draw_progress_sping(int progress, int values[3])
+void draw_progress_sping(int progress, int *values)
 {
-    cerr<<"\r[";
+    std::cerr<<"\r[";
     for(int i = 0; i <= progress; i++)
     {
-        cerr<<(values[i] == 0 ? "*" : "-");
+        std::cerr<<(values[i] == 0 ? "*" : "-");
     }
     if(progress == times_to_ping - 1)
     {
-        cerr<<"]";
+        std::cerr<<"]";
     }
-    cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
+    std::cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
 }
 
-string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
+std::string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
 
-static int writer(char *data, size_t size, size_t nmemb, string *writerData)
+static int writer(char *data, size_t size, size_t nmemb, std::string *writerData)
 {
     if(writerData == NULL)
         return 0;
@@ -38,36 +39,36 @@ static int writer(char *data, size_t size, size_t nmemb, string *writerData)
 
 static size_t writer_dummy(void *ptr, size_t size, size_t nmemb, void *data)
 {
-  /* we are not interested in the downloaded bytes itself,
-     so we only return the size we would have saved ... */
-  (void)ptr;  /* unused */
-  (void)data; /* unused */
-  return (size_t)(size * nmemb);
+    /* we are not interested in the downloaded bytes itself,
+       so we only return the size we would have saved ... */
+    (void)ptr;  /* unused */
+    (void)data; /* unused */
+    return (size_t)(size * nmemb);
 }
 
-string httpGet(string host, string addr, string uri)
+std::string httpGet(std::string host, std::string addr, std::string uri)
 {
-    string recvdata = "", strTmp = "";
+    std::string recvdata = "", strTmp = "";
     char bufRecv[BUF_SIZE];
     int retVal = 0, cur_len = 0;
     SOCKET sHost;
 
     sHost = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
-        return string();
+        return std::string();
     startConnect(sHost, addr, 80);
 
-    string content = "GET " + uri + " HTTP/1.1\r\n"
-                   "Host: " + host + "\r\n"
-                   "User-Agent: " + user_agent_str + "\r\n"
-                   "Accept: */*\r\n\r\n";
+    std::string content = "GET " + uri + " HTTP/1.1\r\n"
+                          "Host: " + host + "\r\n"
+                          "User-Agent: " + user_agent_str + "\r\n"
+                          "Accept: */*\r\n\r\n";
 
     setTimeout(sHost, 1000);
     retVal = send_simple(sHost, content);
     if((unsigned)retVal != content.size())
     {
         closesocket(sHost);
-        return string();
+        return std::string();
     }
     while(1)
     {
@@ -89,9 +90,9 @@ string httpGet(string host, string addr, string uri)
 
 }
 
-string httpsGet(string host, string addr, string uri)
+std::string httpsGet(std::string host, std::string addr, std::string uri)
 {
-    string recvdata;
+    std::string recvdata;
     SSL_CTX *ctx;
     SSL *ssl;
     SOCKET sHost;
@@ -104,17 +105,17 @@ string httpsGet(string host, string addr, string uri)
     if(ctx == NULL)
     {
         ERR_print_errors_fp(stdout);
-        return string();
+        return std::string();
     }
     if((sHost = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        cerr<<"socket error "<<errno<<endl;
-        return string();
+        std::cerr<<"socket error "<<errno<<std::endl;
+        return std::string();
     }
     if(startConnect(sHost, addr, 443) != 0)
     {
-        cerr<<"Connect err "<<errno<<endl;
-        return string();
+        std::cerr<<"Connect err "<<errno<<std::endl;
+        return std::string();
     }
 
     SSL_set_fd(ssl, sHost);
@@ -125,11 +126,11 @@ string httpsGet(string host, string addr, string uri)
     else
     {
         //cerr<<"connected with "<<SSL_get_cipher(ssl)<<" encryption."<<endl;
-        string data = "GET " + uri + " HTTP/1.1\r\n"
-                    "Host: " + host + "\r\n"
-                    "User-Agent: " + user_agent_str + "\r\n"
-                    "Accept: */*\r\n\r\n";
-        cerr<<data<<endl;
+        std::string data = "GET " + uri + " HTTP/1.1\r\n"
+                           "Host: " + host + "\r\n"
+                           "User-Agent: " + user_agent_str + "\r\n"
+                           "Accept: */*\r\n\r\n";
+        std::cerr<<data<<std::endl;
         SSL_write(ssl, data.data(), data.size());
         int len;
         char tmpbuf[BUF_SIZE];
@@ -147,10 +148,10 @@ string httpsGet(string host, string addr, string uri)
     return recvdata;
 }
 
-string curlGet(string url, string proxy)
+std::string curlGet(std::string url, std::string proxy)
 {
     CURL *curl_handle;
-    string data;
+    std::string data;
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -174,7 +175,7 @@ string curlGet(string url, string proxy)
     return data;
 }
 
-long curlPost(string url, string data, string proxy)
+long curlPost(std::string url, std::string data, std::string proxy)
 {
     CURL *curl_handle;
     double retVal = 0.0;
@@ -207,23 +208,18 @@ long curlPost(string url, string data, string proxy)
     return retVal;
 }
 
-string buildSocks5ProxyString(string addr, int port, string username, string password)
+std::string buildSocks5ProxyString(std::string addr, int port, std::string username, std::string password)
 {
-    string authstr = username != "" && password != "" ? username + ":" + password + "@" : "";
-    string proxystr = "socks5://" + authstr + addr + ":" + to_string(port);
+    std::string authstr = username != "" && password != "" ? username + ":" + password + "@" : "";
+    std::string proxystr = "socks5://" + authstr + addr + ":" + to_string(port);
     return proxystr;
 }
 
-string buildSocks5ProxyString(socks5Proxy proxy)
-{
-    return buildSocks5ProxyString(proxy.address, proxy.port, proxy.username, proxy.password);
-}
-
-string webGet(string url, string proxy)
+std::string webGet(std::string url, std::string proxy)
 {
     return curlGet(url, proxy);
     /*
-    string host,uri, addr;
+    std::string host,uri, addr;
     bool https = regmatch(url, "^https(.*)");
 
     url = regreplace(url, "^(http|https)://", "");
@@ -231,18 +227,13 @@ string webGet(string url, string proxy)
     uri = url.substr(url.find("/"));
 
     if(!regmatch(host, "\\d+.\\d+.\\d+.\\d")) addr = hostname2ipv4(host, 80); else addr = host;
-    if(!addr.size()) return string();
+    if(!addr.size()) return std::string();
 
     if(https) return httpsGet(host, addr, uri); else return httpGet(host, addr, uri);
     */
 }
 
-string webGet(string url, socks5Proxy proxy)
-{
-    return curlGet(url, buildSocks5ProxyString(proxy));
-}
-
-double getLoadPageTime(string url, long timeout, string proxy)
+double getLoadPageTime(std::string url, long timeout, std::string proxy)
 {
     CURL *curl_handle;
     CURLcode res;
@@ -260,23 +251,24 @@ double getLoadPageTime(string url, long timeout, string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
     res = curl_easy_perform(curl_handle);
-    if(CURLE_OK == res) {
+    if(CURLE_OK == res)
+    {
         double val;
         res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME, &val);
         if(val > 0.0)
             time_total = val;
     }
     else
-        writeLog(LOG_TYPE_GPING, "Error while fetching '" + url + "' : " + string(curl_easy_strerror(res)));
+        writeLog(LOG_TYPE_GPING, "Error while fetching '" + url + "' : " + std::string(curl_easy_strerror(res)));
     curl_easy_cleanup(curl_handle);
     curl_global_cleanup();
     return time_total;
 }
 
-int websitePing(nodeInfo *node, string url, string local_addr, int local_port, string user, string pass)
+int websitePing(nodeInfo *node, std::string url, std::string local_addr, int local_port, std::string user, std::string pass)
 {
     double time_total = 0.0, retval = 0.0;
-    string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
+    std::string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
     writeLog(LOG_TYPE_GPING, "Website ping started. Test with proxy '" + proxystr + "'.");
     int loop_times = 0, times_to_ping = 3, succeedcounter = 0, failcounter = 0;
     while(loop_times < times_to_ping)
@@ -299,7 +291,7 @@ int websitePing(nodeInfo *node, string url, string local_addr, int local_port, s
         draw_progress_sping(loop_times - 1, node->rawSitePing);
         sleep(200);
     }
-    cerr<<endl;
+    std::cerr<<std::endl;
     if(succeedcounter)
     {
         char strtmp[16] = {};

@@ -3,28 +3,23 @@
 
 #include <string>
 
-#include "socket.h"
-
-using namespace std;
-
 struct geoIPInfo
 {
-    string ip;
-    string country_code;
-    string country;
-    string region_code;
-    string region;
-    string city;
-    string postal_code;
-    string continent_code;
-    string latitude;
-    string longitude;
-    string organization;
-    string asn;
-    string timezone;
+    std::string ip;
+    std::string country_code;
+    std::string country;
+    std::string region_code;
+    std::string region;
+    std::string city;
+    std::string postal_code;
+    std::string continent_code;
+    std::string latitude;
+    std::string longitude;
+    std::string organization;
+    std::string asn;
+    std::string timezone;
 };
 
-geoIPInfo getGeoIPInfo(string ip, string proxy);
-geoIPInfo getGeoIPInfo(string ip, socks5Proxy proxy);
+geoIPInfo getGeoIPInfo(std::string ip, std::string proxy);
 
 #endif // GEOIP_H_INCLUDED

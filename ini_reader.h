@@ -5,30 +5,33 @@
 #include <vector>
 #include <algorithm>
 
-#include "misc.h"
-
 #define MAX_LINE_LENGTH 4096
 
+typedef std::map<std::string, std::multimap<std::string, std::string>> ini_data_struct;
+typedef std::multimap<std::string, std::string> string_multimap;
+
+class INIReader
+{
     /**
     *  @brief A simple INI reader which utilize map and vector
     *  to store sections and items, allowing access in logarithmic time.
     */
-class INIReader
-{
 private:
     bool parsed = false;
-    string current_section;
-    map<string, multimap<string, string>> ini_content;
-    vector<string> exclude_sections, include_sections, read_sections;
+    std::string current_section;
+    ini_data_struct ini_content;
+    string_array exclude_sections, include_sections, read_sections;
 
-    string cached_section;
-    multimap<string, string> cached_section_content;
+    std::string cached_section;
+    string_multimap cached_section_content;
 
-    bool chkIgnore(string section)
+    std::string isolated_items_section;
+
+    bool chkIgnore(std::string section)
     {
         bool excluded = false, included = false;
         if(count(exclude_sections.begin(), exclude_sections.end(), section) > 0)
-                excluded = true;
+            excluded = true;
         if(include_sections.size() != 0)
         {
             if(count(include_sections.begin(), include_sections.end(), section) > 0)
@@ -47,9 +50,19 @@ public:
 
     /**
     *  @brief Set this flag to true so any line within the section will be stored even it doesn't follow the "name=value" format.
-    * These line will store as the name "{NONAME}".
+    * These lines will store as the name "{NONAME}".
     */
     bool store_any_line = false;
+
+    /**
+    *  @brief Save isolated items before any section definitions.
+    */
+    bool store_isolated_line = false;
+
+    /**
+    *  @brief Allow a section title to appear multiple times.
+    */
+    bool allow_dup_section_titles = false;
 
     /**
     *  @brief Initialize the reader.
@@ -62,7 +75,7 @@ public:
     /**
     *  @brief Parse a file during initialization.
     */
-    INIReader(string filePath)
+    INIReader(std::string filePath)
     {
         parsed = false;
         ParseFile(filePath);
@@ -76,17 +89,25 @@ public:
     /**
     *  @brief Exclude a section with the given name.
     */
-    void ExcludeSection(string section)
+    void ExcludeSection(std::string section)
     {
-        exclude_sections.push_back(section);
+        exclude_sections.emplace_back(section);
     }
 
     /**
     *  @brief Include a section with the given name.
     */
-    void IncludeSection(string section)
+    void IncludeSection(std::string section)
     {
-        include_sections.push_back(section);
+        include_sections.emplace_back(section);
+    }
+
+    /**
+    *  @brief Set isolated items to given section.
+    */
+    void SetIsolatedItemsSection(std::string section)
+    {
+        isolated_items_section = section;
     }
 
     /**
@@ -94,63 +115,98 @@ public:
     * If exclude sections are set, these sections will not be stored.
     * If include sections are set, only these sections will be stored.
     */
-    int Parse(string content) //parse content into mapped data
+    int Parse(std::string content) //parse content into mapped data
     {
+        if(!content.size()) //empty content
+            return -1;
+
+        //remove UTF-8 BOM
+        removeUTF8BOM(content);
+
         bool inExcludedSection = false;
-        string strLine, thisSection, curSection, itemName, itemVal;
-        string regSection = "^\\[(.*?)\\]$", regItem = "^(.*?)=(.*?)$";
-        multimap<string, string> itemGroup;
-        stringstream strStrm;
+        std::string strLine, thisSection, curSection, itemName, itemVal;
+        string_multimap itemGroup, existItemGroup;
+        std::stringstream strStrm;
+        unsigned int lineSize = 0;
         char delimiter = count(content.begin(), content.end(), '\n') <= 1 ? '\r' : '\n';
 
         EraseAll(); //first erase all data
-        if(do_utf8_to_gbk)
+        if(do_utf8_to_gbk && is_str_utf8(content))
             content = UTF8ToGBK(content); //do conversion if flag is set
 
+        if(store_isolated_line)
+            curSection = isolated_items_section; //items before any section define will be store in this section
         strStrm<<content;
         while(getline(strStrm, strLine, delimiter)) //get one line of content
         {
-            strLine = replace_all_distinct(strLine, "\r", ""); //remove line break
-            if(!strLine.size() || strLine.size() > MAX_LINE_LENGTH || strLine.find(";") == 0 || strLine.find("#") == 0) //empty lines, lines longer than MAX_LINE_LENGTH and comments are ignored
+            lineSize = strLine.size();
+            if(!lineSize || lineSize > MAX_LINE_LENGTH || strLine[0] == ';' || strLine[0] == '#') //empty lines, lines longer than MAX_LINE_LENGTH and comments are ignored
                 continue;
-            if(regMatch(strLine, regItem)) //is an item
+            if(strLine[lineSize - 1] == '\r') //remove line break
+            {
+                strLine.replace(lineSize - 1, 0, "");
+                lineSize--;
+            }
+            if(strLine.find("=") != strLine.npos) //is an item
             {
                 if(inExcludedSection) //this section is excluded
                     continue;
                 if(!curSection.size()) //not in any section
                     return -1;
-                itemName = trim(regReplace(strLine, regItem, "$1"));
-                itemVal = trim(regReplace(strLine, regItem, "$2"));
-                itemGroup.insert(pair<string, string>(itemName, itemVal)); //insert to current section
+                itemName = trim(strLine.substr(0, strLine.find("=")));
+                itemVal = trim(strLine.substr(strLine.find("=") + 1));
+                itemGroup.emplace(itemName, itemVal); //insert to current section
             }
-            else if(regMatch(strLine, regSection)) //is a section title
+            else if(strLine[0] == '[' && strLine[lineSize - 1] == ']') //is a section title
             {
-                thisSection = regReplace(strLine, regSection, "$1"); //save section title
+                thisSection = strLine.substr(1, lineSize - 2); //save section title
                 inExcludedSection = chkIgnore(thisSection); //check if this section is excluded
 
-                if(curSection != "" && itemGroup.size() != 0) //just finished reading a section
+                if(curSection.size() && itemGroup.size()) //just finished reading a section
                 {
-                    if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
-                        return -1;
-                    ini_content.insert(pair<string, multimap<string, string>>(curSection, itemGroup)); //insert previous section to content map
-                    read_sections.push_back(curSection); //add to read sections list
+                    if(ini_content.count(curSection)) //a section with the same name has been inserted
+                    {
+                        if(allow_dup_section_titles)
+                        {
+                            eraseElements(existItemGroup);
+                            existItemGroup = ini_content.at(curSection); //get the old items
+                            for(auto &x : existItemGroup)
+                                itemGroup.emplace(x); //insert them all into new section
+                            ini_content.erase(curSection); //remove the old section
+                        }
+                        else
+                            return -1; //not allowed, stop
+                    }
+                    ini_content.emplace(curSection, itemGroup); //insert previous section to content map
+                    read_sections.emplace_back(curSection); //add to read sections list
                 }
-                eraseElements(&itemGroup); //reset section storage
+                eraseElements(itemGroup); //reset section storage
                 curSection = thisSection; //start a new section
             }
             else if(store_any_line && !inExcludedSection && curSection.size()) //store a line without name
             {
-                itemGroup.insert(pair<string, string>("{NONAME}", strLine));
+                itemGroup.emplace("{NONAME}", strLine);
             }
-            if(include_sections.size() != 0 && include_sections == read_sections) //all included sections has been read
+            if(include_sections.size() && include_sections == read_sections) //all included sections has been read
                 break; //exit now
         }
-        if(curSection != "" && itemGroup.size() != 0) //final section
+        if(curSection.size() && itemGroup.size()) //final section
         {
-            if(ini_content.count(curSection) != 0) //a section with the same name has been inserted
-                    return -1;
-            ini_content.insert(pair<string, multimap<string, string>>(curSection, itemGroup)); //insert this section to content map
-            read_sections.push_back(curSection); //add to read sections list
+            if(ini_content.count(curSection)) //a section with the same name has been inserted
+            {
+                if(allow_dup_section_titles)
+                {
+                    eraseElements(existItemGroup);
+                    existItemGroup = ini_content.at(curSection); //get the old items
+                    for(auto &x : existItemGroup)
+                        itemGroup.emplace(x); //insert them all into new section
+                    ini_content.erase(curSection); //remove the old section
+                }
+                else
+                    return -1; //not allowed, stop
+            }
+            ini_content.emplace(curSection, itemGroup); //insert this section to content map
+            read_sections.emplace_back(curSection); //add to read sections list
         }
         parsed = true;
         return 0; //all done
@@ -159,15 +215,17 @@ public:
     /**
     *  @brief Parse an INI file into mapped data structure.
     */
-    int ParseFile(string filePath)
+    int ParseFile(std::string filePath)
     {
-        return Parse(fileGet(filePath));
+        if(!fileExist(filePath))
+            return -1;
+        return Parse(fileGet(filePath, false));
     }
 
     /**
     *  @brief Check whether a section exist.
     */
-    bool SectionExist(string section)
+    bool SectionExist(std::string section)
     {
         return ini_content.find(section) != ini_content.end();
     }
@@ -183,13 +241,13 @@ public:
     /**
     *  @brief Return all section names inside INI.
     */
-    vector<string> GetSections()
+    string_array GetSections()
     {
-        vector<string> retData;
+        string_array retData;
 
         for(auto &x : ini_content)
         {
-            retData.push_back(x.first);
+            retData.emplace_back(x.first);
         }
 
         return retData;
@@ -198,7 +256,7 @@ public:
     /**
     *  @brief Enter a section with the given name. Section name and data will be cached to speed up the following reading process.
     */
-    int EnterSection(string section)
+    int EnterSection(std::string section)
     {
         if(!SectionExist(section))
             return -1;
@@ -210,7 +268,7 @@ public:
     /**
     *  @brief Set current section.
     */
-    void SetCurrentSection(string section)
+    void SetCurrentSection(std::string section)
     {
         current_section = section;
     }
@@ -218,7 +276,7 @@ public:
     /**
     *  @brief Check whether an item exist in the given section. Return false if the section does not exist.
     */
-    bool ItemExist(string section, string itemName)
+    bool ItemExist(std::string section, std::string itemName)
     {
         if(!SectionExist(section))
             return false;
@@ -235,15 +293,15 @@ public:
     /**
     *  @brief Check whether an item exist in current section. Return false if the section does not exist.
     */
-    bool ItemExist(string itemName)
+    bool ItemExist(std::string itemName)
     {
-        return current_section != "" ? ItemExist(current_section, itemName) : false;
+        return current_section.size() ? ItemExist(current_section, itemName) : false;
     }
 
     /**
     *  @brief Check whether an item with the given name prefix exist in the given section. Return false if the section does not exist.
     */
-    bool ItemPrefixExist(string section, string itemName)
+    bool ItemPrefixExist(std::string section, std::string itemName)
     {
         if(!SectionExist(section))
             return false;
@@ -266,15 +324,15 @@ public:
     /**
     *  @brief Check whether an item with the given name prefix exist in current section. Return false if the section does not exist.
     */
-    bool ItemPrefixExist(string itemName)
+    bool ItemPrefixExist(std::string itemName)
     {
-        return current_section != "" ? ItemPrefixExist(current_section, itemName) : false;
+        return current_section.size() ? ItemPrefixExist(current_section, itemName) : false;
     }
 
     /**
     *  @brief Count of items in the given section. Return 0 if the section does not exist.
     */
-    unsigned int ItemCount(string section)
+    unsigned int ItemCount(std::string section)
     {
         if(!parsed || !SectionExist(section))
             return 0;
@@ -287,14 +345,14 @@ public:
     */
     void EraseAll()
     {
-        eraseElements(&ini_content);
+        eraseElements(ini_content);
         parsed = false;
     }
 
     /**
     *  @brief Retrieve all items in the given section.
     */
-    int GetItems(string section, multimap<string, string> *data)
+    int GetItems(std::string section, std::multimap<std::string, std::string> &data)
     {
         if(!parsed || !SectionExist(section))
             return -1;
@@ -305,35 +363,35 @@ public:
             cached_section_content = ini_content.at(section);
         }
 
-        *data = cached_section_content;
+        data = cached_section_content;
         return 0;
     }
 
     /**
     *  @brief Retrieve all items in current section.
     */
-    int GetItems(multimap<string, string> *data)
+    int GetItems(string_multimap &data)
     {
-        return current_section != "" ? GetItems(current_section, data) : -1;
+        return current_section.size() ? GetItems(current_section, data) : -1;
     }
 
     /**
     * @brief Retrieve item(s) with the same name prefix in the given section.
     */
-    int GetAll(string section, string itemName, vector<string> *results) //retrieve item(s) with the same itemName prefix
+    int GetAll(std::string section, std::string itemName, string_array &results) //retrieve item(s) with the same itemName prefix
     {
         if(!parsed)
             return -1;
 
-        multimap<string, string> mapTemp;
+        string_multimap mapTemp;
 
-        if(GetItems(section, &mapTemp) != 0)
+        if(GetItems(section, mapTemp) != 0)
             return -1;
 
         for(auto &x : mapTemp)
         {
             if(x.first.find(itemName) == 0)
-                results->push_back(x.second);
+                results.emplace_back(x.second);
         }
 
         return 0;
@@ -342,23 +400,23 @@ public:
     /**
     * @brief Retrieve item(s) with the same name prefix in current section.
     */
-    int GetAll(string itemName, vector<string> *results)
+    int GetAll(std::string itemName, string_array &results)
     {
-        return current_section != "" ? GetAll(current_section, itemName, results) : -1;
+        return current_section.size() ? GetAll(current_section, itemName, results) : -1;
     }
 
     /**
     * @brief Retrieve one item with the exact same name in the given section.
     */
-    string Get(string section, string itemName) //retrieve one item with the exact same itemName
+    std::string Get(std::string section, std::string itemName) //retrieve one item with the exact same itemName
     {
         if(!parsed)
-            return string();
+            return std::string();
 
-        multimap<string, string> mapTemp;
+        string_multimap mapTemp;
 
-        if(GetItems(section, &mapTemp) != 0)
-            return string();
+        if(GetItems(section, mapTemp) != 0)
+            return std::string();
 
         for(auto &x : mapTemp)
         {
@@ -366,21 +424,21 @@ public:
                 return x.second;
         }
 
-        return string();
+        return std::string();
     }
 
     /**
     * @brief Retrieve one item with the exact same name in current section.
     */
-    string Get(string itemName)
+    std::string Get(std::string itemName)
     {
-        return current_section != "" ? Get(current_section, itemName) : string();
+        return current_section.size() ? Get(current_section, itemName) : std::string();
     }
 
     /**
     * @brief Retrieve one boolean item value with the exact same name in the given section.
     */
-    bool GetBool(string section, string itemName)
+    bool GetBool(std::string section, std::string itemName)
     {
         return Get(section, itemName) == "true";
     }
@@ -388,54 +446,95 @@ public:
     /**
     * @brief Retrieve one boolean item value with the exact same name in current section.
     */
-    bool GetBool(string itemName)
+    bool GetBool(std::string itemName)
     {
-        return current_section != "" ? Get(current_section, itemName) == "true" : false;
+        return current_section.size() ? Get(current_section, itemName) == "true" : false;
+    }
+
+    /**
+    * @brief Retrieve one integer item value with the exact same name in the given section.
+    */
+    int GetInt(std::string section, std::string itemName)
+    {
+        return stoi(Get(section, itemName));
+    }
+
+    /**
+    * @brief Retrieve one integer item value with the exact same name in current section.
+    */
+    int GetInt(std::string itemName)
+    {
+        return GetInt(current_section, itemName);
     }
 
     /**
     * @brief Retrieve the first item found in the given section.
     */
-    string GetFirst(string section, string itemName) //return the first item value found in section
+    std::string GetFirst(std::string section, std::string itemName) //return the first item value found in section
     {
         if(!parsed)
-            return string();
-        vector<string> result;
-        if(GetAll(section, itemName, &result) != -1)
+            return std::string();
+        string_array result;
+        if(GetAll(section, itemName, result) != -1)
             return result[0];
         else
-            return string();
+            return std::string();
     }
 
     /**
     * @brief Retrieve the first item found in current section.
     */
-    string GetFirst(string itemName)
+    std::string GetFirst(std::string itemName)
     {
-        return current_section != "" ? GetFirst(current_section, itemName) : string();
+        return current_section.size() ? GetFirst(current_section, itemName) : std::string();
     }
 
     /**
-    *  @brief Add a string value with given values.
+    * @brief Retrieve a string style array with specific separator and write into integer array.
     */
-    int Set(string section, string itemName, string itemVal)
+    template <typename T> void GetIntArray(std::string section, std::string itemName, std::string separator, T &Array)
     {
-        multimap<string, string> mapTemp;
-        string value;
+        string_array vArray;
+        unsigned int index, UBound = sizeof(Array) / sizeof(Array[0]);
+        vArray = split(Get(section, itemName), separator);
+        for(index = 0; index < vArray.size() && index < UBound; index++)
+            Array[index] = stoi(vArray[index]);
+        for(; index < UBound; index++)
+            Array[index] = 0;
+    }
+
+    /**
+    * @brief Retrieve a string style array with specific separator and write into integer array.
+    */
+    template <typename T> void GetIntArray(std::string itemName, std::string separator, T &Array)
+    {
+        if(current_section.size())
+            GetIntArray(current_section, itemName, separator, Array);
+    }
+
+    /**
+    *  @brief Add a std::string value with given values.
+    */
+    int Set(std::string section, std::string itemName, std::string itemVal)
+    {
+        std::string value;
+
+        if(!section.size())
+            return -1;
 
         if(!parsed)
             parsed = true;
 
         if(SectionExist(section))
         {
-            mapTemp = ini_content.at(section);
-            mapTemp.insert(pair<string, string>(itemName, itemVal));
-            ini_content[section] = mapTemp;
+            string_multimap &mapTemp = ini_content.at(section);
+            mapTemp.insert(std::pair<std::string, std::string>(itemName, itemVal));
         }
         else
         {
-            mapTemp.insert(pair<string, string>(itemName, itemVal));
-            ini_content.insert(pair<string, multimap<string, string>>(section, mapTemp));
+            string_multimap mapTemp;
+            mapTemp.insert(std::pair<std::string, std::string>(itemName, itemVal));
+            ini_content.insert(std::pair<std::string, std::multimap<std::string, std::string>>(section, mapTemp));
         }
 
         return 0;
@@ -444,7 +543,7 @@ public:
     /**
     *  @brief Add a string value with given values.
     */
-    int Set(string itemName, string itemVal)
+    int Set(std::string itemName, std::string itemVal)
     {
         if(!current_section.size())
             return -1;
@@ -454,7 +553,7 @@ public:
     /**
     *  @brief Add a boolean value with given values.
     */
-    int SetBool(string section, string itemName, bool itemVal)
+    int SetBool(std::string section, std::string itemName, bool itemVal)
     {
         return Set(section, itemName, itemVal ? "true" : "false");
     }
@@ -462,7 +561,7 @@ public:
     /**
     *  @brief Add a boolean value with given values.
     */
-    int SetBool(string itemName, bool itemVal)
+    int SetBool(std::string itemName, bool itemVal)
     {
         return SetBool(current_section, itemName, itemVal);
     }
@@ -470,15 +569,15 @@ public:
     /**
     *  @brief Add a double value with given values.
     */
-    int SetDouble(string section, string itemName, double itemVal)
+    int SetDouble(std::string section, std::string itemName, double itemVal)
     {
-        return Set(section, itemName, to_string(itemVal));
+        return Set(section, itemName, std::__cxx11::to_string(itemVal));
     }
 
     /**
     *  @brief Add a double value with given values.
     */
-    int SetDouble(string itemName, double itemVal)
+    int SetDouble(std::string itemName, double itemVal)
     {
         return SetDouble(current_section, itemName, itemVal);
     }
@@ -486,28 +585,103 @@ public:
     /**
     *  @brief Add a long value with given values.
     */
-    int SetLong(string section, string itemName, long itemVal)
+    int SetLong(std::string section, std::string itemName, long itemVal)
     {
-        return Set(section, itemName, to_string(itemVal));
+        return Set(section, itemName, std::__cxx11::to_string(itemVal));
     }
 
     /**
     *  @brief Add a long value with given values.
     */
-    int SetLong(string itemName, double itemVal)
+    int SetLong(std::string itemName, long itemVal)
     {
         return SetLong(current_section, itemName, itemVal);
     }
 
     /**
+    *  @brief Add an array with the given separator.
+    */
+    template <typename T> int SetArray(std::string section, std::string itemName, std::string separator, T &Array)
+    {
+        std::string data;
+        for(auto &x : Array)
+            data += std::__cxx11::to_string(x) + separator;
+        data = data.substr(0, data.size() - separator.size());
+        return Set(section, itemName, data);
+    }
+
+    /**
+    *  @brief Add an array with the given separator.
+    */
+    template <typename T> int SetArray(std::string itemName, std::string separator, T &Array)
+    {
+        return current_section.size() ? SetArray(current_section, itemName, separator, Array) : -1;
+    }
+
+    /**
+    *  @brief Erase all items with the given name.
+    */
+    int Erase(std::string section, std::string itemName)
+    {
+        int retVal;
+        if(!SectionExist(section))
+            return -1;
+
+        retVal = ini_content.at(section).erase(itemName);
+        if(retVal && cached_section == section)
+        {
+            cached_section_content = ini_content.at(section);
+        }
+        return retVal;
+    }
+
+    /**
+    *  @brief Erase all items with the given name.
+    */
+    int Erase(std::string itemName)
+    {
+        return current_section.size() ? Erase(current_section, itemName) : -1;
+    }
+
+    /**
+    *  @brief Erase the first item with the given name.
+    */
+    int EraseFirst(std::string section, std::string itemName)
+    {
+        string_multimap &mapTemp = ini_content.at(section);
+        string_multimap::iterator iter = mapTemp.find(itemName);
+        if(iter != mapTemp.end())
+        {
+            mapTemp.erase(iter);
+            if(cached_section == section)
+            {
+                cached_section_content = mapTemp;
+            }
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    /**
+    *  @brief Erase the first item with the given name.
+    */
+    int EraseFirst(std::string itemName)
+    {
+        return current_section.size() ? EraseFirst(current_section, itemName) : -1;
+    }
+
+    /**
     *  @brief Export the whole INI data structure into a string.
     */
-    string ToString()
+    std::string ToString()
     {
-        string content;
+        std::string content;
 
         if(!parsed)
-            return string();
+            return std::string();
 
         for(auto &x : ini_content)
         {
@@ -527,7 +701,7 @@ public:
     /**
     *  @brief Export the whole INI data structure into a file.
     */
-    int ToFile(string filePath)
+    int ToFile(std::string filePath)
     {
         return fileWrite(filePath, ToString(), true);
     }

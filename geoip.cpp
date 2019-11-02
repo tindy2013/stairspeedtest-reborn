@@ -5,13 +5,14 @@
 #include "misc.h"
 #include "logger.h"
 #include "rapidjson_extra.h"
+#include "socket.h"
 
 using namespace rapidjson;
 
-geoIPInfo getGeoIPInfo(string ip, string proxy)
+geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
 {
     writeLog(LOG_TYPE_GEOIP, "GeoIP parse begin.");
-    string strRet, address = ip;
+    std::string strRet, address = ip;
     geoIPInfo info;
     Document json;
 
@@ -48,6 +49,7 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
         return info;
     }
 
+    writeLog(LOG_TYPE_GEOIP, "Fetched GeoIP data: " + strRet);
     writeLog(LOG_TYPE_GEOIP, "Parsing GeoIP result.");
     json.Parse(strRet.data());
     if(json.HasParseError())
@@ -80,9 +82,4 @@ geoIPInfo getGeoIPInfo(string ip, string proxy)
 
     writeLog(LOG_TYPE_GEOIP, "Parse GeoIP complete. Leaving.");
     return info;
-}
-
-geoIPInfo getGeoIPInfo(string ip, socks5Proxy proxy)
-{
-    return getGeoIPInfo(ip, buildSocks5ProxyString(proxy));
 }

@@ -4,9 +4,9 @@
 #include "printout.h"
 #include "perf_test.h"
 
-void testTelegram(string localaddr, int localport, nodePerfInfo *node)
+void testTelegram(std::string localaddr, int localport, nodePerfInfo *node)
 {
-    string telegram_host = "http://91.108.56.180:80";
+    std::string telegram_host = "http://91.108.56.180:80";
     nodeInfo tmpNode;
     if(node->linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
         websitePing(&tmpNode, telegram_host, node->server, node->port, UrlDecode(getUrlArg(node->proxyStr, "user")), UrlDecode(getUrlArg(node->proxyStr, "pass")));
@@ -16,9 +16,9 @@ void testTelegram(string localaddr, int localport, nodePerfInfo *node)
     node->telegramPing = tmpNode.sitePing;
 }
 
-void testCloudflare(string localaddr, int localport, nodePerfInfo *node)
+void testCloudflare(std::string localaddr, int localport, nodePerfInfo *node)
 {
-    string cloudflare_host = "https://1.1.1.1";
+    std::string cloudflare_host = "https://1.1.1.1";
     nodeInfo tmpNode;
     if(node->linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
         websitePing(&tmpNode, cloudflare_host, node->server, node->port, UrlDecode(getUrlArg(node->proxyStr, "user")), UrlDecode(getUrlArg(node->proxyStr, "pass")));

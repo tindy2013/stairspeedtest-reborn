@@ -7,15 +7,16 @@
 
 #include "renderer.h"
 #include "version.h"
+#include "nodeinfo.h"
 
-using namespace std;
 using namespace std::chrono;
+using namespace std::__cxx11;
 
-string export_sort_method_render = "none";
+std::string export_sort_method_render = "none";
 bool export_as_ssrspeed = false;
 
-vector<color> colorgroup;
-vector<int> bounds;
+std::vector<color> colorgroup;
+std::vector<int> bounds;
 
 //renderer values
 int widNumber = 0, widNA = 0, widB = 0, widKB = 0, widMB = 0, widGB = 0, widPercent = 0, widDot = 0;
@@ -28,7 +29,7 @@ const int def_bounds[5] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 
 const int rainbow_colorgroup[8][3] = {{255 * 256, 255 * 256, 255 * 256}, {102 * 256, 255 * 256, 102 * 256}, {255 * 256, 255 * 256, 102 * 256}, {255 * 256, 178 * 256, 102 * 256}, {255 * 256, 102 * 256, 102 * 256}, {226 * 256, 140 * 256, 255 * 256}, {102 * 256, 204 * 256, 255 * 256}, {102 * 256, 102 * 256, 255 * 256}};
 const int rainbow_bounds[8] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 * 1024, 24 * 1024 * 1024, 32 * 1024 * 1024, 40 * 1024 * 1024};
 
-int calcLength(string data)
+int calcLength(std::string data)
 {
     int total = 0;
     for(unsigned int i = 0; i < data.size(); i++)
@@ -41,13 +42,13 @@ int calcLength(string data)
     return total;
 }
 
-int getTextLength(string str)
+int getTextLength(std::string str)
 {
     return ((calcLength(str) - str.size()) / 3) * 2 + (str.size() * 2 - calcLength(str)) - count(str.begin(), str.end(), ' ') / 2;
 }
 
 /*
-static inline int calcCharCount(string data, int type)
+static inline int calcCharCount(std::string data, int type)
 {
     int uBound, lBound, total = 0;
     switch(type)
@@ -79,14 +80,14 @@ static inline int calcCharCount(string data, int type)
 }
 */
 
-static inline int getWidth(pngwriter *png, string font, int fontsize, string text)
+static inline int getWidth(pngwriter *png, std::string font, int fontsize, std::string text)
 {
     return png->get_text_width_utf8(const_cast<char *>(font.data()), fontsize, const_cast<char *>(text.data()));
     //const int widChnChar = 17, widEngChar = 9;
     //return ((calcLength(text) - text.size()) / 3) * widChnChar + ((text.size() * 2 - calcLength(text)) - count(text.begin(), text.end(), ' ') / 2) * widEngChar;
 }
 
-void rendererInit(string font, int fontsize)
+void rendererInit(std::string font, int fontsize)
 {
     pngwriter png;
     writeLog(LOG_TYPE_RENDER, "Start calculating basic string widths for font '" + font + "' at size " + to_string(fontsize) + ".");
@@ -102,7 +103,7 @@ void rendererInit(string font, int fontsize)
              + " MB=" + to_string(widMB) + " GB=" + to_string(widGB) + " Percent=" + to_string(widPercent) + " Dot=" + to_string(widDot));
 }
 
-static inline int getTextWidth(pngwriter *png, string font, int fontsize, string text)
+static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, std::string text)
 {
     int cntNumber = 0, total_width = 0;
 
@@ -116,7 +117,7 @@ static inline int getTextWidth(pngwriter *png, string font, int fontsize, string
     }
     total_width = cntNumber * widNumber + widDot;
     //if(strFind(text, "."))
-        //total_width += widDot;
+    //total_width += widDot;
 
     if(strFind(text, "%"))
         total_width += widPercent;
@@ -136,46 +137,46 @@ static inline int getTextWidth(pngwriter *png, string font, int fontsize, string
 }
 
 /*
-static inline int getTextWidth(pngwriter *png, string font, int fontsize, string text)
+static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, std::string text)
 {
     return png->get_text_width_utf8(const_cast<char *>(font.data()), fontsize, const_cast<char *>(text.data()));
 }
 */
 /*
-static inline int getTextWidth(pngwriter *png, string font, int fontsize, string text)
+static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, std::string text)
 {
     return calcCharCount(text, 0) * widNumber + calcCharCount(text, 1) * widUpperLetter + calcCharCount(text, 2) * widLowerLetter + calcCharCount(text, 3) * widPercent \
     + calcCharCount(text, 4) * widDot + calcCharCount(text, 5) * widSpace;
 }
 */
 
-static inline void plot_text_utf8(pngwriter *png, string face_path, int fontsize, int x_start, int y_start, double angle, string text, double red, double green, double blue)
+static inline void plot_text_utf8(pngwriter *png, std::string face_path, int fontsize, int x_start, int y_start, double angle, std::string text, double red, double green, double blue)
 {
     png->plot_text_utf8(const_cast<char *>(face_path.data()), fontsize, x_start, y_start, angle, const_cast<char *>(text.data()), red, green, blue);
     return;
 }
 
-string secondToString(int duration)
+std::string secondToString(int duration)
 {
     int intHrs = duration / 3600;
     int intMin = (duration % 3600) / 60;
     int intSec = duration % 60;
-    string strHrs = intHrs > 9 ? to_string(intHrs) : "0" + to_string(intHrs);
-    string strMin = intMin > 9 ? to_string(intMin) : "0" + to_string(intMin);
-    string strSec = intSec > 9 ? to_string(intSec) : "0" + to_string(intSec);
+    std::string strHrs = intHrs > 9 ? to_string(intHrs) : "0" + to_string(intHrs);
+    std::string strMin = intMin > 9 ? to_string(intMin) : "0" + to_string(intMin);
+    std::string strSec = intSec > 9 ? to_string(intSec) : "0" + to_string(intSec);
     return strHrs + ":" + strMin + ":" + strSec;
 }
 
-int getSpeed(string speed)
+int getSpeed(std::string speed)
 {
     if(speed == "")
         return 0;
     double speedval = 1.0;
-    if(speed.find("MB") != string::npos)
+    if(speed.find("MB") != std::string::npos)
         speedval = 1048576.0 * stof(speed.substr(0, speed.size() - 2));
-    else if(speed.find("KB") != string::npos)
+    else if(speed.find("KB") != std::string::npos)
         speedval = 1024.0 * stof(speed.substr(0, speed.size() - 2));
-    else if(speed.find("B") != string::npos)
+    else if(speed.find("B") != std::string::npos)
         speedval = 1.0 * stof(speed.substr(0, speed.size() - 1));
     return (int)speedval;
 }
@@ -191,7 +192,7 @@ bool comparer(nodeInfo &a, nodeInfo &b)
     else if(export_sort_method_render == "rping")
         return stof(a.avgPing) > stof(b.avgPing);
     else
-        return 0;
+        return a.groupID < b.groupID || a.id < b.id;
 }
 
 void getColor(color lc, color rc, float level, color *finalcolor)
@@ -210,7 +211,7 @@ color arrayToColor(const int colors[3])
     return retcolor;
 }
 
-void getSpeedColor(string speed, color *finalcolor)
+void getSpeedColor(std::string speed, color *finalcolor)
 {
     int speedval = getSpeed(speed);
     unsigned int color_count = colorgroup.size();
@@ -226,12 +227,12 @@ void getSpeedColor(string speed, color *finalcolor)
     return;
 }
 
-void loadDefaultColor(string type)
+void loadDefaultColor(std::string type)
 {
     if(type == "rainbow")
     {
-        vector<color>().swap(colorgroup);
-        vector<int>().swap(bounds);
+        std::vector<color>().swap(colorgroup);
+        std::vector<int>().swap(bounds);
         for(int i = 0; i < 8; i++)
         {
             colorgroup.push_back(arrayToColor(rainbow_colorgroup[i]));
@@ -240,8 +241,8 @@ void loadDefaultColor(string type)
     }
     else if(type == "original")
     {
-        vector<color>().swap(colorgroup);
-        vector<int>().swap(bounds);
+        std::vector<color>().swap(colorgroup);
+        std::vector<int>().swap(bounds);
         for(int i = 0; i < 5; i++)
         {
             colorgroup.push_back(arrayToColor(def_colorgroup[i]));
@@ -260,9 +261,9 @@ void test()
 */
 #ifndef _FAST_RENDER
 
-string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, string export_sort_method, string export_color_style, bool export_as_new_style, int test_duration)
+std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style)
 {
-    string pngname = replace_all_distinct(resultpath, ".log", ".png");
+    std::string pngname = replace_all_distinct(resultpath, ".log", ".png");
     nodeInfo node;
     int total_width = 0, total_height = 0, node_count = 0, total_line = 0;
     color bg_color;
@@ -270,7 +271,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     loadDefaultColor(export_color_style);
 
     //predefined values
-    string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
+    std::string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
 
     int fontsize = 12, text_x_offset = 5, height_line = 24, text_y_offset = 7;
     double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
@@ -284,16 +285,16 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     //extra value for aligning to the center
     const int enableCenterAlign = export_as_new_style ? 1 : 0;
     const int center_align_offset_side = center_align_offset / 2;
-    #define calcCenterOffset(item, total) ((((total - item) / 2) - center_align_offset_side) * enableCenterAlign)
+#define calcCenterOffset(item, total) ((((total - item) / 2) - center_align_offset_side) * enableCenterAlign)
 
     //SSRSpeed style
     if(export_as_ssrspeed)
     {
         export_as_new_style = true;
         font = "tools" PATH_SLASH "misc" PATH_SLASH "SourceHanSansCN-Medium.otf";
-        fontsize = 10;
-        height_line = 24;
-        text_y_offset = 6;
+        fontsize = 13;
+        height_line = 30;
+        text_y_offset = 7;
         border_red = 0.5;
         border_green = 0.5;
         border_blue = 0.5;
@@ -305,8 +306,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     node_count = nodes.size();
     total_line = node_count + 4;
     total_height = height_line * total_line;
-    if(export_sort_method != "none")
-        sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
+    std::sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
 
     //add title line into the list
     node.group = "Group";
@@ -330,10 +330,10 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     nodes.insert(nodes.begin(), node);
 
     //calculate the width of all columns
-    int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0,  sitePing_width = 0, maxSpeed_width = 0, onlines = 0, final_width = 0;
+    int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0,  sitePing_width = 0, maxSpeed_width = 0, onlines = 0, final_width = 0, test_duration = 0;
     int group_widths[MAX_NODES_COUNT], remarks_widths[MAX_NODES_COUNT], pkLoss_widths[MAX_NODES_COUNT], avgPing_widths[MAX_NODES_COUNT], avgSpeed_widths[MAX_NODES_COUNT], sitePing_widths[MAX_NODES_COUNT], maxSpeed_widths[MAX_NODES_COUNT];
     long long total_traffic = 0;
-    string longest_group, longest_remarks;
+    std::string longest_group, longest_remarks;
     int longest_group_len = 0, longest_remarks_len = 0;
 
     for(int i = 0; i <= node_count; i++)
@@ -375,23 +375,24 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
         }
         //group_width = max(group_widths[i] + center_align_offset, group_width);
         //remarks_width = max(remarks_widths[i] + center_align_offset, remarks_width);
-        pkLoss_width = max(pkLoss_widths[i] + center_align_offset, pkLoss_width);
-        avgPing_width = max(avgPing_widths[i] + center_align_offset, avgPing_width);
+        pkLoss_width = std::max(pkLoss_widths[i] + center_align_offset, pkLoss_width);
+        avgPing_width = std::max(avgPing_widths[i] + center_align_offset, avgPing_width);
         if(export_as_new_style)
-            sitePing_width = max(sitePing_widths[i] + center_align_offset, sitePing_width);
-        avgSpeed_width = max(avgSpeed_widths[i] + center_align_offset, avgSpeed_width);
+            sitePing_width = std::max(sitePing_widths[i] + center_align_offset, sitePing_width);
+        avgSpeed_width = std::max(avgSpeed_widths[i] + center_align_offset, avgSpeed_width);
         if(export_with_maxSpeed)
-            maxSpeed_width = max(maxSpeed_widths[i] + center_align_offset, maxSpeed_width);
+            maxSpeed_width = std::max(maxSpeed_widths[i] + center_align_offset, maxSpeed_width);
 
         total_traffic += nodes[i].totalRecvBytes;
+        test_duration += nodes[i].duration;
         if(nodes[i].online)
             onlines++;
     }
     //only calculate the width of the group/remark title line
     remarks_widths[0] = getWidth(&png, font, fontsize, node.remarks);
-    remarks_width = max(getWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset) + 4;
+    remarks_width = std::max(getWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset) + 4;
     group_widths[0] = getWidth(&png, font, fontsize, node.group);
-    group_width = max(getWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset) + 4;
+    group_width = std::max(getWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset) + 4;
 
     int width_all[8] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
     //int width_all[7] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
@@ -400,10 +401,10 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
         total_width += maxSpeed_width;
 
     //generating information
-    string gentime = "Generated at " + getTime(3);
-    string traffic = "Traffic used : " + speedCalc((double)total_traffic) + ". ";
-    string about = "By Stair Speedtest Reborn " VERSION ".";
-    string title = "  Stair Speedtest Reborn Result Table ( " VERSION " )  ";
+    std::string gentime = "Generated at " + getTime(3);
+    std::string traffic = "Traffic used : " + speedCalc((double)total_traffic) + ". ";
+    std::string about = "By Stair Speedtest Reborn " VERSION ".";
+    std::string title = "  Stair Speedtest Reborn Result Table ( " VERSION " )  ";
     //SSRSpeed style
     if(export_as_ssrspeed)
     {
@@ -418,10 +419,10 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     }
 
     final_width = total_width;
-    final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
-    final_width = max(getWidth(&png, font, fontsize, traffic) + center_align_offset, final_width);
+    final_width = std::max(getWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
+    final_width = std::max(getWidth(&png, font, fontsize, traffic) + center_align_offset, final_width);
     if(export_as_new_style)
-        final_width = max(getWidth(&png, font, fontsize, title) + center_align_offset, final_width);
+        final_width = std::max(getWidth(&png, font, fontsize, title) + center_align_offset, final_width);
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
@@ -458,7 +459,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
         if(i > 0)
             plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         else
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(group_widths[i], group_width), this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(group_widths[i], group_width) - (export_as_ssrspeed ? 4 : 0), this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
         png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
@@ -504,7 +505,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
             png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
         }
         //average speed
-        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + 3 : this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
         if(export_with_maxSpeed) //see if we want to draw max speed
         {
             j++;
@@ -518,7 +519,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
                 png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
             }
             //max speed
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + 3 : this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
         }
         line_index++; //one line completed,  moving up
         png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
@@ -551,9 +552,9 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
 #else
 
 // old style only since we cannot align to the center
-string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, string export_sort_method, string export_color_style, bool export_as_new_style, int test_duration)
+std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style, int test_duration)
 {
-    string pngname = replace_all_distinct(resultpath, ".log", ".png");
+    std::string pngname = replace_all_distinct(resultpath, ".log", ".png");
     nodeInfo node;
     int total_width = 0, total_height = 0, node_count = 0, total_line = 0;
     color bg_color;
@@ -561,7 +562,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
     loadDefaultColor(export_color_style);
 
     //predefined values
-    const string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
+    const std::string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
     const int height_line = 24, fontsize = 12, text_x_offset = 5, text_y_offset = 7, center_align_offset = 8, vertical_delim_align_offset = 2;
     const double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;
@@ -586,7 +587,7 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
 
     //calculate the width of all columns
     int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0, /* sitePing_width = 0, */maxSpeed_width = 0, onlines = 0, final_width = 0;
-    string longest_group, longest_remarks, longest_pkLoss, longest_avgPing, longest_avgSpeed, /*longest_sitePing,*/longest_maxSpeed;
+    std::string longest_group, longest_remarks, longest_pkLoss, longest_avgPing, longest_avgSpeed, /*longest_sitePing,*/longest_maxSpeed;
     long long total_traffic = 0;
     for(int i = 0; i <= node_count; i++)
     {
@@ -626,9 +627,9 @@ string exportRender(string resultpath, vector<nodeInfo> nodes, bool export_with_
         total_width += maxSpeed_width;
 
     //generating information
-    string gentime = "Generated at "+getTime(3);
-    string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+to_string(onlines)+"/"+to_string(node_count)+"]";
-    string about = "By Stair Speedtest Reborn " VERSION ".";
+    std::string gentime = "Generated at "+getTime(3);
+    std::string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+to_string(onlines)+"/"+to_string(node_count)+"]";
+    std::string about = "By Stair Speedtest Reborn " VERSION ".";
 
     final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, total_width);
     final_width = max(getWidth(&png, font, fontsize, traffic) + center_align_offset, total_width);

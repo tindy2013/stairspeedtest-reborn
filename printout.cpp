@@ -8,10 +8,11 @@
 struct LOOKUP_ITEM
 {
     int index;
-    string info;
+    std::string info;
 };
 
-LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
+LOOKUP_ITEM SPEEDTEST_MESSAGES[] =
+{
     {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
     {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nIf you want to test more than one link, separate them with '|'.\nLink: "},
     {SPEEDTEST_MESSAGE_MULTILINK, "Multiple link provided, parsing all nodes.\n\n"},
@@ -19,6 +20,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {SPEEDTEST_MESSAGE_FOUNDSS, "Found single Shadowsocks link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSSR, "Found single ShadowsocksR link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSOCKS, "Found single Socks 5 link.\n"},
+    {SPEEDTEST_MESSAGE_FOUNDNETCH, "Found single Netch link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSUB, "Found subscribe link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDLOCAL, "Found local configure file.\n"},
     {SPEEDTEST_MESSAGE_GROUP, "If you have imported an V2Ray subscribe link which doesn't contain a Group Name, you can specify a custom name below.\nIf you have imported an Shadowsocks/ShadowsocksR link which contains a Group Name, press Enter to skip.\nCustom Group Name: "},
@@ -54,13 +56,15 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES[] = {
     {-1, ""}
 };
 
-LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
+LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] =
+{
     {SPEEDTEST_MESSAGE_WELCOME, "{\"info\":\"started\"}\n"},
     {SPEEDTEST_MESSAGE_EOF, "{\"info\":\"eof\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "{\"info\":\"foundvmess\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDSS, "{\"info\":\"foundss\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDSSR, "{\"info\":\"foundssr\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDSOCKS, "{\"info\":\"foundsocks\"}\n"},
+    {SPEEDTEST_MESSAGE_FOUNDNETCH, "\"info\":\"foundnetch\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDSUB, "{\"info\":\"foundsub\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDLOCAL, "{\"info\":\"foundlocal\"}\n"},
     {SPEEDTEST_MESSAGE_FOUNDUPD, "{\"info\":\"foundupd\"}\n"},
@@ -99,30 +103,33 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] = {
     {-1, ""}
 };
 
-string lookUp(int index, LOOKUP_ITEM *items)
+std::string lookUp(int index, LOOKUP_ITEM *items)
 {
     int i = 0;
-    while (0 <= items[i].index) {
+    while (0 <= items[i].index)
+    {
         if (items[i].index == index)
             return items[i].info;
         i++;
     }
-    return string("");
+    return std::string("");
 }
 
-string lookUp(int index, bool rpcmode)
+std::string lookUp(int index, bool rpcmode)
 {
     if(rpcmode)
     {
         return lookUp(index, SPEEDTEST_MESSAGES_RPC);
-    } else {
+    }
+    else
+    {
         return lookUp(index, SPEEDTEST_MESSAGES);
     }
 }
 
 void printMsg(int index, nodeInfo *node, bool rpcmode)
 {
-    string printout;
+    std::string printout;
     printout = lookUp(index, rpcmode);
     if(printout.size() == 0)
     {
@@ -130,7 +137,7 @@ void printMsg(int index, nodeInfo *node, bool rpcmode)
     }
     printout = replace_all_distinct(printout, "?group?", trim(node->group));
     printout = replace_all_distinct(printout, "?remarks?", trim(node->remarks));
-    printout = replace_all_distinct(printout, "?id?", to_string(node->id));
+    printout = replace_all_distinct(printout, "?id?", std::__cxx11::to_string(node->id));
     printout = replace_all_distinct(printout, "?avgping?", node->avgPing);
     printout = replace_all_distinct(printout, "?pkloss?", node->pkLoss);
     printout = replace_all_distinct(printout, "?siteping?", node->sitePing);
@@ -140,14 +147,14 @@ void printMsg(int index, nodeInfo *node, bool rpcmode)
     printout = replace_all_distinct(printout, "?traffic?", node->traffic);
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
-    cout<<printout;
-    cout.clear();
-    cout.flush();
+    std::cout<<printout;
+    std::cout.clear();
+    std::cout.flush();
 }
 
-void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<string> trans)
+void printMsgWithDict(int index, bool rpcmode, std::vector<std::string> dict, std::vector<std::string> trans)
 {
-    string printout;
+    std::string printout;
     printout = lookUp(index, rpcmode);
     if(printout.size() == 0)
     {
@@ -159,14 +166,14 @@ void printMsgWithDict(int index, bool rpcmode, vector<string> dict, vector<strin
     }
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
-    cout<<printout;
-    cout.clear();
-    cout.flush();
+    std::cout<<printout;
+    std::cout.clear();
+    std::cout.flush();
 }
 
 void printMsgDirect(int index, bool rpcmode)
 {
-    cout<<lookUp(index, rpcmode);
-    cout.clear();
-    cout.flush();
+    std::cout<<lookUp(index, rpcmode);
+    std::cout.clear();
+    std::cout.flush();
 }

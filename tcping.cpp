@@ -5,24 +5,25 @@
 #include "socket.h"
 #include "printout.h"
 #include "logger.h"
+#include "nodeinfo.h"
 
-using namespace std;
 using namespace std::chrono;
+using namespace std::__cxx11;
 
 const int times_to_ping = 6;
 
 void draw_progress_tping(int progress, int values[6])
 {
-    cerr<<"\r[";
+    std::cerr << "\r[";
     for(int i = 0; i <= progress; i++)
     {
-        cerr<<(values[i] == 0 ? "*" : "-");
+        std::cerr << (values[i] == 0 ? "*" : "-");
     }
     if(progress == times_to_ping - 1)
     {
-        cerr<<"]";
+        std::cerr << "]";
     }
-    cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
+    std::cerr << " " << progress + 1 << "/" << times_to_ping << " " << values[progress] << "ms";
 }
 
 int tcping(nodeInfo *node)
@@ -30,7 +31,7 @@ int tcping(nodeInfo *node)
     writeLog(LOG_TYPE_TCPING, "TCP Ping begin.");
     int retVal;
 
-    string host, addr, addrstr;
+    std::string host, addr, addrstr;
     int port;
 
     host = node->server;
@@ -88,7 +89,7 @@ int tcping(nodeInfo *node)
         }
 
     }
-    cerr<<endl;
+    std::cerr << std::endl;
     float pingval = 0.0;
     if(succeedcounter > 0)
         pingval = totduration * 1.0 / succeedcounter;

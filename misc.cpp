@@ -25,22 +25,24 @@
 #include <sys/socket.h>
 #endif // _WIN32
 
+using namespace std::__cxx11;
+
 void sleep(int interval)
 {
-/*
-#ifdef _WIN32
-    Sleep(interval);
-#else
-    // Portable sleep for platforms other than Windows.
-    struct timeval wait = { 0, interval * 1000 };
-    select(0, NULL, NULL, NULL, &wait);
-#endif
-*/
+    /*
+    #ifdef _WIN32
+        Sleep(interval);
+    #else
+        // Portable sleep for platforms other than Windows.
+        struct timeval wait = { 0, interval * 1000 };
+        select(0, NULL, NULL, NULL, &wait);
+    #endif
+    */
     //upgrade to c++11 standard
-    this_thread::sleep_for(chrono::milliseconds(interval));
+    std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 }
 
-string GBKToUTF8(string str_src)
+std::string GBKToUTF8(std::string str_src)
 {
 #ifdef _WIN32
     const char* strGBK = str_src.c_str();
@@ -52,7 +54,7 @@ string GBKToUTF8(string str_src)
     char* str = new char[len + 1];
     memset(str, 0, len + 1);
     WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-    string strTemp = str;
+    std::string strTemp = str;
     if(wstr)
         delete[] wstr;
     if(str)
@@ -63,7 +65,7 @@ string GBKToUTF8(string str_src)
 #endif // _WIN32
 }
 
-string UTF8ToGBK(string str_src)
+std::string UTF8ToGBK(std::string str_src)
 {
 #ifdef _WIN32
     const char* strUTF8 = str_src.data();
@@ -75,7 +77,7 @@ string UTF8ToGBK(string str_src)
     char* szGBK = new char[len + 1];
     memset(szGBK, 0, len + 1);
     WideCharToMultiByte(CP_ACP, 0, wszGBK, -1, szGBK, len, NULL, NULL);
-    string strTemp(szGBK);
+    std::string strTemp(szGBK);
     if (wszGBK)
         delete[] wszGBK;
     if (szGBK)
@@ -87,17 +89,17 @@ string UTF8ToGBK(string str_src)
 }
 
 #ifdef _WIN32
-// string to wstring
-void StringToWstring(wstring& szDst, string str)
+// std::string to wstring
+void StringToWstring(std::wstring& szDst, std::string str)
 {
-	string temp = str;
-	int len = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)temp.c_str(), -1, NULL,0);
-	wchar_t* wszUtf8 = new wchar_t[len + 1];
-	memset(wszUtf8, 0, len * 2 + 2);
-	MultiByteToWideChar(CP_ACP, 0, (LPCSTR)temp.c_str(), -1, (LPWSTR)wszUtf8, len);
-	szDst = wszUtf8;
-	wstring r = wszUtf8;
-	delete[] wszUtf8;
+    std::string temp = str;
+    int len = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)temp.c_str(), -1, NULL,0);
+    wchar_t* wszUtf8 = new wchar_t[len + 1];
+    memset(wszUtf8, 0, len * 2 + 2);
+    MultiByteToWideChar(CP_ACP, 0, (LPCSTR)temp.c_str(), -1, (LPWSTR)wszUtf8, len);
+    szDst = wszUtf8;
+    std::wstring r = wszUtf8;
+    delete[] wszUtf8;
 }
 #endif // _WIN32
 
@@ -115,9 +117,9 @@ unsigned char FromHex(unsigned char x)
     return y;
 }
 
-string UrlDecode(const string& str)
+std::string UrlDecode(const std::string& str)
 {
-    string strTemp = "";
+    std::string strTemp = "";
     size_t length = str.length();
     for (size_t i = 0; i < length; i++)
     {
@@ -141,12 +143,12 @@ static inline bool is_base64(unsigned char c)
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-string base64_encode(string string_to_encode)
+std::string base64_encode(std::string string_to_encode)
 {
     char const* bytes_to_encode = string_to_encode.data();
     unsigned int in_len = string_to_encode.size();
 
-    string ret;
+    std::string ret;
     int i = 0;
     int j = 0;
     unsigned char char_array_3[3];
@@ -190,14 +192,14 @@ string base64_encode(string string_to_encode)
 
 }
 
-string base64_decode(string encoded_string)
+std::string base64_decode(std::string encoded_string)
 {
     int in_len = encoded_string.size();
     int i = 0;
     int j = 0;
     int in_ = 0;
     unsigned char char_array_4[4], char_array_3[3];
-    string ret;
+    std::string ret;
 
     while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
     {
@@ -237,10 +239,10 @@ string base64_decode(string encoded_string)
     return ret;
 }
 
-vector<string> split(const string &s, const string &seperator)
+std::vector<std::string> split(const std::string &s, const std::string &seperator)
 {
-    vector<string> result;
-    typedef string::size_type string_size;
+    std::vector<std::string> result;
+    typedef std::string::size_type string_size;
     string_size i = 0;
 
     while(i != s.size())
@@ -280,106 +282,114 @@ vector<string> split(const string &s, const string &seperator)
     return result;
 }
 
-string getSystemProxy()
+std::string getSystemProxy()
 {
 #ifdef _WIN32
     HKEY key;
     auto ret = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings)", 0, KEY_ALL_ACCESS, &key);
-    if(ret != ERROR_SUCCESS){
+    if(ret != ERROR_SUCCESS)
+    {
         //std::cout << "open failed: " << ret << std::endl;
-        return string();
+        return std::string();
     }
 
     DWORD values_count, max_value_name_len, max_value_len;
     ret = RegQueryInfoKey(key, NULL, NULL, NULL, NULL, NULL, NULL,
-        &values_count, &max_value_name_len, &max_value_len, NULL, NULL);
-    if(ret != ERROR_SUCCESS){
+                          &values_count, &max_value_name_len, &max_value_len, NULL, NULL);
+    if(ret != ERROR_SUCCESS)
+    {
         //std::cout << "query failed" << std::endl;
-        return string();
+        return std::string();
     }
 
     std::vector<std::tuple<std::shared_ptr<char>, DWORD, std::shared_ptr<BYTE>>> values;
-    for(DWORD i = 0; i < values_count; i++){
-		std::shared_ptr<char> value_name(new char[max_value_name_len + 1],
-			std::default_delete<char[]>());
+    for(DWORD i = 0; i < values_count; i++)
+    {
+        std::shared_ptr<char> value_name(new char[max_value_name_len + 1],
+                                         std::default_delete<char[]>());
         DWORD value_name_len = max_value_name_len + 1;
         DWORD value_type, value_len;
         RegEnumValue(key, i, value_name.get(), &value_name_len, NULL, &value_type, NULL, &value_len);
         std::shared_ptr<BYTE> value(new BYTE[value_len],
-			std::default_delete<BYTE[]>());
+                                    std::default_delete<BYTE[]>());
         value_name_len = max_value_name_len + 1;
         RegEnumValue(key, i, value_name.get(), &value_name_len, NULL, &value_type, value.get(), &value_len);
         values.push_back(std::make_tuple(value_name, value_type, value));
     }
 
-	DWORD ProxyEnable = 0;
-	for (auto x : values) {
-		if (strcmp(std::get<0>(x).get(), "ProxyEnable") == 0) {
-			ProxyEnable = *(DWORD*)(std::get<2>(x).get());
-		}
-	}
+    DWORD ProxyEnable = 0;
+    for (auto x : values)
+    {
+        if (strcmp(std::get<0>(x).get(), "ProxyEnable") == 0)
+        {
+            ProxyEnable = *(DWORD*)(std::get<2>(x).get());
+        }
+    }
 
-	if (ProxyEnable) {
-		for (auto x : values) {
-			if (strcmp(std::get<0>(x).get(), "ProxyServer") == 0) {
-				//std::cout << "ProxyServer: " << (char*)(std::get<2>(x).get()) << std::endl;
-				return string((char*)(std::get<2>(x).get()));
-			}
-		}
-	}
-	/*
-	else {
-		//std::cout << "Proxy not Enabled" << std::endl;
-	}
-	*/
-	//return 0;
-	return string();
+    if (ProxyEnable)
+    {
+        for (auto x : values)
+        {
+            if (strcmp(std::get<0>(x).get(), "ProxyServer") == 0)
+            {
+                //std::cout << "ProxyServer: " << (char*)(std::get<2>(x).get()) << std::endl;
+                return std::string((char*)(std::get<2>(x).get()));
+            }
+        }
+    }
+    /*
+    else {
+    	//std::cout << "Proxy not Enabled" << std::endl;
+    }
+    */
+    //return 0;
+    return std::string();
 #else
     char* proxy = getenv("ALL_PROXY");
     if(proxy != NULL)
-        return string(proxy);
+        return std::string(proxy);
     else
-        return string();
+        return std::string();
 #endif // _WIN32
 }
 
-string trim(const string& str)
+std::string trim(const std::string& str)
 {
-    string::size_type pos = str.find_first_not_of(' ');
-    if (pos == string::npos)
+    std::string::size_type pos = str.find_first_not_of(' ');
+    if (pos == std::string::npos)
     {
         return str;
     }
-    string::size_type pos2 = str.find_last_not_of(' ');
-    if (pos2 != string::npos)
+    std::string::size_type pos2 = str.find_last_not_of(' ');
+    if (pos2 != std::string::npos)
     {
         return str.substr(pos, pos2 - pos + 1);
     }
     return str.substr(pos);
 }
 
-string getUrlArg(string url, string request)
+std::string getUrlArg(std::string url, std::string request)
 {
-    smatch result;
-    if (regex_search(url.cbegin(), url.cend(), result, regex(request + "=(.*?)&")))
+    std::smatch result;
+    if (regex_search(url.cbegin(), url.cend(), result, std::regex(request + "=(.*?)&")))
     {
         return result[1];
     }
-    else if (regex_search(url.cbegin(), url.cend(), result, regex(request + "=(.*)")))
+    else if (regex_search(url.cbegin(), url.cend(), result, std::regex(request + "=(.*)")))
     {
         return result[1];
     }
     else
     {
-        return string();
+        return std::string();
     }
 }
 
-string replace_all_distinct(string str, string old_value, string new_value)
+std::string replace_all_distinct(std::string str, std::string old_value, std::string new_value)
 {
-    for(string::size_type pos(0); pos != string::npos; pos += new_value.length())
+    for(std::string::size_type pos(0); pos != std::string::npos; pos += new_value.length())
     {
-        if((pos = str.find(old_value, pos)) != string::npos)
+        if((pos = str.find(old_value, pos)) != std::string::npos)
             str.replace(pos, old_value.length(), new_value);
         else
             break;
@@ -387,32 +397,37 @@ string replace_all_distinct(string str, string old_value, string new_value)
     return str;
 }
 
-bool regFind(string src, string target)
+bool regFind(std::string src, std::string target)
 {
-    regex reg(target);
+    std::regex reg(target);
     return regex_search(src, reg);
 }
 
-string regReplace(string src, string match, string rep)
+std::string regReplace(std::string src, std::string match, std::string rep)
 {
-    string result = "";
-    regex reg(match);
+    std::string result = "";
+    std::regex reg(match);
     regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
     return result;
 }
 
-bool regMatch(string src, string match)
+bool regMatch(std::string src, std::string match)
 {
-    regex reg(match);
+    std::regex reg(match);
     return regex_match(src, reg);
 }
 
-string speedCalc(double speed)
+std::string regTrim(std::string str)
+{
+    return regReplace(str, "^\\s*?(.*)\\s*$", "$1");
+}
+
+std::string speedCalc(double speed)
 {
     if(speed == 0.0)
-        return string("0.00B");
+        return std::string("0.00B");
     char str[10];
-    string retstr;
+    std::string retstr;
     if(speed >= 1073741824.0)
         sprintf(str, "%.2fGB", speed / 1073741824.0);
     else if(speed >= 1048576.0)
@@ -425,84 +440,73 @@ string speedCalc(double speed)
     return retstr;
 }
 
-string urlsafe_base64_reverse(string encoded_string)
+std::string urlsafe_base64_reverse(std::string encoded_string)
 {
     return replace_all_distinct(replace_all_distinct(encoded_string, "-", "+"), "_", "/");
 }
 
-string urlsafe_base64_decode(string encoded_string)
+std::string urlsafe_base64_decode(std::string encoded_string)
 {
     return base64_decode(urlsafe_base64_reverse(encoded_string));
 }
 
-string grabContent(string raw)
-{
-    /*
-    string strTmp="";
-    vector<string> content;
-    content=split(raw,"\r\n\r\n");
-    for(unsigned int i=1;i<content.size();i++) strTmp+=content[i];
-    */
-    return regReplace(raw.substr(raw.find("\r\n\r\n") + 4), "^\\d*?\\r\\n(.*)\\r\\n\\d", "$1");
-    //return raw;
-}
-
-string getMD5(string data)
+std::string getMD5(std::string data)
 {
     MD5_CTX ctx;
-    string result;
-	unsigned int i = 0;
-	unsigned char digest[16] = {};
+    std::string result;
+    unsigned int i = 0;
+    unsigned char digest[16] = {};
 
-	MD5_Init(&ctx);
+    MD5_Init(&ctx);
     MD5_Update(&ctx, data.data(), data.size());
     MD5_Final((unsigned char *)&digest, &ctx);
 
     char tmp[3] = {};
     for(i = 0; i < 16; i++)
-	{
-		snprintf(tmp, 3, "%02x", digest[i]);
-		result += tmp;
+    {
+        snprintf(tmp, 3, "%02x", digest[i]);
+        result += tmp;
     }
 
     return result;
 }
 
-string fileGet(string path)
+std::string fileGet(std::string path, bool binary)
 {
-    ifstream infile;
-    stringstream strstrm;
+    std::ifstream infile;
+    std::stringstream strstrm;
+    std::ios::openmode mode = binary ? std::ios::binary : std::ios::in;
 
-    infile.open(path, ios::binary);
+    infile.open(path, mode);
     if(infile)
     {
         strstrm<<infile.rdbuf();
         infile.close();
         return strstrm.str();
     }
-    return string();
+    return std::string();
 }
 
-bool fileExist(string path)
+bool fileExist(std::string path)
 {
     return _access(path.data(), 4) != -1;
 }
 
-bool fileCopy(string source, string dest)
+bool fileCopy(std::string source, std::string dest)
 {
-    ifstream infile;
-    ofstream outfile;
-    infile.open(source, ios::binary);
+    std::ifstream infile;
+    std::ofstream outfile;
+    infile.open(source, std::ios::binary);
     if(!infile)
         return false;
-    outfile.open(dest, ios::binary);
+    outfile.open(dest, std::ios::binary);
     if(!outfile)
         return false;
     try
     {
         outfile<<infile.rdbuf();
     }
-    catch (exception &e)
+    catch (std::exception &e)
     {
         return false;
     }
@@ -511,47 +515,45 @@ bool fileCopy(string source, string dest)
     return true;
 }
 
-string fileToBase64(string filepath)
+std::string fileToBase64(std::string filepath)
 {
     return base64_encode(fileGet(filepath));
 }
 
-string fileGetMD5(string filepath)
+std::string fileGetMD5(std::string filepath)
 {
     return getMD5(fileGet(filepath));
 }
 
-int fileWrite(string path, string content, bool overwrite)
+int fileWrite(std::string path, std::string content, bool overwrite)
 {
-    fstream outfile;
-    ios::openmode mode = overwrite ? ios::out : ios::app;
+    std::fstream outfile;
+    std::ios::openmode mode = overwrite ? std::ios::out : std::ios::app;
     outfile.open(path, mode);
-    outfile<<content<<endl;
+    outfile << content << std::endl;
     outfile.close();
     return 0;
 }
 
-bool isIPv4(string address)
+bool isIPv4(std::string address)
 {
     return regMatch(address, "^(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}$");
 }
 
-bool isIPv6(string address)
+bool isIPv6(std::string address)
 {
-    int ret;
-    vector<string> regLists = {"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$", "^((?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::((?:([0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{1,4})?)$", "^(::(?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5})|((?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5}::)$"};
+    std::vector<std::string> regLists = {"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$", "^((?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::((?:([0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{1,4})?)$", "^(::(?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5})|((?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5}::)$"};
     for(unsigned int i = 0; i < regLists.size(); i++)
     {
-        ret = regMatch(address, regLists[i]);
-        if(ret)
+        if(regMatch(address, regLists[i]))
             return true;
     }
     return false;
 }
 
-string rand_str(const int len)
+std::string rand_str(const int len)
 {
-    string retData;
+    std::string retData;
     srand(time(NULL));
     int cnt = 0;
     while(cnt < len)
@@ -573,9 +575,9 @@ string rand_str(const int len)
     return retData;
 }
 
-void urlParse(string url, string &host, string &path, int &port, bool &isTLS)
+void urlParse(std::string url, std::string &host, std::string &path, int &port, bool &isTLS)
 {
-    vector<string> args;
+    std::vector<std::string> args;
 
     if(regMatch(url, "^https://(.*)"))
         isTLS = true;
@@ -609,4 +611,139 @@ void urlParse(string url, string &host, string &path, int &port, bool &isTLS)
         else
             port = 80;
     }
+}
+
+bool is_str_utf8(std::string &data)
+{
+    const char *str = data.c_str();
+    unsigned int nBytes = 0;
+    unsigned char chr = *str;
+    bool bAllAscii = true;
+    for (unsigned int i = 0; str[i] != '\0'; ++i)
+    {
+        chr = *(str + i);
+        if (nBytes == 0 && (chr & 0x80) != 0)
+        {
+            bAllAscii = false;
+        }
+        if (nBytes == 0)
+        {
+            if (chr >= 0x80)
+            {
+                if (chr >= 0xFC && chr <= 0xFD)
+                {
+                    nBytes = 6;
+                }
+                else if (chr >= 0xF8)
+                {
+                    nBytes = 5;
+                }
+                else if (chr >= 0xF0)
+                {
+                    nBytes = 4;
+                }
+                else if (chr >= 0xE0)
+                {
+                    nBytes = 3;
+                }
+                else if (chr >= 0xC0)
+                {
+                    nBytes = 2;
+                }
+                else
+                {
+                    return false;
+                }
+                nBytes--;
+            }
+        }
+        else
+        {
+            if ((chr & 0xC0) != 0x80)
+            {
+                return false;
+            }
+            nBytes--;
+        }
+    }
+    if (nBytes != 0)
+    {
+        return false;
+    }
+    if (bAllAscii)
+    {
+        return true;
+    }
+    return true;
+}
+
+std::string getFormData(std::string &raw_data)
+{
+    std::stringstream strstrm;
+    std::string line;
+
+    std::string boundary;
+    std::string file; /* actual file content */
+
+
+    int i = 0;
+
+    strstrm<<raw_data;
+
+    while (std::getline(strstrm, line))
+    {
+        if(i == 0)
+        {
+            // Get boundary
+            boundary = line.substr(0, line.length() - 1);
+        }
+        else if(line.find(boundary) == 0)
+        {
+            // The end
+            break;
+        }
+        else if(line.length() == 1)
+        {
+            // Time to get raw data
+
+            char c;
+            int bl = boundary.length();
+            bool endfile = false;
+            char buffer[256] = {};
+            while(!endfile)
+            {
+                int j = 0;
+                int k;
+                while(j < 256 && strstrm.get(c) && !endfile)
+                {
+                    buffer[j] = c;
+                    k = 0;
+                    // Verify if we are at the end
+                    while(boundary[bl - 1 - k] == buffer[j - k])
+                    {
+                        if(k >= bl - 1)
+                        {
+                            // We are at the end of the file
+                            endfile = true;
+                            break;
+                        }
+                        k++;
+                    }
+                    j++;
+                }
+                file.append(buffer, j);
+                j = 0;
+            };
+            break;
+        }
+        i++;
+    }
+    return file.substr(0, file.size() - boundary.size());
+}
+
+void removeUTF8BOM(std::string &data)
+{
+    int BOM[3] = {0xef, 0xbb, 0xbf};
+    if(data.compare(0, 3, (char*)BOM) == 0)
+        data = data.substr(3);
 }

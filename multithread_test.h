@@ -2,13 +2,13 @@
 #define MULTITHREAD_TEST_H_INCLUDED
 
 #include <string>
+
 #include "misc.h"
+#include "nodeinfo.h"
 
-using namespace std;
-
-int perform_test(nodeInfo *node, string localaddr, int localport, string username, string password, int thread_count);
-int upload_test(nodeInfo *node, string localaddr, int localport, string username, string password);
-int upload_test_curl(nodeInfo *node, string localaddr, int localport, string username, string password);
-int sitePing(nodeInfo *node, string localaddr, int localport, string username, string password, string target);
+int perform_test(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password, int thread_count);
+int upload_test(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password);
+int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password);
+int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password, std::string target);
 
 #endif // MULTITHREAD_TEST_H_INCLUDED

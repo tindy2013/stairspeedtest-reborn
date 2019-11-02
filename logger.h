@@ -17,21 +17,19 @@
 #define LOG_TYPE_RENDER 10
 #define LOG_TYPE_FILEUL 11
 
-using namespace std;
-
-extern string resultPath, logPath;
+extern std::string resultPath, logPath;
 
 int makeDir(const char *path);
-string getTime(int type);
+std::string getTime(int type);
 void logInit(bool rpcmode);
 void resultInit();
-void writeLog(int type, string content);
+void writeLog(int type, std::string content);
 void logEOF();
 
 /*
 void resultInit(bool export_with_maxspeed);
 void writeResult(nodeInfo *node, bool export_with_maxspeed);
-void resultEOF(string traffic, int worknodes, int totnodes);
-void exportResult(string outpath, string utiljspath, string stylepath, bool export_with_maxspeed);
+void resultEOF(std::string traffic, int worknodes, int totnodes);
+void exportResult(std::string outpath, std::string utiljspath, std::string stylepath, bool export_with_maxspeed);
 */
 #endif // LOGGER_H_INCLUDED

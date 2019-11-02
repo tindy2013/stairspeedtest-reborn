@@ -69,6 +69,8 @@ apt install shadowsocks-libev -y
 echo downloading and compiling shadowsocksr-libev
 git clone https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
+git checkout -b latest origin/Akkariiin/develop
+./autogen.sh
 #override some warning settings
 CFLAGS+="-Wno-format-overflow -Wno-format-truncation -Wno-sizeof-pointer-memaccess" ./configure --with-openssl-lib=/usr/local/lib --with-openssl-include=/usr/local/include --disable-documentation
 make -j8
