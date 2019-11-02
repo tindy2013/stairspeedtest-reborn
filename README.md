@@ -1,8 +1,9 @@
 # Stair Speedtest Reborn
 **Proxy performance batch tester based on Shadowsocks(R) and V2Ray**  
+<img alt="Travis-CI build status" src="https://travis-ci.org/tindy2013/stairspeedtest-reborn.svg?branch=master">
 <img alt="GitHub tag (latest SemVer)" src="https://img.shields.io/github/tag/tindy2013/stairspeedtest-reborn.svg">
 <img alt="GitHub release" src="https://img.shields.io/github/release/tindy2013/stairspeedtest-reborn.svg">
-<img src="https://img.shields.io/github/license/tindy2013/stairspeedtest-reborn.svg">
+<img alt="GitHub license" src="https://img.shields.io/github/license/tindy2013/stairspeedtest-reborn.svg">
   
 ## Intro
 This is a C++ remake version of the original [Stair Speedtest](https://github.com/tindy2013/stairspeedtest) script. Despite its similarity to the script verion, this remake version works much more effectively, with faster node parsing, result picture rendering and even cross-platform support.  
@@ -25,8 +26,9 @@ In general, you need the following build dependencies:
 * freetype
 * zlib
 * yaml-cpp
+* libevent
   
-On non-Windows platforms, you also need to have the following clients installed:  
+On non-Windows platforms, you also need to have the following clients installed to 'tools/clients/':  
 * shadowsocks-libev
 * shadowsocksr-libev ('ss-local' installed as the name 'ssr-local')
 * v2ray-core
@@ -59,7 +61,7 @@ build.bat
 ## Compatibility
 Tested platforms: 
   
-* Windows 10 1803 x64, Windows Server 2008 R2 x64, Windows 7 SP1 x64
+* Windows 10 1903 x64, Windows Server 2008 R2 x64, Windows 7 SP1 x64
 * Ubuntu 18.10
 * Debian 6.3
 * CentOS 7.6
