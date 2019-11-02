@@ -1,0 +1,30 @@
+language: cpp
+sudo: required
+matrix:
+    include:
+    - os: osx
+      compiler: clang
+      osx_image: xcode10.3
+      script:
+      - chmod +x build.macos.release.sh
+      - ./build.macos.release.sh
+      deploy:
+        provider: releases
+        api_key: "$GITHUB_OAUTH_TOKEN"
+        file: "stairspeedtest_reborn_darwin64.tar.gz"
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
+    - services: docker
+      script:
+      - docker pull alpine:latest
+      - docker run -v /home/travis/build/tindy2013/stairspeedtest-reborn:/root/workdir alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && chmod +x build.alpine.release.sh && bash build.alpine.release.sh"
+      deploy:
+        provider: releases
+        api_key: "$GITHUB_OAUTH_TOKEN"
+        file: "stairspeedtest_reborn_linux64.tar.gz"
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
