@@ -6,13 +6,12 @@ pkg upgrade
 pkg install -y git cmake clang autoconf automake libtool
 
 #then install precompiled library from repo
-pkg install -y openssl-static libcurl-static libpng-static libev-static libz-static freetype-static
+pkg install -y openssl-static libcurl-static libpng-static libev-static libz-static freetype-static libevent
 
 #get rapidjson
 git clone https://github.com/tencent/rapidjson
 cd rapidjson
-cmake -D CMAKE_INSTALL_PREFIX=/data/data/com.termux/files/usr .
-make install -j2
+cp -r include/* /data/data/com.termux/files/usr/include/
 cd ..
 
 #get pngwriter
