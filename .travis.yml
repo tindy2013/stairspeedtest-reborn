@@ -1,5 +1,10 @@
 language: cpp
 sudo: required
+stages:
+    - name: deploy
+      if: branch = master
+    - name: before_script
+      if: branch = master
 matrix:
     include:
     - os: osx
@@ -19,7 +24,7 @@ matrix:
     - services: docker
       script:
       - docker pull alpine:latest
-      - docker run -v /home/travis/build/tindy2013/stairspeedtest-reborn:/root/workdir alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && chmod +x build.alpine.release.sh && bash build.alpine.release.sh"
+      - docker run -v $TRAVIS_BUILD_DIR:/root/workdir alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && chmod +x build.alpine.release.sh && bash build.alpine.release.sh"
       deploy:
         provider: releases
         api_key: "$GITHUB_OAUTH_TOKEN"
