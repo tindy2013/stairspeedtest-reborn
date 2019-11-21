@@ -18,6 +18,6 @@ gcc -Wall -fexceptions  -DCURL_STATICLIB -std=c++17   -c tcping.cpp -o obj/tcpin
 gcc -Wall -fexceptions  -DCURL_STATICLIB -std=c++17   -c webget.cpp -o obj/webget.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -std=c++17   -c webgui_wrapper.cpp -o obj/webgui_wrapper.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -std=c++17   -c webserver_libevent.cpp -o obj/webserver_libevent.o
-g++ -o stairspeedtest obj/geoip.o obj/logger.o obj/main.o obj/misc.o obj/multithread_test.o obj/printout.o obj/processes.o obj/rapidjson_extra.o obj/renderer.o obj/rulematch.o obj/socket.o obj/speedtestutil.o obj/tcping.o obj/webget.o obj/webgui_wrapper.o obj/webserver_libevent.o -lcurl -lPNGwriter -lpng16 -lfreetype -lz -lssl -lcrypto -ldl -lpthread -lyaml-cpp -s
+g++ -o stairspeedtest obj/geoip.o obj/logger.o obj/main.o obj/misc.o obj/multithread_test.o obj/printout.o obj/processes.o obj/rapidjson_extra.o obj/renderer.o obj/rulematch.o obj/socket.o obj/speedtestutil.o obj/tcping.o obj/webget.o obj/webgui_wrapper.o obj/webserver_libevent.o -levent -lcurl -lPNGwriter -lpng16 -lfreetype -lz -lssl -lcrypto -ldl -lpthread -lyaml-cpp -s
 chmod +x stairspeedtest
 
