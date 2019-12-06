@@ -1510,6 +1510,12 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom
         processed = true;
     }
 
+    //try to parse as exported log
+    if(explodeLog(sub, nodes) == 0)
+    {
+        return;
+    }
+
     //try to parse as normal subscription
     if(!processed)
     {
