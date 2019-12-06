@@ -2,6 +2,9 @@
 #include <cstdint>
 #include <iostream>
 #include <evhttp.h>
+#ifdef MALLOC_TRIM
+#include <malloc.h>
+#endif // MALLOC_TRIM
 
 #include <string>
 #include <vector>
@@ -22,10 +25,18 @@ struct responseRoute
 
 std::vector<responseRoute> responses;
 
+static inline void buffer_cleanup(struct evbuffer *eb)
+{
+    evbuffer_free(eb);
+    #ifdef MALLOC_TRIM
+    malloc_trim(0);
+    #endif // MALLOC_TRIM
+}
+
 static inline int process_request(const char *method_str, std::string uri, std::string &postdata, std::string &content_type, std::string &return_data)
 {
     std::string path, arguments;
-    //std::cerr << "handle_cmd:    " << method_str << std::endl << "handle_uri:    " << uri << std::endl;
+    std::cerr << "handle_cmd:    " << method_str << std::endl << "handle_uri:    " << uri << std::endl;
 
     if(strFind(uri, "?"))
     {
@@ -53,10 +64,10 @@ static inline int process_request(const char *method_str, std::string uri, std::
     return -1;
 }
 
-void OnReq(evhttp_request *req, void * args)
+void OnReq(evhttp_request *req, void *args)
 {
     const char *req_content_type = evhttp_find_header(req->input_headers, "Content-Type"), *req_ac_method = evhttp_find_header(req->input_headers, "Access-Control-Request-Method");
-    const char *req_method = req_ac_method == NULL ? EVBUFFER_LENGTH(req->input_buffer) == 0 ? "GET" : "POST" : "OPTIONS", *uri = evhttp_request_get_uri(req);
+    const char *req_method = req_ac_method == NULL ? EVBUFFER_LENGTH(req->input_buffer) == 0 ? "GET" : "POST" : "OPTIONS", *uri = req->uri;
     int retVal;
     std::string postdata, content_type, return_data;
 
@@ -73,7 +84,8 @@ void OnReq(evhttp_request *req, void * args)
 
     retVal = process_request(req_method, uri, postdata, content_type, return_data);
 
-    auto *OutBuf = evhttp_request_get_output_buffer(req);
+    //auto *OutBuf = evhttp_request_get_output_buffer(req);
+    struct evbuffer *OutBuf = evbuffer_new();
     if (!OutBuf)
         return;
 
@@ -83,7 +95,6 @@ void OnReq(evhttp_request *req, void * args)
         evhttp_add_header(req->output_headers, "Access-Control-Allow-Origin", "*");
         evhttp_add_header(req->output_headers, "Access-Control-Allow-Headers", "*");
         evhttp_send_reply(req, HTTP_OK, "", NULL);
-        return;
         break;
     case 0: //found normal
         if(content_type.size())
@@ -92,6 +103,7 @@ void OnReq(evhttp_request *req, void * args)
             {
                 evhttp_add_header(req->output_headers, "Location", return_data.c_str());
                 evhttp_send_reply(req, HTTP_MOVETEMP, "", NULL);
+                buffer_cleanup(OutBuf);
                 return;
             }
             else
@@ -108,6 +120,7 @@ void OnReq(evhttp_request *req, void * args)
     default: //undefined behavior
         evhttp_send_error(req, HTTP_INTERNAL, "");
     }
+    buffer_cleanup(OutBuf);
 }
 
 int start_web_server(void *argv)
@@ -151,8 +164,11 @@ int httpserver_bindsocket(std::string listen_address, int listen_port, int backl
     int ret;
     SOCKET nfd;
     nfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (nfd < 0)
+    if (nfd <= 0)
+    {
+        closesocket(nfd);
         return -1;
+    }
 
     int one = 1;
     ret = setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(int));
@@ -163,12 +179,18 @@ int httpserver_bindsocket(std::string listen_address, int listen_port, int backl
     addr.sin_addr.s_addr = inet_addr(listen_address.data());
     addr.sin_port = htons(listen_port);
 
-    ret = bind(nfd, (struct sockaddr*)&addr, sizeof(addr));
+    ret = ::bind(nfd, (struct sockaddr*)&addr, sizeof(addr));
     if (ret < 0)
+    {
+        closesocket(nfd);
         return -1;
+    }
     ret = listen(nfd, backlog);
     if (ret < 0)
+    {
+        closesocket(nfd);
         return -1;
+    }
 
     unsigned long ul = 1;
     ioctlsocket(nfd, FIONBIO, &ul); //set to non-blocking mode
@@ -178,7 +200,7 @@ int httpserver_bindsocket(std::string listen_address, int listen_port, int backl
 
 int start_web_server_multi(void *argv)
 {
-    struct listener_args *args = (listener_args*)argv;
+    struct listener_args *args = reinterpret_cast<listener_args*>(argv);
     std::string listen_address = args->listen_address;
     int port = args->port, nthreads = args->max_workers;
     int i, ret;
@@ -207,17 +229,17 @@ int start_web_server_multi(void *argv)
             return -1;
     }
     while(true)
-        sleep(10000);//sleep forever to simulate single thread
+        sleep(10000); //block forever
 
     return 0;
 }
 
-void append_response(std::string type, std::string request, std::string content_type, response_callback response)
+void append_response(std::string method, std::string uri, std::string content_type, response_callback response)
 {
     responseRoute rr;
-    rr.method = type;
-    rr.path = request;
+    rr.method = method;
+    rr.path = uri;
     rr.content_type = content_type;
     rr.rc = response;
-    responses.push_back(rr);
+    responses.emplace_back(rr);
 }

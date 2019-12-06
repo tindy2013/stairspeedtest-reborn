@@ -28,6 +28,7 @@ extern std::string speedtest_mode, export_sort_method, export_color_style, custo
 extern bool ssr_libev, ss_libev;
 extern std::vector<color> custom_color_groups;
 extern std::vector<int> custom_color_bounds;
+extern string_array custom_exclude_remarks, custom_include_remarks;
 
 //functions from main
 void addNodes(std::string link, bool multilink);
@@ -337,11 +338,12 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
     append_response("POST", "/readfileconfig", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         eraseElements(allNodes);
+        fileWrite("received.txt", getFormData(postdata), true);
         if(server_status == "running")
             return "running";
         else
         {
-            if(explodeConfContent(getFormData(postdata), override_conf_port, socksport, ss_libev, ssr_libev, allNodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+            if(explodeConfContent(getFormData(postdata), override_conf_port, socksport, ss_libev, ssr_libev, allNodes, custom_exclude_remarks, custom_include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
                 return "error";
             else
                 return ssrspeed_generate_web_configs(allNodes);

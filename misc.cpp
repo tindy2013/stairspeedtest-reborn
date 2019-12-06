@@ -4,6 +4,7 @@
 #include <thread>
 #include <sstream>
 #include <iosfwd>
+//#include <filesystem>
 #include <unistd.h>
 
 #include <rapidjson/document.h>
@@ -98,10 +99,15 @@ void StringToWstring(std::wstring& szDst, std::string str)
     memset(wszUtf8, 0, len * 2 + 2);
     MultiByteToWideChar(CP_ACP, 0, (LPCSTR)temp.c_str(), -1, (LPWSTR)wszUtf8, len);
     szDst = wszUtf8;
-    std::wstring r = wszUtf8;
+    //std::wstring r = wszUtf8;
     delete[] wszUtf8;
 }
 #endif // _WIN32
+
+unsigned char ToHex(unsigned char x)
+{
+    return  x > 9 ? x + 55 : x + 48;
+}
 
 unsigned char FromHex(unsigned char x)
 {
@@ -117,6 +123,30 @@ unsigned char FromHex(unsigned char x)
     return y;
 }
 
+std::string UrlEncode(const std::string& str)
+{
+    std::string strTemp = "";
+    size_t length = str.length();
+    for (size_t i = 0; i < length; i++)
+    {
+        if (isalnum((unsigned char)str[i]) ||
+            (str[i] == '-') ||
+            (str[i] == '_') ||
+            (str[i] == '.') ||
+            (str[i] == '~'))
+            strTemp += str[i];
+        else if (str[i] == ' ')
+            strTemp += "+";
+        else
+        {
+            strTemp += '%';
+            strTemp += ToHex((unsigned char)str[i] >> 4);
+            strTemp += ToHex((unsigned char)str[i] % 16);
+        }
+    }
+    return strTemp;
+}
+
 std::string UrlDecode(const std::string& str)
 {
     std::string strTemp = "";
@@ -127,7 +157,8 @@ std::string UrlDecode(const std::string& str)
             strTemp += ' ';
         else if (str[i] == '%')
         {
-            assert(i + 2 < length);
+            if(i + 2 >= length)
+                return strTemp;
             unsigned char high = FromHex((unsigned char)str[++i]);
             unsigned char low = FromHex((unsigned char)str[++i]);
             strTemp += high * 16 + low;
@@ -370,7 +401,8 @@ std::string trim(const std::string& str)
 
 std::string getUrlArg(std::string url, std::string request)
 {
-    std::smatch result;
+    //std::smatch result;
+    /*
     if (regex_search(url.cbegin(), url.cend(), result, std::regex(request + "=(.*?)&")))
     {
         return result[1];
@@ -383,6 +415,23 @@ std::string getUrlArg(std::string url, std::string request)
     {
         return std::string();
     }
+    */
+
+    string_array vArray, arglist = split(url, "&");
+    for(std::string &x : arglist)
+    {
+        /*
+        if(regex_search(x.cbegin(), x.cend(), result, std::regex("^" + request + "=(.*)$")))
+            return result[1];
+        */
+        std::string::size_type epos = x.find("=");
+        if(epos != x.npos)
+        {
+            if(x.substr(0, epos) == request)
+                return x.substr(epos + 1);
+        }
+    }
+    return std::string();
 }
 
 std::string replace_all_distinct(std::string str, std::string old_value, std::string new_value)
@@ -397,24 +446,58 @@ std::string replace_all_distinct(std::string str, std::string old_value, std::st
     return str;
 }
 
+bool regValid(std::string &reg)
+{
+    try
+    {
+        std::regex r(reg);
+        return true;
+    }
+    catch (std::regex_error &e)
+    {
+        return false;
+    }
+}
+
 bool regFind(std::string src, std::string target)
 {
-    std::regex reg(target);
-    return regex_search(src, reg);
+    try
+    {
+        std::regex reg(target);
+        return regex_search(src, reg);
+    }
+    catch (std::regex_error &e)
+    {
+        return false;
+    }
 }
 
 std::string regReplace(std::string src, std::string match, std::string rep)
 {
     std::string result = "";
-    std::regex reg(match);
-    regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
+    try
+    {
+        std::regex reg(match);
+        regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
+    }
+    catch (std::regex_error &e)
+    {
+        result = src;
+    }
     return result;
 }
 
 bool regMatch(std::string src, std::string match)
 {
-    std::regex reg(match);
-    return regex_match(src, reg);
+    try
+    {
+        std::regex reg(match);
+        return regex_match(src, reg);
+    }
+    catch (std::regex_error &e)
+    {
+        return false;
+    }
 }
 
 std::string regTrim(std::string str)
@@ -448,6 +531,11 @@ std::string urlsafe_base64_reverse(std::string encoded_string)
 std::string urlsafe_base64_decode(std::string encoded_string)
 {
     return base64_decode(urlsafe_base64_reverse(encoded_string));
+}
+
+std::string urlsafe_base64_encode(std::string string_to_encode)
+{
+    return replace_all_distinct(replace_all_distinct(replace_all_distinct(base64_encode(string_to_encode), "+", "-"), "/", "_"), "=", "");
 }
 
 std::string getMD5(std::string data)
@@ -489,6 +577,8 @@ std::string fileGet(std::string path, bool binary)
 
 bool fileExist(std::string path)
 {
+    //using c++17 standard, but may cause problem on clang
+    //return std::filesystem::exists(path);
     return _access(path.data(), 4) != -1;
 }
 
@@ -617,7 +707,7 @@ bool is_str_utf8(std::string &data)
 {
     const char *str = data.c_str();
     unsigned int nBytes = 0;
-    unsigned char chr = *str;
+    unsigned char chr;
     bool bAllAscii = true;
     for (unsigned int i = 0; str[i] != '\0'; ++i)
     {
@@ -677,7 +767,38 @@ bool is_str_utf8(std::string &data)
     return true;
 }
 
-std::string getFormData(std::string &raw_data)
+void removeUTF8BOM(std::string &data)
+{
+    int BOM[3] = {0xef, 0xbb, 0xbf};
+    if(data.compare(0, 3, (char*)BOM) == 0)
+        data = data.substr(3);
+}
+
+int shortAssemble(unsigned short num_a, unsigned short num_b)
+{
+    return (int)num_b << 16 | num_a;
+}
+
+void shortDisassemble(int source, unsigned short &num_a, unsigned short &num_b)
+{
+    num_a = (unsigned short)source;
+    num_b = (unsigned short)(source >> 16);
+}
+
+int to_int(std::string &s, int def_vaule)
+{
+    int retval = 0;
+    char c;
+    std::stringstream ss(s);
+    if(!(ss >> retval))
+        return def_vaule;
+    else if(ss >> c)
+        return def_vaule;
+    else
+        return retval;
+}
+
+std::string getFormData(const std::string &raw_data)
 {
     std::stringstream strstrm;
     std::string line;
@@ -739,11 +860,4 @@ std::string getFormData(std::string &raw_data)
         i++;
     }
     return file.substr(0, file.size() - boundary.size());
-}
-
-void removeUTF8BOM(std::string &data)
-{
-    int BOM[3] = {0xef, 0xbb, 0xbf};
-    if(data.compare(0, 3, (char*)BOM) == 0)
-        data = data.substr(3);
 }

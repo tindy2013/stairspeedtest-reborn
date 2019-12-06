@@ -470,8 +470,6 @@ void readConf(std::string path)
         listen_address = ini.Get("listen_address");
     if(ini.ItemExist("listen_port"))
         listen_port = ini.GetInt("listen_port");
-
-    remarksInit(custom_exclude_remarks, custom_include_remarks);
 }
 
 void signalHandler(int signum)
@@ -870,7 +868,7 @@ void addNodes(std::string link, bool multilink)
         if(strSub.size())
         {
             writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
-            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, nodes);
+            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, nodes, custom_exclude_remarks, custom_include_remarks);
             rewriteNodeGroupID(&nodes, curGroupID);
             copyNodes(&nodes, &allNodes);
         }
@@ -894,7 +892,7 @@ void addNodes(std::string link, bool multilink)
         }
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, nodes, custom_exclude_remarks, custom_include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
@@ -913,7 +911,7 @@ void addNodes(std::string link, bool multilink)
         fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, nodes, custom_exclude_remarks, custom_include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
@@ -1143,8 +1141,8 @@ int main(int argc, char* argv[])
     logEOF();
     printMsgDirect(SPEEDTEST_MESSAGE_EOF, rpcmode);
     sleep(1);
-    std::cin.clear();
-    std::cin.ignore();
+    //std::cin.clear();
+    //std::cin.ignore();
     if(!rpcmode)
         _getch();
 #ifdef _WIN32

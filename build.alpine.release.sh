@@ -4,7 +4,7 @@ mkdir bin
 mkdir tools/clients
 rm -rf tools/clients/*
 rm tools/gui/websocketd.exe
-set -e
+set -xe
 
 apk add gcc g++ cmake make autoconf automake libtool build-base linux-headers
 apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev rapidjson-dev mbedtls-dev mbedtls-static libev-dev pcre-dev libsodium-dev c-ares-dev
@@ -71,11 +71,11 @@ cd ..
 apk del wget
 apk add wget
 
-curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip
+wget https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip
 unzip websocketd-0.3.0-linux_amd64.zip websocketd
 mv websocketd tools/gui/
 
-curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
+wget https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
 unzip v2ray-linux-64.zip v2ray v2ctl
 mv v2ray tools/clients/
 mv v2ctl tools/clients/

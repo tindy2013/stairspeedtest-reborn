@@ -96,14 +96,17 @@ bool runProgram(std::string command, std::string runpath, bool wait)
 
 #else
     char curdir[1024] = {};
+    getcwd(curdir, 1024);
+    chdir(runpath.data());
+    /*
     posix_spawn_file_actions_t file_actions;
     const char* cargs[4] = {"sh", "-c", command.data(), NULL};
     posix_spawn_file_actions_init(&file_actions);
     posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
     posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
-    getcwd(curdir, 1024);
-    chdir(runpath.data());
     posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), NULL);
+    */
+    popen(command.data(), "r");
     chdir(curdir);
     return true;
 #endif // _WIN32
