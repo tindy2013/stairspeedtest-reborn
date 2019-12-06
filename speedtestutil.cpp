@@ -1356,6 +1356,46 @@ void explodeNetchConf(std::string netch, bool ss_libev, bool ssr_libev, std::str
     }
 }
 
+int explodeLog(std::string log, std::vector<nodeInfo> &nodes)
+{
+    INIReader ini;
+    std::vector<std::string> nodeList, vArray;
+    std::string strTemp;
+    nodeInfo node;
+    ini.Parse(log);
+
+    if(!ini.SectionExist("Basic"))
+        return -1;
+
+    nodeList = ini.GetSections();
+    node.proxyStr = "LOG";
+    for(auto &x : nodeList)
+    {
+        if(x == "Basic")
+            continue;
+        ini.EnterSection(x);
+        vArray = split(x, "^");
+        node.group = vArray[0];
+        node.remarks = vArray[1];
+        node.avgPing = ini.Get("AvgPing");
+        node.avgSpeed = ini.Get("AvgSpeed");
+        node.groupID = ini.GetInt("GroupID");
+        node.id = ini.GetInt("ID");
+        node.maxSpeed = ini.Get("MaxSpeed");
+        node.online = ini.GetBool("Online");
+        node.pkLoss = ini.Get("PkLoss");
+        ini.GetIntArray("RawPing", ",", node.rawPing);
+        ini.GetIntArray("RawSitePing", ",", node.rawSitePing);
+        ini.GetIntArray("RawSpeed", ",", node.rawSpeed);
+        node.sitePing = ini.Get("SitePing");
+        node.totalRecvBytes = ini.GetInt("UsedTraffic");
+        node.ulSpeed = ini.Get("ULSpeed");
+        nodes.push_back(node);
+    }
+
+    return 0;
+}
+
 bool chkIgnore(const nodeInfo &node, string_array &exclude_remarks, string_array &include_remarks)
 {
     bool excluded = false, included = false;
