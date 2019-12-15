@@ -242,7 +242,7 @@ int runClient(int client, std::string runpath)
     std::string ssr_libev_path = "tools/clients/ssr-local -c config.json";
 
     std::string ss_libev_dir = "tools/clients/";
-    std::string ss_libev_path = "ss-local -c ../../config.json";
+    std::string ss_libev_path = "./ss-local -c ../../config.json";
 
     switch(client)
     {
@@ -720,6 +720,7 @@ int singleTest(nodeInfo *node)
     auto end = steady_clock::now();
     auto duration = duration_cast<seconds>(end - start);
     node->duration = duration.count();
+    sleep(300);
     return SPEEDTEST_ERROR_NONE;
 }
 

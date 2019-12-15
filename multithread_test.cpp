@@ -418,13 +418,13 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
     node->totalRecvBytes = received_bytes;
     node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
     node->maxSpeed = speedCalc(max_speed);
+    received_mutex.unlock(); //unlock to make threads continue running
     if(node->avgSpeed == "0.00B")
     {
         node->avgSpeed = "N/A";
         node->maxSpeed = "N/A";
     }
     writeLog(LOG_TYPE_FILEDL, "Downloaded " + to_string(received_bytes) + " bytes in " + to_string(deltatime) + " milliseconds.");
-    received_mutex.unlock(); //unlock to make threads continue running
     for(int i = 0; i < thread_count; i++)
     {
         if(threads[i].joinable())

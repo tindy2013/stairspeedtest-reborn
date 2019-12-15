@@ -81,8 +81,21 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     cmdstr = const_cast<char*>(command.data());
     pathstr = const_cast<char*>(path.data());
     retval = CreateProcess(NULL, cmdstr, NULL, NULL, false, CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB, NULL, pathstr, &si, &pi);
+    if(retval == FALSE)
+        return false;
 
-    sleep(50); //slow down to prevent some problem
+    sleep(500); //slow down to prevent some problem
+    DWORD ExitCode = STILL_ACTIVE;
+
+    WaitForInputIdle(pi.hProcess, 2000);
+    do
+    {
+        retval = GetExitCodeProcess(pi.hProcess, &ExitCode);
+        if(retval == false)
+            continue;
+    }
+    while(ExitCode != STILL_ACTIVE);
+
     AssignProcessToJobObject(job, pi.hProcess);
     SetInformationJobObject(job, JobObjectExtendedLimitInformation, &job_limits, sizeof(job_limits));
 
@@ -96,17 +109,17 @@ bool runProgram(std::string command, std::string runpath, bool wait)
 
 #else
     char curdir[1024] = {};
-    getcwd(curdir, 1024);
+    getcwd(curdir, 1023);
     chdir(runpath.data());
     /*
-    posix_spawn_file_actions_t file_actions;
     const char* cargs[4] = {"sh", "-c", command.data(), NULL};
+    posix_spawn_file_actions_t file_actions;
     posix_spawn_file_actions_init(&file_actions);
     posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
     posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
     posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), NULL);
     */
-    popen(command.data(), "r");
+    pPipe = popen(command.data(), "r");
     chdir(curdir);
     return true;
 #endif // _WIN32
@@ -115,18 +128,17 @@ bool runProgram(std::string command, std::string runpath, bool wait)
 
 void killByHandle()
 {
-    #ifdef _WIN32
+#ifdef _WIN32
     if(hProc != NULL)
     {
         TerminateProcess(hProc, 0);
         CloseHandle(hProc);
     }
-    #else
+#else
     if(hProc != 0)
         kill(hProc, SIGTERM);
-    #endif // _WIN32
+#endif // _WIN32
 }
-
 
 /*
 void runprogram(std::string command, std::string runpath, bool wait)
@@ -249,7 +261,7 @@ bool killProgram(std::string program)
     return true;
 #else
     //if(!feof(pPipe))
-        //pclose(pPipe);
+    //pclose(pPipe);
     program = "pkill -f " + program;
     system(program.data());
     return true;
