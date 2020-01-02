@@ -1,7 +1,8 @@
 #!/bin/bash
+set -xe
 
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool git
-apk add libpng-dev libpng-static libressl-dev freetype-dev freetype-static zlib-dev zlib-static rapidjson-dev libevent-dev libevent-static bzip2-static
+apk add libpng-dev libpng-static libressl-dev freetype-dev freetype-static zlib-dev zlib-static rapidjson-dev libevent-dev libevent-static bzip2-static pcre-dev
 
 git clone https://github.com/curl/curl
 cd curl
@@ -26,7 +27,7 @@ cmake .
 make -j4
 g++ -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o  -static -lpcrecpp -lpcre -levent -lyaml-cpp -lPNGwriter -lpng -lfreetype -lcurl -lssl -lcrypto -lz -lbz2 -ldl -lpthread -O3 -s  
 
-if [ $TRAVIS_BRANCH = $TRAVIS_TAG ];then
+if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
 	bash scripts/build.alpine.clients.sh
 	
 	cd base
