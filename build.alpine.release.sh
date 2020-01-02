@@ -2,11 +2,8 @@
 mkdir obj
 set -xe
 
-apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool
-apk add libpng-dev libpng-static libressl-dev freetype-dev freetype-static zlib-dev rapidjson-dev mbedtls-dev mbedtls-static libevent-dev libevent-static
-
-chmod +x build.alpine.clients.sh
-./build.alpine.clients.sh
+apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool git
+apk add libpng-dev libpng-static libressl-dev freetype-dev freetype-static zlib-dev zlib-static rapidjson-dev mbedtls-dev mbedtls-static libevent-dev libevent-static
 
 git clone https://github.com/curl/curl
 cd curl
@@ -31,6 +28,9 @@ git clone git://sourceware.org/git/bzip2.git
 cd bzip2
 make install -j4
 cd ..
+
+chmod +x build.alpine.clients.sh
+./build.alpine.clients.sh
 
 gcc -Wall -fexceptions  -DCURL_STATICLIB -std=c++17   -c geoip.cpp -o obj/geoip.o
 gcc -Wall -fexceptions  -DCURL_STATICLIB -std=c++17   -c logger.cpp -o obj/logger.o
