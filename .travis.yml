@@ -1,10 +1,5 @@
 language: cpp
 sudo: required
-stages:
-    - name: before_script
-      if: branch = master
-    - name: deploy
-      if: branch = master
 matrix:
     include:
     - os: osx
