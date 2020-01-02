@@ -60,6 +60,6 @@ curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websoc
 unzip websocketd-0.3.0-darwin_amd64.zip websocketd
 mv websocketd base/tools/gui/
 
-chmod +rx tools/clients/* tools/gui/websocketd
+chmod +rx base/tools/clients/* base/tools/gui/websocketd
 
 set +xe
