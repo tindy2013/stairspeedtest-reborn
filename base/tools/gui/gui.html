@@ -2,9 +2,9 @@
 <html>
 <meta charset="utf-8" />
 <!-- 生产环境版本，优化了尺寸和速度 -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <!-- 开发环境版本，包含了有帮助的命令行警告 -->
-<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
 <script src="https://unpkg.com/element-ui@2.9.1/lib/index.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/element-ui@2.9.1/lib/theme-chalk/index.css">
 
@@ -63,8 +63,8 @@
 										<el-option key="0" label="否" :value="false"></el-option>
 										<el-option key="1" label="是" :value="true"></el-option>
 									</el-select>
-									<el-button type="primary" @click="submit" style="margin-left: 20px" v-if="option" icon="el-icon-check" :disabled="loading" :loading="loading">提 交</el-button>
-									<el-button type="danger" @click="dialogFormVisible = false" icon="el-icon-close" :disabled="!loading">终 止</el-button>
+									<el-button type="primary" @click="submit" style="margin-left: 20px" icon="el-icon-check" :disabled="loading" :loading="loading">提 交</el-button>
+									<el-button type="danger" @click="terminate" icon="el-icon-close" :disabled="!loading">终 止</el-button>
 								</el-form-item>
 							</el-row>
 						</el-form>
