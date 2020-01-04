@@ -1,0 +1,23 @@
+CPPFLAGS = -g -Wall -std=c++11 -fexceptions -D_MACOS -DCURL_STATICLIB
+CPPFLAGS += -I/usr/local/include -I/usr/local/opt/openssl@1.1/include -I/usr/local/include/freetype2
+LDFLAGS = -L/usr/local/opt/openssl@1.1/lib
+LDFLAGS += -levent -lcurl -lPNGwriter -lpng -lfreetype -lz -lssl -lcrypto -lyaml-cpp -ldl -lpthread
+
+HEADERS = $(wildcard *.h)
+SOURCES = $(filter-out perf_test.cpp, $(wildcard *.cpp))
+OBJECTS = $(patsubst %.cpp,obj/%.o,$(SOURCES))
+
+all: stairspeedtest $(OBJECTS)
+
+stairspeedtest: $(OBJECTS)
+	$(CXX) -g -o $@ $^ $(LDFLAGS)
+
+obj/%.o: %.cpp $(HEADERS)
+	@ mkdir -p obj/
+	$(CXX) $(CPPFLAGS) -c -o $@ $<
+
+.PHONY: clean
+
+clean:
+	$(RM) stairspeedtest
+	$(RM) -r obj/

@@ -51,7 +51,7 @@ build.bat
 ./build.sh  
 
 # On MacOS:  
-./build.macos.sh  
+make -f Makefile.macos
 ```
 ## Usage
 * Run "stairspeedtest" for CLI speedtest, run "webgui" for Web GUI speedtest.
