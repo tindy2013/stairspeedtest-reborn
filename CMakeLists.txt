@@ -9,7 +9,7 @@ ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter -Wno-unused-result)
 
 OPTION(USING_STD_REGEX "Use std::regex from C++ library instead of PCRECPP" OFF)
 
-IF(MACOS)
+IF(APPLE)
 	ADD_DEFINITIONS(-D_MACOS)
 ENDIF()
 
