@@ -1,6 +1,7 @@
 #!/bin/bash
 set -xe
 
+brew reinstall make cmake automake autoconf libtool
 brew reinstall libpng yaml-cpp freetype rapidjson pcre libevent zlib bzip2
 
 git clone https://github.com/curl/curl

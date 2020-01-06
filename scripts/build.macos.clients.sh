@@ -3,6 +3,7 @@ mkdir base/tools/clients
 
 set -xe
 
+brew reinstall make cmake automake autoconf libtool
 brew reinstall libev libsodium c-ares mbedtls
 
 git clone https://github.com/shadowsocks/shadowsocks-libev
