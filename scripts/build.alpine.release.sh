@@ -1,26 +1,30 @@
 #!/bin/bash
 set -xe
+export suppress = "> /dev/null"
+if [ "$verbose" = "true" ];then
+	export suppress = ""
+fi
 
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool git
 apk add libpng-dev libpng-static libressl-dev freetype-dev freetype-static zlib-dev zlib-static rapidjson-dev libevent-dev libevent-static bzip2-static pcre-dev
 
 git clone https://github.com/curl/curl
 cd curl
-./buildconf > /dev/null
-./configure --with-ssl --disable-ldap --disable-ldaps --disable-rtsp --without-libidn2 > /dev/null
-make install -j4 > /dev/null
+/bin/sh -c "./buildconf $suppress"
+/bin/sh -c "./configure --with-ssl --disable-ldap --disable-ldaps --disable-rtsp --without-libidn2 $suppress"
+/bin/sh -c "make install -j4 $suppress"
 cd ..
 
 git clone https://github.com/jbeder/yaml-cpp
 cd yaml-cpp
-cmake -DYAML_CPP_BUILD_TESTS=OFF -DYAML_CPP_BUILD_TOOLS=OFF . > /dev/null
-make install -j4 > /dev/null
+/bin/sh -c "cmake -DYAML_CPP_BUILD_TESTS=OFF -DYAML_CPP_BUILD_TOOLS=OFF . $suppress"
+/bin/sh -c "make install -j4 $suppress"
 cd ..
 
 git clone https://github.com/pngwriter/pngwriter
 cd pngwriter
-cmake . > /dev/null
-make install -j4 > /dev/null
+/bin/sh -c "cmake . $suppress"
+/bin/sh -c "make install -j4 $suppress"
 cd ..
 
 cmake .
