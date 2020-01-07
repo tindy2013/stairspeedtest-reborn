@@ -2,7 +2,7 @@
 mkdir base/tools/clients
 
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool
-apk add libev-dev pcre-dev libsodium-dev libsodium-static c-ares-dev libevent-dev libevent-static mbedtls-dev mbedtls-static
+apk add openssl-dev openssl-libs-static libev-dev pcre-dev libsodium-dev libsodium-static c-ares-dev libevent-dev libevent-static mbedtls-dev mbedtls-static
 
 git clone https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
