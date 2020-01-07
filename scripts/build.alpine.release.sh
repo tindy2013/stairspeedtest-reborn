@@ -2,7 +2,7 @@
 set -xe
 
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool git
-apk add libpng-dev libpng-static openssl-dev openssl-libs-static nghttp2-static freetype-dev freetype-static zlib-dev zlib-static rapidjson-dev libevent-dev libevent-static bzip2-static pcre-dev
+apk add libpng-dev libpng-static openssl-dev openssl-libs-static curl-dev curl-static nghttp2-static freetype-dev freetype-static zlib-dev zlib-static rapidjson-dev libevent-dev libevent-static bzip2-static pcre-dev
 
 git clone https://github.com/jbeder/yaml-cpp
 cd yaml-cpp
