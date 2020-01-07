@@ -8,9 +8,9 @@ git clone https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
 git submodule init
 git submodule update
-/bin/sh -c "./autogen.sh $suppress"
-/bin/sh -c "./configure --disable-documentation $suppress"
-/bin/sh -c "make -j4 $suppress"
+./autogen.sh
+./configure --disable-documentation
+make -j4
 cd src
 gcc obfs_local*.o ../libcork/.libs/libcork.a -o simple-obfs -lev -s -static
 mv simple-obfs ../../base/tools/clients/
@@ -20,9 +20,9 @@ git clone https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
 git submodule init
 git submodule update
-/bin/sh -c "./autogen.sh $suppress"
-/bin/sh -c "./configure --disable-documentation $suppress"
-/bin/sh -c "make -j4 $suppress"
+./autogen.sh
+./configure --disable-documentation
+make -j4
 cd src
 gcc ss_local*.o .libs/libshadowsocks-libev.a -o ss-local -lpcre -lmbedtls -lmbedcrypto -lev -lsodium -s -static
 mv ss-local ../../base/tools/clients/
@@ -31,9 +31,9 @@ cd ../..
 git clone https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
 git checkout -b latest origin/Akkariiin/develop
-/bin/sh -c "./autogen.sh $suppress"
-/bin/sh -c "./configure --disable-documentation $suppress"
-/bin/sh -c "make -j4 $suppress"
+./autogen.sh
+./configure --disable-documentation
+make -j4
 cd src
 gcc ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a -o ssr-local -lpcre -lssl -lcrypto -lev -lsodium -s -static
 mv ssr-local ../../base/tools/clients/
