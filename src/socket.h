@@ -20,6 +20,9 @@
 #define SOCKADDR_IN sockaddr_in
 #define ZeroMemory(d,l) memset((d), 0, (l))
 #define ioctlsocket ioctl
+#ifndef SA_INTERRUPT
+#define SA_INTERRUPT 0 //ignore this setting
+#endif
 #ifndef HAVE_MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0 //ignore this setting
 #endif
@@ -37,7 +40,7 @@
 typedef sockaddr *LPSOCKADDR;
 #endif // _WIN32
 
-#define BUF_SIZE 8192
+#define BUF_SIZE 1024
 
 int getNetworkType(std::string addr);
 int Send(SOCKET sHost, const char* data, int len, int flags);
