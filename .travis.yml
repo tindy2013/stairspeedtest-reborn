@@ -1,18 +1,13 @@
 language: cpp
 sudo: required
-stages:
-    - name: deploy
-      if: branch = master
-    - name: before_script
-      if: branch = master
 matrix:
     include:
-    - os: osx
+    - name: "macOS Build"
+      os: osx
       compiler: clang
       osx_image: xcode10.3
       script:
-      - chmod +x build.macos.release.sh
-      - ./build.macos.release.sh
+      - bash scripts/build.macos.release.sh
       deploy:
         provider: releases
         api_key: "$GITHUB_OAUTH_TOKEN"
@@ -21,14 +16,46 @@ matrix:
         draft: true
         on:
           tags: true
-    - services: docker
+    - name: "Linux x86_64 Build"
+      services: docker
       script:
-      - docker pull alpine:latest
-      - docker run -v $TRAVIS_BUILD_DIR:/root/workdir alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && chmod +x build.alpine.release.sh && bash build.alpine.release.sh"
+      - docker run -v $TRAVIS_BUILD_DIR:/root/workdir -e TRAVIS_BRANCH -e TRAVIS_TAG alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
       deploy:
         provider: releases
         api_key: "$GITHUB_OAUTH_TOKEN"
         file: "stairspeedtest_reborn_linux64.tar.gz"
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
+    - name: "Linux ARMHF Build"
+      services: docker
+      script:
+      - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - docker run -v $TRAVIS_BUILD_DIR:/root/workdir -e TRAVIS_BRANCH -e TRAVIS_TAG multiarch/alpine:armhf-edge /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
+      before_deploy:
+        script:
+        - mv stairspeedtest_reborn_linux64.tar.gz stairspeedtest_reborn_armhf.tar.gz
+      deploy:
+        provider: releases
+        api_key: "$GITHUB_OAUTH_TOKEN"
+        file: "stairspeedtest_reborn_armhf.tar.gz"
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
+    - name: "Linux ARM64 Build"
+      arch: arm64
+      services: docker
+      script:
+      - docker run -v $TRAVIS_BUILD_DIR:/root/workdir -e TRAVIS_BRANCH -e TRAVIS_TAG alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
+      before_deploy:
+        script:
+        - mv stairspeedtest_reborn_linux64.tar.gz stairspeedtest_reborn_arm64.tar.gz
+      deploy:
+        provider: releases
+        api_key: "$GITHUB_OAUTH_TOKEN"
+        file: "stairspeedtest_reborn_arm64.tar.gz"
         skip_cleanup: true
         draft: true
         on:
