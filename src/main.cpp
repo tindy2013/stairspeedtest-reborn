@@ -31,7 +31,6 @@ using namespace std::chrono;
 using namespace std::__cxx11;
 
 #define MAX_FILE_SIZE 100 * 1024 * 1024
-#define BUF_SIZE 8192
 
 //for use globally
 bool rpcmode = false;

@@ -69,6 +69,7 @@ void ssrspeed_regenerate_node_list(rapidjson::Document &json)
     int server_port;
 
     eraseElements(targetNodes);
+    eraseElements(testedNodes);
 
     for(unsigned int i = 0; i < json["configs"].Size(); i++)
     {
@@ -304,7 +305,7 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
 
     append_response("GET", "/", "REDIRECT", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        return "https://web.xn--8str30ceuh.site/";
+        return "http://web.xn--8str30ceuh.site/";
     });
 
     append_response("GET", "/favicon.ico", "x-icon", [](RESPONSE_CALLBACK_ARGS) -> std::string

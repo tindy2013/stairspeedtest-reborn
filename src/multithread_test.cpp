@@ -19,17 +19,40 @@ using namespace std::chrono;
 using namespace std::__cxx11;
 
 #define MAX_FILE_SIZE 512*1024*1024
-#define BUF_SIZE 8192
 
 //for use of site ping
-const int times_to_ping = 10, fail_limit = 3;
+const int times_to_ping = 10, fail_limit = 2;
 
 //for use of multi-thread socket test
 typedef std::lock_guard<std::mutex> guarded_mutex;
 int received_bytes = 0;
 int launched = 0, still_running = 0, buffer_size = 4096;
 bool EXIT_FLAG = false;
-std::mutex received_mutex, thread_count_mutex, launched_mutex, exit_flag_mutex;
+std::mutex thread_count_mutex, launched_mutex;
+
+#ifdef _WIN32
+CRITICAL_SECTION received_mutex, exit_flag_mutex;
+
+static inline void Lock(CRITICAL_SECTION &x)
+{
+    EnterCriticalSection(&x);
+}
+static inline void Unlock(CRITICAL_SECTION &x)
+{
+    LeaveCriticalSection(&x);
+}
+#else
+std::mutex received_mutex, exit_flag_mutex;
+
+static inline void Lock(std::mutex &x)
+{
+    x.lock();
+}
+static inline void Unlock(std::mutex &x)
+{
+    x.unlock();
+}
+#endif // _WIN32
 
 static inline void launch_acc()
 {
@@ -68,21 +91,24 @@ static inline int safe_read_launched()
 static inline bool safe_read_exit_flag()
 {
     bool retVal;
-    guarded_mutex guard(exit_flag_mutex);
+    Lock(exit_flag_mutex);
     retVal = EXIT_FLAG;
+    Unlock(exit_flag_mutex);
     return retVal;
 }
 
 static inline void safe_set_exit_flag()
 {
-    guarded_mutex guard(exit_flag_mutex);
+    Lock(exit_flag_mutex);
     EXIT_FLAG = true;
+    Unlock(exit_flag_mutex);
 }
 
 static inline void append_recv_bytes(int received)
 {
-    guarded_mutex guard(received_mutex);
+    Lock(received_mutex);
     received_bytes += received;
+    Unlock(received_mutex);
 }
 
 static inline void draw_progress_dl(int progress, int this_bytes)
@@ -370,6 +396,10 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
 
     int running;
     std::thread threads[thread_count];
+    #ifdef _WIN32
+    InitializeCriticalSection(&received_mutex);
+    InitializeCriticalSection(&exit_flag_mutex);
+    #endif // _WIN32
     for(i = 0; i != thread_count; i++)
     {
         writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + to_string(i + 1) + ".");
@@ -384,12 +414,12 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
     for(i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
-        received_mutex.lock(); //stop the receive
+        Lock(received_mutex); //stop the receive
         this_bytes = (received_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
         transferred_bytes = received_bytes;
         //cerr<<this_bytes<<" "<<last_bytes<<endl;
         sleep(5); //slow down to prevent some problem
-        received_mutex.unlock();
+        Unlock(received_mutex);
         node->rawSpeed[i - 1] = this_bytes;
         if(i % 2 == 0)
         {
@@ -409,16 +439,16 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
     safe_set_exit_flag(); //terminate all threads right now
-    received_mutex.lock(); //lock it to prevent any further data writing
+    Lock(received_mutex); //lock it to prevent any further data writing
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     //cerr<<deltatime<<" "<<received_bytes<<endl;
-    sleep(5); //slow down to prevent some problem
+    sleep(1); //slow down to prevent some problem
     node->totalRecvBytes = received_bytes;
     node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
     node->maxSpeed = speedCalc(max_speed);
-    received_mutex.unlock(); //unlock to make threads continue running
+    Unlock(received_mutex); //unlock to make threads continue running
     if(node->avgSpeed == "0.00B")
     {
         node->avgSpeed = "N/A";
@@ -475,11 +505,11 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     for(i = 1; i < 11; i++)
     {
         sleep(1000); //accumulate data
-        received_mutex.lock(); //stop the process
+        Lock(received_mutex); //stop the process
         this_bytes = received_bytes - transferred_bytes;
         transferred_bytes = received_bytes;
-        sleep(5); //slow down to prevent some problem
-        received_mutex.unlock();
+        sleep(1); //slow down to prevent some problem
+        Unlock(received_mutex);
         running = safe_read_running();
         writeLog(LOG_TYPE_FILEUL, "Running worker threads: " + to_string(running) + ", total sent bytes: " + to_string(transferred_bytes) \
                  + ", current sent bytes: " + to_string(this_bytes) + ".");
@@ -490,7 +520,7 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEUL, "Test completed. Terminate worker threads.");
     safe_set_exit_flag(); //terminate worker thread right now
-    received_mutex.lock(); //lock it to prevent any further data writing
+    Lock(received_mutex); //lock it to prevent any further data writing
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
@@ -502,11 +532,15 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     }
     writeLog(LOG_TYPE_FILEUL, "Uploaded " + to_string(received_bytes) + " bytes in " + to_string(deltatime) + " milliseconds.");
     node->totalRecvBytes += received_bytes;
-    received_mutex.unlock(); //unlock to make worker thread continue running
+    Unlock(received_mutex); //unlock to make worker thread continue running
     for(auto &x : workers)
         if(x.joinable())
             x.join();//wait until worker thread has exited
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
+    #ifdef _WIN32
+    DeleteCriticalSection(&received_mutex);
+    DeleteCriticalSection(&exit_flag_mutex);
+    #endif // _WIN32
     return 0;
 }
 
@@ -516,6 +550,10 @@ int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::
     std::string url = node->ulTarget;
     std::string proxy = buildSocks5ProxyString(localaddr, localport, username, password);
     writeLog(LOG_TYPE_FILEUL, "Starting up worker thread.");
+    #ifdef _WIN32
+    InitializeCriticalSection(&received_mutex);
+    InitializeCriticalSection(&exit_flag_mutex);
+    #endif // _WIN32
     std::thread worker = std::thread(_thread_upload_curl, node, url, proxy);
     while(!safe_read_launched())
         sleep(20); //wait until worker thread starts up
@@ -537,6 +575,10 @@ int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::
     if(worker.joinable())
         worker.join();//wait until worker thread has exited
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
+    #ifdef _WIN32
+    DeleteCriticalSection(&received_mutex);
+    DeleteCriticalSection(&exit_flag_mutex);
+    #endif // _WIN32
     return 0;
 }
 
