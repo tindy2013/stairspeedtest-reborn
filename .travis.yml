@@ -34,7 +34,6 @@ matrix:
       - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - docker run -v $TRAVIS_BUILD_DIR:/root/workdir -e TRAVIS_BRANCH -e TRAVIS_TAG multiarch/alpine:armhf-edge /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
       before_deploy:
-        script:
         - mv stairspeedtest_reborn_linux64.tar.gz stairspeedtest_reborn_armhf.tar.gz
       deploy:
         provider: releases
@@ -50,7 +49,6 @@ matrix:
       script:
       - docker run -v $TRAVIS_BUILD_DIR:/root/workdir -e TRAVIS_BRANCH -e TRAVIS_TAG alpine:latest /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
       before_deploy:
-        script:
         - mv stairspeedtest_reborn_linux64.tar.gz stairspeedtest_reborn_arm64.tar.gz
       deploy:
         provider: releases
