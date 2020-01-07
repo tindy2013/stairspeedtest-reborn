@@ -1,9 +1,9 @@
 # Stair Speedtest Reborn
 **Proxy performance batch tester based on Shadowsocks(R) and V2Ray**  
-<img alt="Travis-CI build status" src="https://travis-ci.org/tindy2013/stairspeedtest-reborn.svg?branch=master">
-<img alt="GitHub tag (latest SemVer)" src="https://img.shields.io/github/tag/tindy2013/stairspeedtest-reborn.svg">
-<img alt="GitHub release" src="https://img.shields.io/github/release/tindy2013/stairspeedtest-reborn.svg">
-<img alt="GitHub license" src="https://img.shields.io/github/license/tindy2013/stairspeedtest-reborn.svg">
+[![Build Status](https://travis-ci.org/tindy2013/stairspeedtest-reborn.svg?branch=master)](https://travis-ci.org/tindy2013/stairspeedtest-reborn)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/tindy2013/stairspeedtest-reborn.svg)](https://github.com/tindy2013/stairspeedtest-reborn/tags)
+[![GitHub release](https://img.shields.io/github/release/tindy2013/stairspeedtest-reborn.svg)](https://github.com/tindy2013/stairspeedtest-reborn/releases)
+[![GitHub license](https://img.shields.io/github/license/tindy2013/stairspeedtest-reborn.svg)](https://github.com/tindy2013/stairspeedtest-reborn/blob/master/LICENSE)
   
 ## Intro
 This is a C++ remake version of the original [Stair Speedtest](https://github.com/tindy2013/stairspeedtest) script. Despite its similarity to the script verion, this remake version works much more effectively, with faster node parsing, result picture rendering and even cross-platform support.  
@@ -27,32 +27,19 @@ In general, you need the following build dependencies:
 * zlib
 * yaml-cpp
 * libevent
+* pcre
   
 On non-Windows platforms, you also need to have the following clients installed to 'tools/clients/':  
 * shadowsocks-libev
 * shadowsocksr-libev ('ss-local' installed as the name 'ssr-local')
 * v2ray-core
   
-You can also use the auto configure script (experimental):
+After installing all these dependencies, you can use CMake to configure and build:  
 ```bash
-# On most Linux platforms  
-./config.sh  
-
-# On MacOS:  
-./config.macos.sh
+cmake .
+make -j
 ```
-  
-After installing all these dependencies, you can use the quick build script:  
-```bash
-# On Windows
-build.bat  
-  
-# On most Linux platforms  
-./build.sh  
 
-# On MacOS:  
-./build.macos.sh  
-```
 ## Usage
 * Run "stairspeedtest" for CLI speedtest, run "webgui" for Web GUI speedtest.
 * Results for subscribe link tests will be saved to a log file in "results" folder.
