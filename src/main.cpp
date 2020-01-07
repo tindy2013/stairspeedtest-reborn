@@ -28,12 +28,14 @@
 #include "nodeinfo.h"
 
 using namespace std::chrono;
-using namespace std::__cxx11;
 
 #define MAX_FILE_SIZE 100 * 1024 * 1024
 
-//for use globally
+//use for command argument
 bool rpcmode = false;
+std::string sub_url;
+
+//for use globally
 bool multilink = false;
 int socksport = 65432;
 std::string socksaddr = "127.0.0.1";
@@ -493,8 +495,12 @@ void chkArg(int argc, char* argv[])
     {
         if(!strcmp(argv[i], "/rpc"))
             rpcmode = true;
-        if(!strcmp(argv[i], "/web"))
+        else if(!strcmp(argv[i], "/web"))
             webserver_mode = true;
+        else if(!strcmp(argv[i], "/u") && argc > i + 1)
+            sub_url.assign(argv[++i]);
+        else if(!strcmp(argv[i], "/g") && argc > i + 1)
+            custom_group.assign(argv[++i]);
     }
 }
 
@@ -557,8 +563,8 @@ int singleTest(nodeInfo *node)
             clearTrans();
             addTrans("?group?", node->group);
             addTrans("?remarks?", node->remarks);
-            addTrans("?index?", to_string(node->id + 1));
-            addTrans("?total?", to_string(node_count));
+            addTrans("?index?", std::to_string(node->id + 1));
+            addTrans("?total?", std::to_string(node_count));
             printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
         }
         writeLog(LOG_TYPE_INFO, "Received server. Group: " + node->group + " Name: " + node->remarks);
@@ -566,7 +572,7 @@ int singleTest(nodeInfo *node)
         printMsg(SPEEDTEST_MESSAGE_GOTGPING, node, rpcmode);
         printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
         printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
-        writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + to_string(node->totalRecvBytes));
+        writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + std::to_string(node->totalRecvBytes));
         printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
         return SPEEDTEST_ERROR_NONE;
     }
@@ -595,8 +601,8 @@ int singleTest(nodeInfo *node)
         clearTrans();
         addTrans("?group?", node->group);
         addTrans("?remarks?", node->remarks);
-        addTrans("?index?", to_string(node->id + 1));
-        addTrans("?total?", to_string(node_count));
+        addTrans("?index?", std::to_string(node->id + 1));
+        addTrans("?total?", std::to_string(node_count));
         printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
     }
     writeLog(LOG_TYPE_INFO, "Received server. Group: " + node->group + " Name: " + node->remarks);
@@ -626,7 +632,7 @@ int singleTest(nodeInfo *node)
         }
         for(auto &x : node->rawPing)
         {
-            logdata += to_string(x) + " ";
+            logdata += std::to_string(x) + " ";
         }
         writeLog(LOG_TYPE_RAW, logdata);
         writeLog(LOG_TYPE_INFO, "TCP Ping: " + node->avgPing + "  Packet Loss: " + node->pkLoss);
@@ -641,7 +647,7 @@ int singleTest(nodeInfo *node)
     if(node->outboundGeoIP.organization != "")
     {
         clearTrans();
-        addTrans("?id?", to_string(node->id));
+        addTrans("?id?", std::to_string(node->id));
         addTrans("?isp?", node->outboundGeoIP.organization);
         addTrans("?location?", node->outboundGeoIP.country_code);
         writeLog(LOG_TYPE_INFO, "Got outbound ISP: " + node->outboundGeoIP.organization + "  Country code: " + node->outboundGeoIP.country_code);
@@ -661,7 +667,7 @@ int singleTest(nodeInfo *node)
         logdata = "";
         for(auto &x : node->rawSitePing)
         {
-            logdata += to_string(x) + " ";
+            logdata += std::to_string(x) + " ";
         }
         writeLog(LOG_TYPE_RAW, logdata);
         writeLog(LOG_TYPE_INFO, "Site ping: " + node->sitePing);
@@ -677,7 +683,7 @@ int singleTest(nodeInfo *node)
         logdata = "";
         for(auto &x : node->rawSpeed)
         {
-            logdata += to_string(x) + " ";
+            logdata += std::to_string(x) + " ";
         }
         writeLog(LOG_TYPE_RAW, logdata);
         if(node->totalRecvBytes == 0)
@@ -688,7 +694,7 @@ int singleTest(nodeInfo *node)
             logdata = "";
             for(auto &x : node->rawSpeed)
             {
-                logdata += to_string(x) + " ";
+                logdata += std::to_string(x) + " ";
             }
             writeLog(LOG_TYPE_RAW, logdata);
             if(node->totalRecvBytes == 0)
@@ -712,7 +718,7 @@ int singleTest(nodeInfo *node)
         upload_test(node, testserver, testport, username, password);
         printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
     }
-    writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + to_string(node->totalRecvBytes));
+    writeLog(LOG_TYPE_INFO, "Average speed: " + node->avgSpeed + "  Max speed: " + node->maxSpeed + "  Upload speed: " + node->ulSpeed + "  Traffic used in bytes: " + std::to_string(node->totalRecvBytes));
     printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
     node->online = true;
     killClient(node->linkType);
@@ -731,7 +737,7 @@ void batchTest(std::vector<nodeInfo> *nodes)
     cur_node_id = -1;
 
     node_count = nodes->size();
-    writeLog(LOG_TYPE_INFO, "Total node(s) found: " + to_string(node_count));
+    writeLog(LOG_TYPE_INFO, "Total node(s) found: " + std::to_string(node_count));
     if(node_count == 0)
     {
         writeLog(LOG_TYPE_ERROR, "No nodes are found in this subscription.");
@@ -762,7 +768,7 @@ void batchTest(std::vector<nodeInfo> *nodes)
                 onlines++;
         }
         //resultEOF(speedCalc(tottraffic * 1.0), onlines, nodes->size());
-        writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + to_string(node_count) + "/" + to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
+        writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + std::to_string(node_count) + "/" + std::to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
         //exportHTML();
         saveResult(nodes);
         if(!multilink || (multilink && multilink_export_as_one_image))
@@ -837,7 +843,7 @@ void addNodes(std::string link, bool multilink)
     {
     case SPEEDTEST_MESSAGE_FOUNDSUB:
         printMsgDirect(SPEEDTEST_MESSAGE_FOUNDSUB, rpcmode);
-        if(!rpcmode && !multilink && !webserver_mode)
+        if(!rpcmode && !multilink && !webserver_mode && !sub_url.size())
         {
             printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(std::cin, strInput);
@@ -880,7 +886,7 @@ void addNodes(std::string link, bool multilink)
         break;
     case SPEEDTEST_MESSAGE_FOUNDLOCAL:
         printMsgDirect(SPEEDTEST_MESSAGE_FOUNDLOCAL, rpcmode);
-        if(!rpcmode && !multilink)
+        if(!rpcmode && !multilink && !sub_url.size())
         {
             printMsgDirect(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(std::cin, strInput);
@@ -1002,7 +1008,7 @@ int main(int argc, char* argv[])
     */
     clientCheck();
     socksport = checkPort(socksport);
-    writeLog(LOG_TYPE_INFO, "Using local port: " + to_string(socksport));
+    writeLog(LOG_TYPE_INFO, "Using local port: " + std::to_string(socksport));
     writeLog(LOG_TYPE_INFO, "Init completed.");
     //intro message
     if(webserver_mode)
@@ -1011,25 +1017,34 @@ int main(int argc, char* argv[])
         return 0;
     }
     printMsgDirect(SPEEDTEST_MESSAGE_WELCOME, rpcmode);
-    getline(std::cin, link);
-    writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));
-    if(rpcmode)
+    if(sub_url.size())
     {
-        string_array webargs = split(link, "^");
-        if(webargs.size() == 6)
+        link = sub_url;
+        std::cout<<"Provided from argument.\n"<<std::endl;
+    }
+    else
+    {
+        getline(std::cin, link);
+        writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));
+        if(rpcmode)
         {
-            link = webargs[0];
-            if(webargs[1] != "?empty?")
-                custom_group = webargs[1];
-            speedtest_mode = webargs[2];
-            export_sort_method = webargs[4];
-            export_with_maxspeed = webargs[5] == "true";
-        }
-        else
-        {
-            link = "?empty?";
+            string_array webargs = split(link, "^");
+            if(webargs.size() == 6)
+            {
+                link = webargs[0];
+                if(webargs[1] != "?empty?")
+                    custom_group = webargs[1];
+                speedtest_mode = webargs[2];
+                export_sort_method = webargs[4];
+                export_with_maxspeed = webargs[5] == "true";
+            }
+            else
+            {
+                link = "?empty?";
+            }
         }
     }
+
     if(strFind(link, "|"))
     {
         multilink = true;
@@ -1084,22 +1099,22 @@ int main(int argc, char* argv[])
                     {
                         {
                             clearTrans();
-                            addTrans("?id?", to_string(i +1));
+                            addTrans("?id?", std::to_string(i +1));
                             printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVINGMULTI, rpcmode, dict, trans);
                         }
-                        writeLog(LOG_TYPE_INFO, "Now exporting result for group " + to_string(i + 1) + "...");
-                        curPNGPath = curPNGPathPrefix + "-multilink-group" + to_string(i + 1) + ".png";
+                        writeLog(LOG_TYPE_INFO, "Now exporting result for group " + std::to_string(i + 1) + "...");
+                        curPNGPath = curPNGPathPrefix + "-multilink-group" + std::to_string(i + 1) + ".png";
                         pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
                         {
                             clearTrans();
-                            addTrans("?id?", to_string(i + 1));
+                            addTrans("?id?", std::to_string(i + 1));
                             addTrans("?picpath?", pngpath);
                             printMsgWithDict(SPEEDTEST_MESSAGE_PICSAVEDMULTI, rpcmode, dict, trans);
                         }
-                        writeLog(LOG_TYPE_INFO, "Group " + to_string(i + 1) + " result saved to " + pngpath + " .");
+                        writeLog(LOG_TYPE_INFO, "Group " + std::to_string(i + 1) + " result saved to " + pngpath + " .");
                     }
                     else
-                        writeLog(LOG_TYPE_INFO, "Group " + to_string(i + 1) + " result export skipped.");
+                        writeLog(LOG_TYPE_INFO, "Group " + std::to_string(i + 1) + " result export skipped.");
                 }
             }
         }

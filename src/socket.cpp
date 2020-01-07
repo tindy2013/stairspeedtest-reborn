@@ -291,7 +291,7 @@ std::string hostnameToIPAddr(std::string host)
 
 int connectSocks5(SOCKET sHost, std::string username, std::string password)
 {
-    char buf[BUFSIZ], bufRecv[BUFSIZ];
+    char buf[BUF_SIZE], bufRecv[BUF_SIZE];
     //ZeroMemory(buf, BUF_SIZE);
     char* ptr;
     ptr = buf;
