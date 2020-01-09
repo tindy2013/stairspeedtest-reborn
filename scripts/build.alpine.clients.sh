@@ -39,13 +39,23 @@ gcc ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a -o ssr-l
 mv ssr-local ../../base/tools/clients/
 cd ../..
 
+if [[ "$ARCH" = "x86_64" ]];then
 curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
-unzip v2ray-linux-64.zip v2ray v2ctl
+curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip
+else
+curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_arm.zip
+if [[ "$ARCH" = "aarch64" ]];then
+curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm64.zip
+else if [[ "$ARCH" = "armhf" ]];then
+curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm.zip
+fi
+fi
+fi
+
+unzip v2ray*.zip v2ray v2ctl
+unzip websocketd*.zip websocketd
 mv v2ray base/tools/clients/
 mv v2ctl base/tools/clients/
-
-curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip
-unzip websocketd-0.3.0-linux_amd64.zip websocketd
 mv websocketd base/tools/gui/
 
 chmod +rx base/tools/clients/* base/tools/gui/websocketd
