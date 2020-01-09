@@ -1637,6 +1637,11 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom
         processed = true;
     }
 
+    if(!processed && explodeLog(sub, nodes))
+    {
+        processed = true;
+    }
+
     //try to parse as normal subscription
     if(!processed)
     {
