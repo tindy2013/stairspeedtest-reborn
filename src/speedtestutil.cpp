@@ -1637,7 +1637,7 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, std::string custom
         processed = true;
     }
 
-    if(!processed && explodeLog(sub, nodes))
+    if(!processed && explodeLog(sub, nodes) != -1)
     {
         processed = true;
     }
