@@ -13,7 +13,7 @@
 
 using namespace std::chrono;
 
-int def_timeout = 2000;
+int connect_timeout = 1000;
 
 #ifdef __CYGWIN32__
 #undef _WIN32
@@ -120,28 +120,36 @@ int setTimeout(SOCKET s, int timeout)
     ret = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(int));
     ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(int));
 #else
-    struct timeval timeo = {0, timeout * 1000};
+    struct timeval timeo = {timeout / 1000, (timeout % 1000) * 1000};
     ret = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeo, sizeof(timeo));
     ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeo, sizeof(timeo));
 #endif
-    def_timeout = timeout;
     return ret;
 }
 
 int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
 {
     int ret = -1;
-#ifdef _WIN32
     int error = 1;
     timeval tm;
     fd_set set;
-    unsigned long ul = 1;
+
     int len = sizeof(int);
+#ifdef _WIN32
+    unsigned long ul = 1;
     ioctlsocket(sockfd, FIONBIO, &ul); //set to non-blocking mode
+#else
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    if(flags == -1)
+        return -1;
+    error = fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+    if(error == -1)
+        return -1;
+#endif // _WIN32
     if(connect(sockfd, addr, addrsize) == -1)
     {
-        tm.tv_sec = 0;
-        tm.tv_usec = def_timeout * 1000;
+        tm.tv_sec = connect_timeout / 1000;
+        tm.tv_usec = (connect_timeout % 1000) * 1000;
         FD_ZERO(&set);
         FD_SET(sockfd, &set);
         if(select(sockfd + 1, NULL, &set, NULL, &tm) > 0)
@@ -158,36 +166,13 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     else
         ret = 0;
 
+#ifdef _WIN32
     ul = 0;
     ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
 #else
-    struct sigaction act, oldact;
-    act.sa_handler = [](int signo)
-    {
-        return;
-    };
-    sigemptyset(&act.sa_mask);
-    sigaddset(&act.sa_mask, SIGALRM);
-    act.sa_flags = SA_INTERRUPT;
-    sigaction(SIGALRM, &act, &oldact);
-    if(alarm(def_timeout / 1000) != 0)
-    {
-        //cerr<<"connect timeout set"<<endl;
-    }
-
-    ret = connect(sockfd, addr, addrsize);
-    if(ret < 0)
-    {
-        close(sockfd);
-        if (errno == EINTR)
-        {
-            //errno = TIMEOUT;
-            //cerr<<"connect timeout"<<endl;
-            alarm(0);
-            return 1;
-        }
-    }
-    alarm(0);
+    error = fcntl(sockfd, F_SETFL, flags & ~O_NONBLOCK);
+    if(error == -1)
+        return -1;
 #endif // _WIN32
     return ret;
 }

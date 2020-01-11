@@ -179,9 +179,9 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         goto end;
-    setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
         goto end;
+    setTimeout(sHost, 5000);
     if(connectSocks5(sHost, username, password) == -1)
         goto end;
     if(connectThruSocks(sHost, host, port) == -1)
@@ -396,10 +396,10 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
 
     int running;
     std::thread threads[thread_count];
-    #ifdef _WIN32
+#ifdef _WIN32
     InitializeCriticalSection(&received_mutex);
     InitializeCriticalSection(&exit_flag_mutex);
-    #endif // _WIN32
+#endif // _WIN32
     for(i = 0; i != thread_count; i++)
     {
         writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + to_string(i + 1) + ".");
@@ -537,10 +537,10 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
         if(x.joinable())
             x.join();//wait until worker thread has exited
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
-    #ifdef _WIN32
+#ifdef _WIN32
     DeleteCriticalSection(&received_mutex);
     DeleteCriticalSection(&exit_flag_mutex);
-    #endif // _WIN32
+#endif // _WIN32
     return 0;
 }
 
@@ -550,10 +550,10 @@ int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::
     std::string url = node->ulTarget;
     std::string proxy = buildSocks5ProxyString(localaddr, localport, username, password);
     writeLog(LOG_TYPE_FILEUL, "Starting up worker thread.");
-    #ifdef _WIN32
+#ifdef _WIN32
     InitializeCriticalSection(&received_mutex);
     InitializeCriticalSection(&exit_flag_mutex);
-    #endif // _WIN32
+#endif // _WIN32
     std::thread worker = std::thread(_thread_upload_curl, node, url, proxy);
     while(!safe_read_launched())
         sleep(20); //wait until worker thread starts up
@@ -575,10 +575,10 @@ int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::
     if(worker.joinable())
         worker.join();//wait until worker thread has exited
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
-    #ifdef _WIN32
+#ifdef _WIN32
     DeleteCriticalSection(&received_mutex);
     DeleteCriticalSection(&exit_flag_mutex);
-    #endif // _WIN32
+#endif // _WIN32
     return 0;
 }
 
@@ -614,7 +614,6 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
             writeLog(LOG_TYPE_GPING, "ERROR: Could not create socket.");
             goto end;
         }
-        setTimeout(sHost, 5000);
         if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
         {
             failcounter++;
@@ -622,6 +621,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
             writeLog(LOG_TYPE_GPING, "ERROR: Connect to SOCKS5 server " + localaddr + ":" + to_string(localport) + " failed.");
             goto end;
         }
+        setTimeout(sHost, 5000);
         if(connectSocks5(sHost, username, password) == -1)
         {
             failcounter++;
