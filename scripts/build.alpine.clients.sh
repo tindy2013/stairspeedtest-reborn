@@ -40,20 +40,25 @@ mv ssr-local ../../base/tools/clients/
 cd ../..
 
 if [[ "$ARCH" = "x86_64" ]];then
-curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
-curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip
-else
-curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_arm.zip
-if [[ "$ARCH" = "aarch64" ]];then
-curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm64.zip
-else if [[ "$ARCH" = "armhf" ]];then
-curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm.zip
-fi
-fi
+    curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
+    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_amd64.zip
+    else if [[ "$ARCH" = "x86" ]];then
+        curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-32.zip
+        curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_386.zip
+    else
+        curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_arm.zip
+        if [[ "$ARCH" = "aarch64" ]];then
+            curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm64.zip
+            else if [[ "$ARCH" = "armhf" ]];then
+                curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm.zip
+            fi
+        fi
+    fi
 fi
 
 unzip v2ray*.zip v2ray v2ctl
 unzip websocketd*.zip websocketd
+strip -s websocketd
 mv v2ray base/tools/clients/
 mv v2ctl base/tools/clients/
 mv websocketd base/tools/gui/

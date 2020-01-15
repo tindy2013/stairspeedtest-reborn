@@ -31,7 +31,7 @@ cp /usr/local/lib/libpng.a .
 cp /usr/local/lib/libfreetype.a .
 
 export CMAKE_CXX_FLAGS="-I/usr/local/include -I/usr/local/opt/openssl@1.1/include -I/usr/local/opt/curl/include"
-cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 -DMACOS=on .
+cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 .
 make -j8
 c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o libpcrecpp.a libpcre.a libevent.a libcurl.a libPNGwriter.a libpng.a libfreetype.a libz.a libssl.a libcrypto.a libyaml-cpp.a libbz2.a -ldl -lpthread -O3
 

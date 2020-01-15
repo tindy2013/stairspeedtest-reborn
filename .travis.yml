@@ -16,6 +16,20 @@ matrix:
         draft: true
         on:
           tags: true
+    - name: "Linux x86 Build"
+      services: docker
+      script:
+      - docker run -v $TRAVIS_BUILD_DIR:/root/workdir -e TRAVIS_BRANCH -e TRAVIS_TAG multiarch/alpine:x86-edge /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
+      before_deploy:
+        - mv stairspeedtest_reborn_linux64.tar.gz stairspeedtest_reborn_linux32.tar.gz
+      deploy:
+        provider: releases
+        api_key: "$GITHUB_OAUTH_TOKEN"
+        file: "stairspeedtest_reborn_linux32.tar.gz"
+        skip_cleanup: true
+        draft: true
+        on:
+          tags: true
     - name: "Linux x86_64 Build"
       services: docker
       script:
