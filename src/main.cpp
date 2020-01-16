@@ -342,7 +342,7 @@ void readConf(std::string path)
     INIReader ini;
     std::string strTemp;
 
-    ini.do_utf8_to_gbk = true;
+    //ini.do_utf8_to_gbk = true;
     ini.ParseFile("pref.ini");
 
     ini.EnterSection("common");
