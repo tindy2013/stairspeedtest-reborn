@@ -461,6 +461,10 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
             threads[i].join();//wait until all threads has exited
     }
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test completed.");
+#ifdef _WIN32
+    DeleteCriticalSection(&received_mutex);
+    DeleteCriticalSection(&exit_flag_mutex);
+#endif // _WIN32
     return 0;
 }
 
@@ -488,6 +492,11 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     {
         writeLog(LOG_TYPE_FILEUL, "Found HTTP URL.");
     }
+
+#ifdef _WIN32
+    InitializeCriticalSection(&received_mutex);
+    InitializeCriticalSection(&exit_flag_mutex);
+#endif // _WIN32
 
     int running;
     std::thread workers[2];

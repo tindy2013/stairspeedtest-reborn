@@ -13,7 +13,7 @@
 
 using namespace std::chrono;
 
-int connect_timeout = 1000;
+int connect_timeout = 3000;
 
 #ifdef __CYGWIN32__
 #undef _WIN32
@@ -127,6 +127,19 @@ int setTimeout(SOCKET s, int timeout)
     return ret;
 }
 
+int setSocketBlocking(SOCKET s, bool blocking)
+{
+#ifdef _WIN32
+    unsigned long ul = !blocking;
+    return ioctlsocket(s, FIONBIO, &ul); //set to non-blocking mode
+#else
+    int flags = fcntl(s, F_GETFL, 0);
+    if(flags == -1)
+        return -1;
+    return fcntl(s, F_SETFL, blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK));
+#endif // _WIN32
+}
+
 int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
 {
     int ret = -1;
@@ -135,17 +148,8 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     fd_set set;
 
     int len = sizeof(int);
-#ifdef _WIN32
-    unsigned long ul = 1;
-    ioctlsocket(sockfd, FIONBIO, &ul); //set to non-blocking mode
-#else
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if(flags == -1)
+    if(setSocketBlocking(sockfd, false) == -1)
         return -1;
-    error = fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-    if(error == -1)
-        return -1;
-#endif // _WIN32
     if(connect(sockfd, addr, addrsize) == -1)
     {
         tm.tv_sec = connect_timeout / 1000;
@@ -166,14 +170,8 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
     else
         ret = 0;
 
-#ifdef _WIN32
-    ul = 0;
-    ioctlsocket(sockfd, FIONBIO, &ul); //set to blocking mode
-#else
-    error = fcntl(sockfd, F_SETFL, flags & ~O_NONBLOCK);
-    if(error == -1)
+    if(setSocketBlocking(sockfd, true) == -1)
         return -1;
-#endif // _WIN32
     return ret;
 }
 
@@ -207,11 +205,11 @@ int send_simple(SOCKET sHost, std::string data)
 int simpleSend(std::string addr, int port, std::string data)
 {
     SOCKET sHost = socket(getNetworkType(addr), SOCK_STREAM, IPPROTO_IP);
-    setTimeout(sHost, 1000);
     if(sHost == INVALID_SOCKET)
         return SOCKET_ERROR;
-    if(startConnect(sHost, addr, port) == SOCKET_ERROR)
+    if(startConnect(sHost, addr, port) != 0)
         return SOCKET_ERROR;
+    setTimeout(sHost, 3000);
     unsigned int retVal = send_simple(sHost, data);
     if(retVal == data.size())
     {
@@ -219,13 +217,13 @@ int simpleSend(std::string addr, int port, std::string data)
 #ifdef _WIN32
         return WSAGetLastError();
 #else
-        return -1;
+        return 0;
 #endif // _WIN32
     }
     else
     {
         closesocket(sHost);
-        return 1;
+        return SOCKET_ERROR;
     }
 }
 

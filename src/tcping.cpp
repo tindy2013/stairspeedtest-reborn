@@ -65,7 +65,7 @@ int tcping(nodeInfo *node)
         auto end = steady_clock::now();
         auto duration = duration_cast<milliseconds>(end - start);
         int deltatime = duration.count();
-        if(retVal != 1)
+        if(retVal != SOCKET_ERROR)
         {
             succeedcounter++;
             node->rawPing[loopcounter] = deltatime;

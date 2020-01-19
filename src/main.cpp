@@ -813,6 +813,19 @@ void rewriteNodeGroupID(std::vector<nodeInfo> *nodes, int groupID)
     }
 }
 
+std::string removeEmoji(std::string remark)
+{
+    char emoji_id[2] = {(char)-16, (char)-97};
+    while(true)
+    {
+        if(remark[0] == emoji_id[0] && remark[1] == emoji_id[1])
+            remark.erase(0, 4);
+        else
+            break;
+    }
+    return remark;
+}
+
 void addNodes(std::string link, bool multilink)
 {
     int linkType = -1;
@@ -1061,6 +1074,8 @@ int main(int argc, char* argv[])
         addNodes(link, multilink);
     }
     rewriteNodeID(&allNodes); //reset all index
+    for(nodeInfo &x : allNodes)
+        x.remarks = trim(removeEmoji(x.remarks)); //remove all emojis
     if(allNodes.size() > 1) //group or multi-link
     {
         batchTest(&allNodes);
