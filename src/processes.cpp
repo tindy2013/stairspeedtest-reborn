@@ -84,17 +84,20 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     if(retval == FALSE)
         return false;
 
-    sleep(500); //slow down to prevent some problem
+    //sleep(500); //slow down to prevent some problem
     DWORD ExitCode = STILL_ACTIVE;
 
-    WaitForInputIdle(pi.hProcess, 2000);
     do
     {
         retval = GetExitCodeProcess(pi.hProcess, &ExitCode);
-        if(retval == false)
+        if(retval == FALSE)
             continue;
+        else if(ExitCode == STILL_ACTIVE)
+            break;
+        else
+            return ExitCode;
     }
-    while(ExitCode != STILL_ACTIVE);
+    while(true);
 
     AssignProcessToJobObject(job, pi.hProcess);
     SetInformationJobObject(job, JobObjectExtendedLimitInformation, &job_limits, sizeof(job_limits));
@@ -131,8 +134,8 @@ void killByHandle()
 #ifdef _WIN32
     if(hProc != NULL)
     {
-        TerminateProcess(hProc, 0);
-        CloseHandle(hProc);
+        if(TerminateProcess(hProc, 0))
+            CloseHandle(hProc);
     }
 #else
     if(hProc != 0)
