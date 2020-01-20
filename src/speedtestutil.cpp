@@ -400,6 +400,8 @@ void explodeSS(std::string ss, bool libev, std::string custom_port, int local_po
     }
     else
     {
+        if(!regMatch(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*):(.*)"))
+            return;
         ss = regReplace(urlsafe_base64_decode(ss), "(.*?):(.*?)@(.*):(.*)", "$1|$2|$3|$4");
         args = split(ss, "|");
         method = args[0];
