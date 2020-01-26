@@ -122,6 +122,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
     posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), NULL);
     */
+    command = command + " > /dev/null 2>&1";
     pPipe = popen(command.data(), "r");
     chdir(curdir);
     return true;
