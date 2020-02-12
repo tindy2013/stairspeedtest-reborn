@@ -3,7 +3,7 @@ set -e
 
 apk add gcc g++ cmake make autoconf automake libtool
 
-apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev
+apk add libpng-dev libressl-dev freetype-dev freetype-static zlib-dev openssl rapidjson-dev pcre2-dev
 
 git clone https://github.com/curl/curl
 cd curl

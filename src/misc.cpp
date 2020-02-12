@@ -11,11 +11,17 @@
 #ifdef USE_STD_REGEX
 #include <regex>
 #else
-#include <pcrecpp.h>
+#include <jpcre2.hpp>
+typedef jpcre2::select<char> jp;
 #endif // USE_STD_REGEX
 
 #include <rapidjson/document.h>
+
+#ifdef USE_MBEDTLS
+#include <mbedtls/md5.h>
+#else
 #include <openssl/md5.h>
+#endif // USE_MBEDTLS
 
 #include "misc.h"
 
@@ -32,8 +38,6 @@
 #endif // _access
 #include <sys/socket.h>
 #endif // _WIN32
-
-using namespace std::__cxx11;
 
 void sleep(int interval)
 {
@@ -126,7 +130,7 @@ unsigned char FromHex(unsigned char x)
     else if (x >= '0' && x <= '9')
         y = x - '0';
     else
-        assert(0);
+        y = x;
     return y;
 }
 
@@ -156,7 +160,7 @@ std::string UrlEncode(const std::string& str)
 
 std::string UrlDecode(const std::string& str)
 {
-    std::string strTemp = "";
+    std::string strTemp;
     size_t length = str.length();
     for (size_t i = 0; i < length; i++)
     {
@@ -166,9 +170,14 @@ std::string UrlDecode(const std::string& str)
         {
             if(i + 2 >= length)
                 return strTemp;
-            unsigned char high = FromHex((unsigned char)str[++i]);
-            unsigned char low = FromHex((unsigned char)str[++i]);
-            strTemp += high * 16 + low;
+            if(isalnum(str[i + 1]) && isalnum(str[i + 2]))
+            {
+                unsigned char high = FromHex((unsigned char)str[++i]);
+                unsigned char low = FromHex((unsigned char)str[++i]);
+                strTemp += high * 16 + low;
+            }
+            else
+                strTemp += str[i];
         }
         else
             strTemp += str[i];
@@ -320,6 +329,21 @@ std::vector<std::string> split(const std::string &s, const std::string &seperato
     return result;
 }
 
+std::string GetEnv(std::string name)
+{
+    std::string retVal;
+#ifdef _WIN32
+    char chrData[1024] = {};
+    if(GetEnvironmentVariable(name.c_str(), chrData, 1023))
+        retVal.assign(chrData);
+#else
+    char *env = getenv(name.c_str());
+    if(env != NULL)
+        retVal.assign(env);
+#endif // _WIN32
+    return retVal;
+}
+
 std::string getSystemProxy()
 {
 #ifdef _WIN32
@@ -423,20 +447,28 @@ std::string getUrlArg(std::string url, std::string request)
         return std::string();
     }
     */
+    /*
+    std::string::size_type spos = url.find("?");
+    if(spos != url.npos)
+        url.erase(0, spos + 1);
 
     string_array vArray, arglist = split(url, "&");
     for(std::string &x : arglist)
     {
-        /*
-        if(regex_search(x.cbegin(), x.cend(), result, std::regex("^" + request + "=(.*)$")))
-            return result[1];
-        */
         std::string::size_type epos = x.find("=");
         if(epos != x.npos)
         {
             if(x.substr(0, epos) == request)
                 return x.substr(epos + 1);
         }
+    }
+    */
+    std::string pattern = request + "=";
+    std::string::size_type pos = url.rfind(pattern);
+    if(pos != url.npos)
+    {
+        pos += pattern.size();
+        return url.substr(pos, url.find("&", pos) - pos);
     }
     return std::string();
 }
@@ -458,7 +490,7 @@ bool regValid(std::string &reg)
 {
     try
     {
-        std::regex r(reg);
+        std::regex r(reg, std::regex::ECMAScript);
         return true;
     }
     catch (std::regex_error &e)
@@ -471,7 +503,13 @@ bool regFind(std::string src, std::string target)
 {
     try
     {
-        std::regex reg(target);
+        std::regex::flag_type flags = std::regex::extended | std::regex::ECMAScript;
+        if(target.find("(?i)") == 0)
+        {
+            target.erase(0, 4);
+            flags |= std::regex::icase;
+        }
+        std::regex reg(target, flags);
         return regex_search(src, reg);
     }
     catch (std::regex_error &e)
@@ -485,7 +523,13 @@ std::string regReplace(std::string src, std::string match, std::string rep)
     std::string result = "";
     try
     {
-        std::regex reg(match);
+        std::regex::flag_type flags = std::regex::extended | std::regex::ECMAScript;
+        if(match.find("(?i)") == 0)
+        {
+            match.erase(0, 4);
+            flags |= std::regex::icase;
+        }
+        std::regex reg(match, flags);
         regex_replace(back_inserter(result), src.begin(), src.end(), reg, rep);
     }
     catch (std::regex_error &e)
@@ -499,7 +543,13 @@ bool regMatch(std::string src, std::string match)
 {
     try
     {
-        std::regex reg(match);
+        std::regex::flag_type flags = std::regex::extended | std::regex::ECMAScript;
+        if(match.find("(?i)") == 0)
+        {
+            match.erase(0, 4);
+            flags |= std::regex::icase;
+        }
+        std::regex reg(match, flags);
         return regex_match(src, reg);
     }
     catch (std::regex_error &e)
@@ -510,62 +560,37 @@ bool regMatch(std::string src, std::string match)
 
 #else
 
-bool regValid(std::string &reg)
+bool regMatch(std::string src, std::string target)
 {
-    try
-    {
-        pcrecpp::RE r(reg);
-        return true;
-    }
-    catch (std::exception &e)
-    {
+    jp::Regex reg;
+    reg.setPattern(target).addModifier("gm").addPcre2Option(PCRE2_ANCHORED|PCRE2_ENDANCHORED).compile();
+    if(!reg)
         return false;
-    }
+    return reg.match(src);
 }
 
 bool regFind(std::string src, std::string target)
 {
-    try
-    {
-        pcrecpp::RE reg(target);
-        return reg.PartialMatch(src);
-    }
-    catch (std::exception &e)
-    {
+    jp::Regex reg;
+    reg.setPattern(target).addModifier("gm").compile();
+    if(!reg)
         return false;
-    }
+    return reg.match(src);
 }
 
-std::string regReplace(std::string src, std::string match, std::string rep)
+std::string regReplace(std::string src, std::string target, std::string rep)
 {
-    std::string result = src;
-    try
-    {
-        if(rep.find("$") != rep.npos)
-            rep = replace_all_distinct(rep, "$", "\\");
-        pcrecpp::RE reg(match);
-        if(reg.GlobalReplace(rep, &result))
-            return result;
-        else
-            return src;
-    }
-    catch (std::exception &e)
-    {
+    jp::Regex reg;
+    reg.setPattern(target).addModifier("gm").compile();
+    if(!reg)
         return src;
-    }
+    return reg.replace(src, rep);
 }
 
-bool regMatch(std::string src, std::string match)
+bool regValid(std::string &target)
 {
-    try
-    {
-        pcrecpp::RE reg(match);
-        return reg.FullMatch(src);
-    }
-    catch (std::exception &e)
-    {
-        return false;
-    }
+    jp::Regex reg(target);
+    return !!reg;
 }
 #endif // USE_STD_REGEX
 
@@ -604,14 +629,26 @@ std::string urlsafe_base64_encode(std::string string_to_encode)
 
 std::string getMD5(std::string data)
 {
-    MD5_CTX ctx;
+
     std::string result;
     unsigned int i = 0;
     unsigned char digest[16] = {};
 
+#ifdef USE_MBEDTLS
+    mbedtls_md5_context ctx;
+
+    mbedtls_md5_init(&ctx);
+    mbedtls_md5_starts_ret(&ctx);
+    mbedtls_md5_update_ret(&ctx, reinterpret_cast<const unsigned char*>(data.data()), data.size());
+    mbedtls_md5_finish_ret(&ctx, reinterpret_cast<unsigned char*>(&digest));
+    mbedtls_md5_free(&ctx);
+#else
+    MD5_CTX ctx;
+
     MD5_Init(&ctx);
     MD5_Update(&ctx, data.data(), data.size());
     MD5_Final((unsigned char *)&digest, &ctx);
+#endif // USE_MBEDTLS
 
     char tmp[3] = {};
     for(i = 0; i < 16; i++)
@@ -623,11 +660,23 @@ std::string getMD5(std::string data)
     return result;
 }
 
-std::string fileGet(std::string path, bool binary)
+std::string fileGet(std::string path, bool binary, bool scope_limit)
 {
     std::ifstream infile;
     std::stringstream strstrm;
     std::ios::openmode mode = binary ? std::ios::binary : std::ios::in;
+
+    if(scope_limit)
+    {
+#ifdef _WIN32
+        if(path.find(":\\") != path.npos || path.find("..") != path.npos)
+            return std::string();
+#else
+        if(path.find("/") == 0 || path.find("..") != path.npos)
+            return std::string();
+#endif // _WIN32
+    }
+
 
     infile.open(path, mode);
     if(infile)
@@ -671,12 +720,12 @@ bool fileCopy(std::string source, std::string dest)
 
 std::string fileToBase64(std::string filepath)
 {
-    return base64_encode(fileGet(filepath));
+    return base64_encode(fileGet(filepath, true));
 }
 
 std::string fileGetMD5(std::string filepath)
 {
-    return getMD5(fileGet(filepath));
+    return getMD5(fileGet(filepath, true));
 }
 
 int fileWrite(std::string path, std::string content, bool overwrite)
@@ -689,12 +738,12 @@ int fileWrite(std::string path, std::string content, bool overwrite)
     return 0;
 }
 
-bool isIPv4(std::string address)
+bool isIPv4(std::string &address)
 {
     return regMatch(address, "^(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}$");
 }
 
-bool isIPv6(std::string address)
+bool isIPv6(std::string &address)
 {
     std::vector<std::string> regLists = {"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$", "^((?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4})*)?)::((?:([0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{1,4})?)$", "^(::(?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5})|((?:[0-9A-Fa-f]{1,4})(?::[0-9A-Fa-f]{1,4}){5}::)$"};
     for(unsigned int i = 0; i < regLists.size(); i++)
@@ -750,12 +799,12 @@ void urlParse(std::string url, std::string &host, std::string &path, int &port, 
     {
         args = split(regReplace(host, "\\[(.*)\\](.*)", "$1,$2"), ",");
         if(args.size() == 2) //with port
-            port = stoi(args[1].substr(1));
+            port = to_int(args[1].substr(1));
         host = args[0];
     }
     else if(strFind(host, ":"))
     {
-        port = stoi(host.substr(host.rfind(":") + 1));
+        port = to_int(host.substr(host.rfind(":") + 1));
         host = host.substr(0, host.rfind(":"));
     }
     if(port == 0)
@@ -767,7 +816,7 @@ void urlParse(std::string url, std::string &host, std::string &path, int &port, 
     }
 }
 
-bool is_str_utf8(std::string &data)
+bool is_str_utf8(std::string data)
 {
     const char *str = data.c_str();
     unsigned int nBytes = 0;
@@ -848,11 +897,11 @@ void shortDisassemble(int source, unsigned short &num_a, unsigned short &num_b)
     num_b = (unsigned short)(source >> 16);
 }
 
-int to_int(std::string &s, int def_vaule)
+int to_int(std::string str, int def_vaule)
 {
     int retval = 0;
     char c;
-    std::stringstream ss(s);
+    std::stringstream ss(str);
     if(!(ss >> retval))
         return def_vaule;
     else if(ss >> c)
@@ -868,7 +917,6 @@ std::string getFormData(const std::string &raw_data)
 
     std::string boundary;
     std::string file; /* actual file content */
-
 
     int i = 0;
 
@@ -893,7 +941,7 @@ std::string getFormData(const std::string &raw_data)
             char c;
             int bl = boundary.length();
             bool endfile = false;
-            char buffer[256] = {};
+            char buffer[256];
             while(!endfile)
             {
                 int j = 0;

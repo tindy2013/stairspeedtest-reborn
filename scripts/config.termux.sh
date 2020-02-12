@@ -6,7 +6,7 @@ pkg upgrade
 pkg install -y git cmake clang autoconf automake libtool
 
 #then install precompiled library from repo
-pkg install -y openssl-static libcurl-static libpng-static libev-static libz-static freetype-static libevent
+pkg install -y openssl-static libcurl-static libpng-static libev-static zlib-static freetype-static libevent pcre2-static
 
 #get rapidjson
 git clone https://github.com/tencent/rapidjson

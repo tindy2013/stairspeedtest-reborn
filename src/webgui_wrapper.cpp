@@ -152,7 +152,7 @@ void json_write_node(rapidjson::Writer<rapidjson::StringBuffer> &writer, nodeInf
     writer.Key("inbound");
     writer.StartObject();
     writer.Key("address");
-    writer.String(std::string(node.server + ":" + std::__cxx11::to_string(node.port)).data());
+    writer.String(std::string(node.server + ":" + std::to_string(node.port)).data());
     writer.Key("info");
     writer.String("N/A");
     writer.EndObject();
@@ -310,7 +310,7 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
 
     append_response("GET", "/favicon.ico", "x-icon", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        return fileGet("tools/gui/favicon.ico");
+        return fileGet("tools/gui/favicon.ico", true);
     });
 
     append_response("GET", "/getversion", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string

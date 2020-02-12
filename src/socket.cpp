@@ -392,7 +392,7 @@ int connectThruSocks(SOCKET sHost, std::string host, int port)
 int connectThruHTTP(SOCKET sHost, std::string username, std::string password, std::string dsthost, int dstport)
 {
     char bufRecv[BUF_SIZE] = {};
-    std::string request = "CONNECT " + dsthost + ":" + std::__cxx11::to_string(dstport) + " HTTP/1.1\r\n";
+    std::string request = "CONNECT " + dsthost + ":" + std::to_string(dstport) + " HTTP/1.1\r\n";
     std::string authstr = "Authorization: Basic " + base64_encode(username + ":" + password) + "\r\n";
     if(username != "" && password != "")
         request += authstr;

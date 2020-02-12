@@ -137,7 +137,7 @@ void printMsg(int index, nodeInfo *node, bool rpcmode)
     }
     printout = replace_all_distinct(printout, "?group?", trim(node->group));
     printout = replace_all_distinct(printout, "?remarks?", trim(node->remarks));
-    printout = replace_all_distinct(printout, "?id?", std::__cxx11::to_string(node->id));
+    printout = replace_all_distinct(printout, "?id?", std::to_string(node->id));
     printout = replace_all_distinct(printout, "?avgping?", node->avgPing);
     printout = replace_all_distinct(printout, "?pkloss?", node->pkLoss);
     printout = replace_all_distinct(printout, "?siteping?", node->sitePing);
