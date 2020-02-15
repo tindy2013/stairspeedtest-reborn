@@ -10,7 +10,6 @@
 #include "nodeinfo.h"
 
 using namespace std::chrono;
-using namespace std::__cxx11;
 
 std::string export_sort_method_render = "none";
 bool export_as_ssrspeed = false;
@@ -90,7 +89,7 @@ static inline int getWidth(pngwriter *png, std::string font, int fontsize, std::
 void rendererInit(std::string font, int fontsize)
 {
     pngwriter png;
-    writeLog(LOG_TYPE_RENDER, "Start calculating basic string widths for font '" + font + "' at size " + to_string(fontsize) + ".");
+    writeLog(LOG_TYPE_RENDER, "Start calculating basic string widths for font '" + font + "' at size " + std::to_string(fontsize) + ".");
     widNumber = getWidth(&png, font, fontsize, "1");
     widNA = getWidth(&png, font, fontsize, "N/A");
     widB = getWidth(&png, font, fontsize, "B");
@@ -99,8 +98,8 @@ void rendererInit(std::string font, int fontsize)
     widGB = getWidth(&png, font, fontsize, "GB");
     widPercent = getWidth(&png, font, fontsize, "%");
     widDot = getWidth(&png, font, fontsize, ".");
-    writeLog(LOG_TYPE_RENDER, "Calculated basic string widths: Number=" + to_string(widNumber) + " N/A=" + to_string(widNA) + " KB=" + to_string(widKB) \
-             + " MB=" + to_string(widMB) + " GB=" + to_string(widGB) + " Percent=" + to_string(widPercent) + " Dot=" + to_string(widDot));
+    writeLog(LOG_TYPE_RENDER, "Calculated basic string widths: Number=" + std::to_string(widNumber) + " N/A=" + std::to_string(widNA) + " KB=" + std::to_string(widKB) \
+             + " MB=" + std::to_string(widMB) + " GB=" + std::to_string(widGB) + " Percent=" + std::to_string(widPercent) + " Dot=" + std::to_string(widDot));
 }
 
 static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, std::string text)
@@ -161,9 +160,9 @@ std::string secondToString(int duration)
     int intHrs = duration / 3600;
     int intMin = (duration % 3600) / 60;
     int intSec = duration % 60;
-    std::string strHrs = intHrs > 9 ? to_string(intHrs) : "0" + to_string(intHrs);
-    std::string strMin = intMin > 9 ? to_string(intMin) : "0" + to_string(intMin);
-    std::string strSec = intSec > 9 ? to_string(intSec) : "0" + to_string(intSec);
+    std::string strHrs = intHrs > 9 ? std::to_string(intHrs) : "0" + std::to_string(intHrs);
+    std::string strMin = intMin > 9 ? std::to_string(intMin) : "0" + std::to_string(intMin);
+    std::string strSec = intSec > 9 ? std::to_string(intSec) : "0" + std::to_string(intSec);
     return strHrs + ":" + strMin + ":" + strSec;
 }
 
@@ -408,14 +407,14 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bo
     //SSRSpeed style
     if(export_as_ssrspeed)
     {
-        traffic += "Time used: " + secondToString(test_duration) + ". Online Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
+        traffic += "Time used: " + secondToString(test_duration) + ". Online Node(s) : [" + std::to_string(onlines) + "/" + std::to_string(node_count) + "]";
         title = "  SSRSpeed Result Table ( v2.6.2 )  ";
     }
     else
     {
         if(export_as_new_style)
             traffic += "Time used : " + secondToString(test_duration) + ". ";
-        traffic += "Working Node(s) : [" + to_string(onlines) + "/" + to_string(node_count) + "]";
+        traffic += "Working Node(s) : [" + std::to_string(onlines) + "/" + std::to_string(node_count) + "]";
     }
 
     final_width = total_width;
@@ -628,7 +627,7 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
 
     //generating information
     std::string gentime = "Generated at "+getTime(3);
-    std::string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+to_string(onlines)+"/"+to_string(node_count)+"]";
+    std::string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+std::to_string(onlines)+"/"+std::to_string(node_count)+"]";
     std::string about = "By Stair Speedtest Reborn " VERSION ".";
 
     final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, total_width);

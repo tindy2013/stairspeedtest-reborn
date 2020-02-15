@@ -8,7 +8,6 @@
 #include "nodeinfo.h"
 
 using namespace std::chrono;
-using namespace std::__cxx11;
 
 const int times_to_ping = 6;
 
@@ -36,7 +35,7 @@ int tcping(nodeInfo *node)
 
     host = node->server;
     port = node->port;
-    writeLog(LOG_TYPE_TCPING, "Ping target: " + host + ":" + to_string(port) + ".");
+    writeLog(LOG_TYPE_TCPING, "Ping target: " + host + ":" + std::to_string(port) + ".");
 
     bool IPv6 = isIPv6(host);
 
@@ -55,7 +54,7 @@ int tcping(nodeInfo *node)
 
     addrstr = IPv6 ? "[" + addr + "]" : addr;
 
-    writeLog(LOG_TYPE_TCPING, "Start probing " + addrstr + ":" + to_string(port) + ".");
+    writeLog(LOG_TYPE_TCPING, "Start probing " + addrstr + ":" + std::to_string(port) + ".");
     int loopcounter = 0, succeedcounter = 0, failcounter = 0, totduration = 0;
     //simpleSend(addr, port, "."); //establish connection
     while((loopcounter < times_to_ping))
@@ -70,13 +69,13 @@ int tcping(nodeInfo *node)
             succeedcounter++;
             node->rawPing[loopcounter] = deltatime;
             totduration += deltatime;
-            writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + to_string(port) + "/tcp - Port is open - time=" + to_string(deltatime) + "ms");
+            writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + std::to_string(port) + "/tcp - Port is open - time=" + std::to_string(deltatime) + "ms");
         }
         else
         {
             failcounter++;
             node->rawPing[loopcounter] = 0;
-            writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + to_string(port) + "/tcp - No response - time=" + to_string(deltatime) + "ms");
+            writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + std::to_string(port) + "/tcp - No response - time=" + std::to_string(deltatime) + "ms");
         }
         draw_progress_tping(loopcounter, node->rawPing);
         loopcounter++;
@@ -99,8 +98,8 @@ int tcping(nodeInfo *node)
     node->pkLoss.assign(strtmp);
     snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
     node->avgPing.assign(strtmp);
-    writeLog(LOG_TYPE_TCPING, "Ping statistics for " + addrstr + ":" + to_string(port) + " : " \
-             + to_string(loopcounter) + " probes sent, " + to_string(succeedcounter) + " successful, " + to_string(failcounter) + " failed. " \
+    writeLog(LOG_TYPE_TCPING, "Ping statistics for " + addrstr + ":" + std::to_string(port) + " : " \
+             + std::to_string(loopcounter) + " probes sent, " + std::to_string(succeedcounter) + " successful, " + std::to_string(failcounter) + " failed. " \
              + "(" + node->pkLoss + " fail)");
     return SPEEDTEST_MESSAGE_GOTPING;
 }

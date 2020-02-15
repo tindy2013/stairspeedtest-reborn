@@ -395,7 +395,7 @@ void readConf(std::string path)
         vChild = split(ini.Get("custom_color_groups"), "|");
         if(vChild.size() >= 2)
         {
-            for(i = 0; i < vChild.size() - 1; i++)
+            for(i = 0; i < vChild.size(); i++)
             {
                 vArray = split(vChild[i], ",");
                 if(vArray.size() == 3)
@@ -413,7 +413,7 @@ void readConf(std::string path)
         vChild = split(ini.Get("custom_color_bounds"), "|");
         if(vChild.size() >= 2)
         {
-            for(i = 0; i < vChild.size() - 1; i++)
+            for(i = 0; i < vChild.size(); i++)
             {
                 custom_color_bounds.push_back(stoi(vChild[i]));
             }
@@ -975,7 +975,7 @@ int main(int argc, char* argv[])
     #ifndef _WIN32
     setsid();
     unshare(CLONE_NEWPID | CLONE_NEWUSER);
-    fileWrite("/proc/self/uid_map", "0 " + to_string(getuid()) + " 1", false);
+    fileWrite("/proc/self/uid_map", "0 " + std::to_string(getuid()) + " 1", false);
     int retVal = fork();
     if(retVal == -1)
     {

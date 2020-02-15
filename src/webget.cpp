@@ -7,8 +7,6 @@
 #include "logger.h"
 #include "socket.h"
 
-using namespace std::__cxx11;
-
 const int times_to_ping = 3;
 
 void draw_progress_sping(int progress, int *values)
@@ -211,7 +209,7 @@ long curlPost(std::string url, std::string data, std::string proxy)
 std::string buildSocks5ProxyString(std::string addr, int port, std::string username, std::string password)
 {
     std::string authstr = username != "" && password != "" ? username + ":" + password + "@" : "";
-    std::string proxystr = "socks5://" + authstr + addr + ":" + to_string(port);
+    std::string proxystr = "socks5://" + authstr + addr + ":" + std::to_string(port);
     return proxystr;
 }
 
@@ -279,7 +277,7 @@ int websitePing(nodeInfo *node, std::string url, std::string local_addr, int loc
             succeedcounter++;
             time_total += retval * 1000.0;
             node->rawSitePing[loop_times] = retval * 1000.0;
-            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Success - interval=" + to_string(node->rawSitePing[loop_times]) + "ms");
+            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Success - interval=" + std::to_string(node->rawSitePing[loop_times]) + "ms");
         }
         else
         {

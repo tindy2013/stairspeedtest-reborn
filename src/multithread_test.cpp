@@ -3,6 +3,7 @@
 #include <thread>
 #include <iostream>
 #include <mutex>
+#include <atomic>
 #include <unistd.h>
 
 #include <openssl/ssl.h>
@@ -16,7 +17,6 @@
 #include "nodeinfo.h"
 
 using namespace std::chrono;
-using namespace std::__cxx11;
 
 #define MAX_FILE_SIZE 512*1024*1024
 
@@ -25,9 +25,12 @@ const int times_to_ping = 10, fail_limit = 2;
 
 //for use of multi-thread socket test
 typedef std::lock_guard<std::mutex> guarded_mutex;
-int received_bytes = 0;
-int launched = 0, still_running = 0, buffer_size = 4096;
-bool EXIT_FLAG = false;
+//int received_bytes = 0;
+std::atomic_int received_bytes = 0;
+//int launched = 0, still_running = 0;
+std::atomic_int launched = 0, still_running = 0;
+//bool EXIT_FLAG = false;
+std::atomic_bool EXIT_FLAG = false;
 std::mutex thread_count_mutex, launched_mutex;
 
 #ifdef _WIN32
@@ -167,8 +170,10 @@ static inline void draw_progress_gping(int progress, int *values)
 
 int _thread_download(std::string host, int port, std::string uri, std::string localaddr, int localport, std::string username, std::string password, bool useTLS = false)
 {
-    launch_acc();
-    running_acc();
+    //launch_acc();
+    //running_acc();
+    launched++;
+    still_running++;
     char bufRecv[BUF_SIZE];
     int retVal, cur_len/*, recv_len = 0*/;
     SOCKET sHost;
@@ -209,7 +214,9 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
         }
         else
         {
-            SSL_write(ssl, request.data(), request.size());
+            retVal = SSL_write(ssl, request.data(), request.size());
+            if(retVal == SOCKET_ERROR)
+                goto end;
             while(1)
             {
                 cur_len = SSL_read(ssl, bufRecv, BUF_SIZE - 1);
@@ -226,22 +233,23 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
                 }
                 if(cur_len == 0)
                     break;
+                /*
                 append_recv_bytes(cur_len);
                 if(safe_read_exit_flag())
+                    break;
+                */
+                received_bytes += cur_len;
+                if(EXIT_FLAG)
                     break;
             }
         }
         SSL_clear(ssl);
-
     }
     else
     {
         retVal = Send(sHost, request.data(), request.size(), 0);
         if (SOCKET_ERROR == retVal)
-        {
-            closesocket(sHost);
-            return -1;
-        }
+            goto end;
         while(1)
         {
             cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
@@ -258,17 +266,21 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
             }
             if(cur_len == 0)
                 break;
-            //recv_len += cur_len;
+            /*
             append_recv_bytes(cur_len);
-            //if(recv_len >= MAX_FILE_SIZE) break;
             if(safe_read_exit_flag())
+                break;
+            */
+            received_bytes += cur_len;
+            if(EXIT_FLAG)
                 break;
         }
     }
 
 end:
     closesocket(sHost);
-    running_dec();
+    //running_dec();
+    still_running--;
     return 0;
 }
 
@@ -396,13 +408,15 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
 
     int running;
     std::thread threads[thread_count];
+    /*
 #ifdef _WIN32
     InitializeCriticalSection(&received_mutex);
     InitializeCriticalSection(&exit_flag_mutex);
 #endif // _WIN32
+    */
     for(i = 0; i != thread_count; i++)
     {
-        writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + to_string(i + 1) + ".");
+        writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + std::to_string(i + 1) + ".");
         threads[i] = std::thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
     }
     while(!safe_read_launched())
@@ -410,16 +424,22 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
 
     writeLog(LOG_TYPE_FILEDL, "All threads launched. Start accumulating data.");
     auto start = steady_clock::now();
-    int transferred_bytes = 0, last_bytes = 0, this_bytes = 0, max_speed = 0;
+    int transferred_bytes = 0, last_bytes = 0, this_bytes = 0, cur_recv_bytes = 0, max_speed = 0;
     for(i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
+        /*
         Lock(received_mutex); //stop the receive
         this_bytes = (received_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
         transferred_bytes = received_bytes;
         //cerr<<this_bytes<<" "<<last_bytes<<endl;
         sleep(5); //slow down to prevent some problem
         Unlock(received_mutex);
+        */
+        cur_recv_bytes = received_bytes;
+        this_bytes = (cur_recv_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
+        transferred_bytes = cur_recv_bytes;
+
         node->rawSpeed[i - 1] = this_bytes;
         if(i % 2 == 0)
         {
@@ -429,42 +449,53 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
         {
             last_bytes = this_bytes;
         }
-        running = safe_read_running();
-        writeLog(LOG_TYPE_FILEDL, "Running threads: " + to_string(running) + ", total received bytes: " + to_string(transferred_bytes) \
-                 + ", current received bytes: " + to_string(this_bytes) + ".");
+        //running = safe_read_running();
+        running = still_running;
+        writeLog(LOG_TYPE_FILEDL, "Running threads: " + std::to_string(running) + ", total received bytes: " + std::to_string(transferred_bytes) \
+                 + ", current received bytes: " + std::to_string(this_bytes) + ".");
         if(!running)
             break;
         draw_progress_dl(i, this_bytes);
     }
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
-    safe_set_exit_flag(); //terminate all threads right now
-    Lock(received_mutex); //lock it to prevent any further data writing
+    //safe_set_exit_flag(); //terminate all threads right now
+    EXIT_FLAG = true; //terminate all threads right now
+    //Lock(received_mutex); //lock it to prevent any further data writing
+    cur_recv_bytes = received_bytes;
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     //cerr<<deltatime<<" "<<received_bytes<<endl;
-    sleep(1); //slow down to prevent some problem
+    //sleep(1); //slow down to prevent some problem
+    /*
     node->totalRecvBytes = received_bytes;
     node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
+    */
+    node->totalRecvBytes = cur_recv_bytes;
+    node->avgSpeed = speedCalc(cur_recv_bytes * 1000.0 / deltatime);
     node->maxSpeed = speedCalc(max_speed);
-    Unlock(received_mutex); //unlock to make threads continue running
+    //Unlock(received_mutex); //unlock to make threads continue running
     if(node->avgSpeed == "0.00B")
     {
         node->avgSpeed = "N/A";
         node->maxSpeed = "N/A";
     }
-    writeLog(LOG_TYPE_FILEDL, "Downloaded " + to_string(received_bytes) + " bytes in " + to_string(deltatime) + " milliseconds.");
+    //writeLog(LOG_TYPE_FILEDL, "Downloaded " + std::to_string(received_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
+    writeLog(LOG_TYPE_FILEDL, "Downloaded " + std::to_string(cur_recv_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
     for(int i = 0; i < thread_count; i++)
     {
         if(threads[i].joinable())
             threads[i].join();//wait until all threads has exited
+        writeLog(LOG_TYPE_FILEDL, "Thread #" + std::to_string(i + 1) + " has exited.");
     }
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test completed.");
+    /*
 #ifdef _WIN32
     DeleteCriticalSection(&received_mutex);
     DeleteCriticalSection(&exit_flag_mutex);
 #endif // _WIN32
+    */
     return 0;
 }
 
@@ -502,7 +533,7 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     std::thread workers[2];
     for(i = 0; i < 1; i++)
     {
-        writeLog(LOG_TYPE_FILEUL, "Starting up worker thread #" + to_string(i + 1) + ".");
+        writeLog(LOG_TYPE_FILEUL, "Starting up worker thread #" + std::to_string(i + 1) + ".");
         workers[i] = std::thread(_thread_upload, host, port, uri, localaddr, localport, username, password, useTLS);
     }
     while(!safe_read_launched())
@@ -520,8 +551,8 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
         sleep(1); //slow down to prevent some problem
         Unlock(received_mutex);
         running = safe_read_running();
-        writeLog(LOG_TYPE_FILEUL, "Running worker threads: " + to_string(running) + ", total sent bytes: " + to_string(transferred_bytes) \
-                 + ", current sent bytes: " + to_string(this_bytes) + ".");
+        writeLog(LOG_TYPE_FILEUL, "Running worker threads: " + std::to_string(running) + ", total sent bytes: " + std::to_string(transferred_bytes) \
+                 + ", current sent bytes: " + std::to_string(this_bytes) + ".");
         if(!running)
             break;
         draw_progress_ul(i, this_bytes);
@@ -539,7 +570,7 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     {
         node->ulSpeed = "N/A";
     }
-    writeLog(LOG_TYPE_FILEUL, "Uploaded " + to_string(received_bytes) + " bytes in " + to_string(deltatime) + " milliseconds.");
+    writeLog(LOG_TYPE_FILEUL, "Uploaded " + std::to_string(received_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
     node->totalRecvBytes += received_bytes;
     Unlock(received_mutex); //unlock to make worker thread continue running
     for(auto &x : workers)
@@ -605,7 +636,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
                           "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
 
 
-    writeLog(LOG_TYPE_GPING, "Website ping started. Target: '" + target + "' . Proxy: '" + localaddr + ":" + to_string(localport) + "' .");
+    writeLog(LOG_TYPE_GPING, "Website ping started. Target: '" + target + "' . Proxy: '" + localaddr + ":" + std::to_string(localport) + "' .");
     int loopcounter = 0, succeedcounter = 0, failcounter = 0, totduration = 0;
     while(loopcounter < times_to_ping)
     {
@@ -627,7 +658,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
         {
             failcounter++;
             node->rawSitePing[loopcounter] = 0;
-            writeLog(LOG_TYPE_GPING, "ERROR: Connect to SOCKS5 server " + localaddr + ":" + to_string(localport) + " failed.");
+            writeLog(LOG_TYPE_GPING, "ERROR: Connect to SOCKS5 server " + localaddr + ":" + std::to_string(localport) + " failed.");
             goto end;
         }
         setTimeout(sHost, 5000);
@@ -642,7 +673,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
         {
             failcounter++;
             node->rawSitePing[loopcounter] = 0;
-            writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + to_string(port) + " through SOCKS5 server failed.");
+            writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
             goto end;
         }
 
@@ -667,7 +698,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
                 {
                     failcounter++;
                     node->rawSitePing[loopcounter] = 0;
-                    writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + to_string(port) + " through SOCKS5 server failed.");
+                    writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
                 }
                 else
                 {
@@ -680,14 +711,14 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
                     {
                         failcounter++;
                         node->rawSitePing[loopcounter] = 0;
-                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + to_string(deltatime) + "ms");
+                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
                     }
                     else
                     {
                         succeedcounter++;
                         node->rawSitePing[loopcounter] = deltatime;
                         totduration += deltatime;
-                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + to_string(deltatime) + "ms");
+                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
                     }
                 }
                 SSL_clear(ssl);
@@ -709,14 +740,14 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
             {
                 failcounter++;
                 node->rawSitePing[loopcounter] = 0;
-                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + to_string(deltatime) + "ms");
+                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
             }
             else
             {
                 succeedcounter++;
                 node->rawSitePing[loopcounter] = deltatime;
                 totduration += deltatime;
-                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + to_string(deltatime) + "ms");
+                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
 
             }
         }
@@ -733,7 +764,7 @@ end:
     snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
     node->sitePing.assign(strtmp);
     writeLog(LOG_TYPE_GPING, "Ping statistics of target " + target + " : " \
-             + to_string(loopcounter) + " probes sent, " + to_string(succeedcounter) + " successful, " + to_string(failcounter) + " failed. ");
+             + std::to_string(loopcounter) + " probes sent, " + std::to_string(succeedcounter) + " successful, " + std::to_string(failcounter) + " failed. ");
     writeLog(LOG_TYPE_GPING, "Website ping completed. Leaving.");
     return SPEEDTEST_MESSAGE_GOTGPING;
 }

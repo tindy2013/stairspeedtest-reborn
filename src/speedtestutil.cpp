@@ -11,7 +11,6 @@
 #include "rapidjson_extra.h"
 #include "ini_reader.h"
 
-using namespace std::__cxx11;
 using namespace rapidjson;
 using namespace YAML;
 
@@ -45,7 +44,9 @@ std::string vmessConstruct(std::string add, std::string port, std::string type, 
     std::string wsset = wsset_vmess;
     std::string tcpset = tcpset_vmess;
     std::string tlsset = tlsset_vmess;
-    base = replace_all_distinct(base, "?localport?", to_string(local_port));
+    host = trim(host);
+    path = trim(path);
+    base = replace_all_distinct(base, "?localport?", std::to_string(local_port));
     base = replace_all_distinct(base, "?add?", add);
     base = replace_all_distinct(base, "?port?", port);
     base = replace_all_distinct(base, "?id?", id);
@@ -105,7 +106,7 @@ std::string ssrConstruct(std::string group, std::string remarks, std::string rem
         base = config;
     else
         base = replace_all_distinct(base, "?config?", config);
-    base = replace_all_distinct(base, "?localport?", to_string(local_port));
+    base = replace_all_distinct(base, "?localport?", std::to_string(local_port));
 
     return base;
 }
@@ -134,7 +135,7 @@ std::string ssConstruct(std::string server, std::string port, std::string passwo
         base = config;
     else
         base = replace_all_distinct(base, "?config?", config);
-    base = replace_all_distinct(base, "?localport?", to_string(local_port));
+    base = replace_all_distinct(base, "?localport?", std::to_string(local_port));
 
     return base;
 }
