@@ -8,8 +8,7 @@ brew reinstall libev libsodium c-ares mbedtls
 
 git clone https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
-git submodule init
-git submodule update
+git submodule update --init
 ./autogen.sh
 CC=cc ./configure --disable-documentation
 make -j8
@@ -25,8 +24,7 @@ cd ../..
 
 git clone https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
-git submodule init
-git submodule update
+git submodule update --init
 ./autogen.sh > /dev/null
 CC=cc ./configure --disable-documentation > /dev/null
 make -j8 > /dev/null

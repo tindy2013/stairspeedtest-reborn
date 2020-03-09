@@ -71,7 +71,7 @@ void resultInit()
     resultPath = "results" PATH_SLASH + curtime + ".log";
 }
 
-void writeLog(int type, std::string content)
+void writeLog(int type, std::string content, int level)
 {
     std::string timestr = "[" + getTime(2) + "]", typestr = "[UNKNOWN]";
     switch(type)
@@ -145,7 +145,7 @@ void writeResult(nodeInfo *node, bool export_with_maxspeed)
 
 void resultEOF(std::string traffic, int worknodes, int totnodes)
 {
-    result_content += "Traffic used : " + traffic + ". Working Node(s) : [" + to_string(worknodes) + "/" + to_string(totnodes) + "]\n";
+    result_content += "Traffic used : " + traffic + ". Working Node(s) : [" + std::to_string(worknodes) + "/" + std::to_string(totnodes) + "]\n";
     result_content += "Generated at " + getTime(3) + "\n";
     result_content += "By Stair Speedtest " VERSION ".\n";
     writeToFile(resultPath,result_content,true);

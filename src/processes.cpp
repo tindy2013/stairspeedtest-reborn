@@ -84,7 +84,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     if(retval == FALSE)
         return false;
 
-    //sleep(500); //slow down to prevent some problem
+    sleep(100); //slow down to prevent some problem
     DWORD ExitCode = STILL_ACTIVE;
 
     do

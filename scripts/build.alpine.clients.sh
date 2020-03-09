@@ -18,8 +18,7 @@ cd ../..
 
 git clone https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
-git submodule init
-git submodule update
+git submodule update --init
 ./autogen.sh
 ./configure --disable-documentation
 make -j4

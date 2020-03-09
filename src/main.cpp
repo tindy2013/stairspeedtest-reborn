@@ -862,7 +862,7 @@ void addNodes(std::string link, bool multilink)
             getline(std::cin, strInput);
             if(strInput.size())
             {
-                custom_group = GBKToUTF8(strInput);
+                custom_group = ACPToUTF8(strInput);
                 writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
             }
         }
@@ -905,7 +905,7 @@ void addNodes(std::string link, bool multilink)
             getline(std::cin, strInput);
             if(strInput.size())
             {
-                custom_group = GBKToUTF8(strInput);
+                custom_group = ACPToUTF8(strInput);
                 writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
             }
         }
@@ -1038,7 +1038,7 @@ int main(int argc, char* argv[])
     else
     {
         getline(std::cin, link);
-        writeLog(LOG_TYPE_INFO, "Input data: " + GBKToUTF8(link));
+        writeLog(LOG_TYPE_INFO, "Input data: " + ACPToUTF8(link));
         if(rpcmode)
         {
             string_array webargs = split(link, "^");
