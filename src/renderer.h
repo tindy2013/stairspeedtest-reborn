@@ -21,6 +21,6 @@ extern std::vector<color> colorgroup;
 extern std::vector<int> bounds;
 extern bool export_as_ssrspeed;
 
-std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bool export_with_maxspeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style);
+std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, bool export_with_maxspeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style);
 
 #endif // RENDERER_H_INCLUDED

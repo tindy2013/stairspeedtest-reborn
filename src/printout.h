@@ -72,7 +72,7 @@ enum
 #define SOCKS_DEFAULT_GROUP "SocksProvider"
 #define HTTP_DEFAULT_GROUP "HTTPProvider"
 
-void printMsg(int index, nodeInfo *node, bool rpcmode);
+void printMsg(int index, nodeInfo &node, bool rpcmode);
 void printMsgWithDict(int index, bool rpcmode, std::vector<std::string> dict, std::vector<std::string> trans);
 void printMsgDirect(int index, bool rpcmode);
 

@@ -42,11 +42,13 @@ typedef sockaddr *LPSOCKADDR;
 
 #define BUF_SIZE 1024
 
+SOCKET initSocket(int af, int type, int protocol);
 int getNetworkType(std::string addr);
 int Send(SOCKET sHost, const char* data, int len, int flags);
 int Recv(SOCKET sHost, char* data, int len, int flags);
 int socks5_do_auth_userpass(SOCKET sHost, std::string user, std::string pass);
 int setTimeout(SOCKET s, int timeout);
+int setSocketBlocking(SOCKET s, bool blocking);
 int startConnect(SOCKET sHost, std::string addr, int port);
 int simpleSend(std::string addr, int port, std::string data);
 int send_simple(SOCKET sHost, std::string data);

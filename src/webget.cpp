@@ -164,7 +164,7 @@ std::string curlGet(std::string url, std::string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &data);
-    if(proxy != "")
+    if(proxy.size())
         curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
 
     curl_easy_perform(curl_handle);
@@ -191,7 +191,7 @@ long curlPost(std::string url, std::string data, std::string proxy)
     curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, data.size());
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 10L);
     curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
-    if(proxy != "")
+    if(proxy.size())
         curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
 
     res = curl_easy_perform(curl_handle);
@@ -208,7 +208,7 @@ long curlPost(std::string url, std::string data, std::string proxy)
 
 std::string buildSocks5ProxyString(std::string addr, int port, std::string username, std::string password)
 {
-    std::string authstr = username != "" && password != "" ? username + ":" + password + "@" : "";
+    std::string authstr = username.size() && password.size() ? username + ":" + password + "@" : "";
     std::string proxystr = "socks5://" + authstr + addr + ":" + std::to_string(port);
     return proxystr;
 }

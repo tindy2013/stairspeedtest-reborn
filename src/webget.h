@@ -20,7 +20,7 @@ std::string webGet(std::string url, std::string proxy = "");
 std::string httpGet(std::string host, std::string addr, std::string uri);
 std::string httpsGet(std::string host, std::string addr, std::string uri);
 long curlPost(std::string url, std::string data, std::string proxy);
-int websitePing(nodeInfo *node, std::string url, std::string local_addr, int local_port, std::string user, std::string pass);
+int websitePing(nodeInfo &node, std::string url, std::string local_addr, int local_port, std::string user, std::string pass);
 std::string buildSocks5ProxyString(std::string addr, int port, std::string username, std::string password);
 
 #endif // WEBGET_H_INCLUDED

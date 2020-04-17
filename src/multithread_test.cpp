@@ -181,7 +181,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
                           "Host: " + host + "\r\n"
                           "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
 
-    sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
+    sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         goto end;
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
@@ -295,7 +295,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
                           "Host: " + host + "\r\n\r\n";
     std::string post_data;
 
-    sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
+    sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         goto end;
     setTimeout(sHost, 5000);
@@ -381,11 +381,11 @@ int _thread_upload_curl(nodeInfo *node, std::string url, std::string proxy)
     return 0;
 }
 
-int perform_test(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password, int thread_count)
+int perform_test(nodeInfo &node, std::string localaddr, int localport, std::string username, std::string password, int thread_count)
 {
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test started.");
     //prep up vars first
-    std::string host, uri, testfile = node->testFile;
+    std::string host, uri, testfile = node.testFile;
     int port = 0, i;
     bool useTLS = false;
 
@@ -440,7 +440,7 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
         this_bytes = (cur_recv_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
         transferred_bytes = cur_recv_bytes;
 
-        node->rawSpeed[i - 1] = this_bytes;
+        node.rawSpeed[i - 1] = this_bytes;
         if(i % 2 == 0)
         {
             max_speed = std::max(max_speed, (this_bytes + last_bytes) / 2); //pick 2 speed point and get average before calculating max speed
@@ -469,17 +469,17 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
     //cerr<<deltatime<<" "<<received_bytes<<endl;
     //sleep(1); //slow down to prevent some problem
     /*
-    node->totalRecvBytes = received_bytes;
-    node->avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
+    node.totalRecvBytes = received_bytes;
+    node.avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
     */
-    node->totalRecvBytes = cur_recv_bytes;
-    node->avgSpeed = speedCalc(cur_recv_bytes * 1000.0 / deltatime);
-    node->maxSpeed = speedCalc(max_speed);
+    node.totalRecvBytes = cur_recv_bytes;
+    node.avgSpeed = speedCalc(cur_recv_bytes * 1000.0 / deltatime);
+    node.maxSpeed = speedCalc(max_speed);
     //Unlock(received_mutex); //unlock to make threads continue running
-    if(node->avgSpeed == "0.00B")
+    if(node.avgSpeed == "0.00B")
     {
-        node->avgSpeed = "N/A";
-        node->maxSpeed = "N/A";
+        node.avgSpeed = "N/A";
+        node.maxSpeed = "N/A";
     }
     //writeLog(LOG_TYPE_FILEDL, "Downloaded " + std::to_string(received_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
     writeLog(LOG_TYPE_FILEDL, "Downloaded " + std::to_string(cur_recv_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
@@ -499,11 +499,11 @@ int perform_test(nodeInfo *node, std::string localaddr, int localport, std::stri
     return 0;
 }
 
-int upload_test(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password)
+int upload_test(nodeInfo &node, std::string localaddr, int localport, std::string username, std::string password)
 {
     writeLog(LOG_TYPE_FILEUL, "Upload test started.");
     //prep up vars first
-    std::string host, uri, testfile = node->ulTarget;
+    std::string host, uri, testfile = node.ulTarget;
     int port = 0, i;
     bool useTLS = false;
 
@@ -565,13 +565,13 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     sleep(5); //slow down to prevent some problem
-    node->ulSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
-    if(node->ulSpeed == "0.00B")
+    node.ulSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
+    if(node.ulSpeed == "0.00B")
     {
-        node->ulSpeed = "N/A";
+        node.ulSpeed = "N/A";
     }
     writeLog(LOG_TYPE_FILEUL, "Uploaded " + std::to_string(received_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
-    node->totalRecvBytes += received_bytes;
+    node.totalRecvBytes += received_bytes;
     Unlock(received_mutex); //unlock to make worker thread continue running
     for(auto &x : workers)
         if(x.joinable())
@@ -584,17 +584,17 @@ int upload_test(nodeInfo *node, std::string localaddr, int localport, std::strin
     return 0;
 }
 
-int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password)
+int upload_test_curl(nodeInfo &node, std::string localaddr, int localport, std::string username, std::string password)
 {
     writeLog(LOG_TYPE_FILEUL, "Upload test started.");
-    std::string url = node->ulTarget;
+    std::string url = node.ulTarget;
     std::string proxy = buildSocks5ProxyString(localaddr, localport, username, password);
     writeLog(LOG_TYPE_FILEUL, "Starting up worker thread.");
 #ifdef _WIN32
     InitializeCriticalSection(&received_mutex);
     InitializeCriticalSection(&exit_flag_mutex);
 #endif // _WIN32
-    std::thread worker = std::thread(_thread_upload_curl, node, url, proxy);
+    std::thread worker = std::thread(_thread_upload_curl, &node, url, proxy);
     while(!safe_read_launched())
         sleep(20); //wait until worker thread starts up
 
@@ -611,7 +611,7 @@ int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::
     }
     std::cerr<<std::endl;
 
-    writeLog(LOG_TYPE_FILEUL, "Reported upload speed: " + node->ulSpeed);
+    writeLog(LOG_TYPE_FILEUL, "Reported upload speed: " + node.ulSpeed);
     if(worker.joinable())
         worker.join();//wait until worker thread has exited
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
@@ -622,13 +622,13 @@ int upload_test_curl(nodeInfo *node, std::string localaddr, int localport, std::
     return 0;
 }
 
-int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string username, std::string password, std::string target)
+int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string username, std::string password, std::string target)
 {
     char bufRecv[BUF_SIZE];
     int retVal, cur_len;
     SOCKET sHost;
     std::string host, uri;
-    int port = 0;
+    int port = 0, rawSitePing[10] = {};
     bool useTLS = false;
     urlParse(target, host, uri, port, useTLS);
     std::string request = "GET " + uri + " HTTP/1.1\r\n"
@@ -646,18 +646,18 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
             break;
         }
         auto start = steady_clock::now();
-        sHost = socket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
+        sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
         if(INVALID_SOCKET == sHost)
         {
             failcounter++;
-            node->rawSitePing[loopcounter] = 0;
+            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: Could not create socket.");
             goto end;
         }
         if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
         {
             failcounter++;
-            node->rawSitePing[loopcounter] = 0;
+            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: Connect to SOCKS5 server " + localaddr + ":" + std::to_string(localport) + " failed.");
             goto end;
         }
@@ -665,14 +665,14 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
         if(connectSocks5(sHost, username, password) == -1)
         {
             failcounter++;
-            node->rawSitePing[loopcounter] = 0;
+            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: SOCKS5 server authentication failed.");
             goto end;
         }
         if(connectThruSocks(sHost, host, port) == -1)
         {
             failcounter++;
-            node->rawSitePing[loopcounter] = 0;
+            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
             goto end;
         }
@@ -686,7 +686,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
             if(ctx == NULL)
             {
                 failcounter++;
-                node->rawSitePing[loopcounter] = 0;
+                rawSitePing[loopcounter] = 0;
                 writeLog(LOG_TYPE_GPING, "OpenSSL: " + std::string(ERR_error_string(ERR_get_error(), NULL)));
             }
             else
@@ -697,7 +697,7 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
                 if(SSL_connect(ssl) != 1)
                 {
                     failcounter++;
-                    node->rawSitePing[loopcounter] = 0;
+                    rawSitePing[loopcounter] = 0;
                     writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
                 }
                 else
@@ -710,13 +710,13 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
                     if(cur_len <= 0)
                     {
                         failcounter++;
-                        node->rawSitePing[loopcounter] = 0;
+                        rawSitePing[loopcounter] = 0;
                         writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
                     }
                     else
                     {
                         succeedcounter++;
-                        node->rawSitePing[loopcounter] = deltatime;
+                        rawSitePing[loopcounter] = deltatime;
                         totduration += deltatime;
                         writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
                     }
@@ -739,30 +739,31 @@ int sitePing(nodeInfo *node, std::string localaddr, int localport, std::string u
             if(cur_len <= 0)
             {
                 failcounter++;
-                node->rawSitePing[loopcounter] = 0;
+                rawSitePing[loopcounter] = 0;
                 writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
             }
             else
             {
                 succeedcounter++;
-                node->rawSitePing[loopcounter] = deltatime;
+                rawSitePing[loopcounter] = deltatime;
                 totduration += deltatime;
                 writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
 
             }
         }
 end:
-        draw_progress_gping(loopcounter, node->rawSitePing);
+        draw_progress_gping(loopcounter, rawSitePing);
         loopcounter++;
         closesocket(sHost);
     }
     std::cerr<<std::endl;
+    std::move(std::begin(rawSitePing), std::end(rawSitePing), node.rawSitePing);
     float pingval = 0.0;
     if(succeedcounter > 0)
         pingval = totduration * 1.0 / succeedcounter;
     char strtmp[16] = {};
     snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
-    node->sitePing.assign(strtmp);
+    node.sitePing.assign(strtmp);
     writeLog(LOG_TYPE_GPING, "Ping statistics of target " + target + " : " \
              + std::to_string(loopcounter) + " probes sent, " + std::to_string(succeedcounter) + " successful, " + std::to_string(failcounter) + " failed. ");
     writeLog(LOG_TYPE_GPING, "Website ping completed. Leaving.");

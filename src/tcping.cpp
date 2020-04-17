@@ -25,16 +25,17 @@ void draw_progress_tping(int progress, int values[6])
     std::cerr << " " << progress + 1 << "/" << times_to_ping << " " << values[progress] << "ms";
 }
 
-int tcping(nodeInfo *node)
+int tcping(nodeInfo &node)
 {
     writeLog(LOG_TYPE_TCPING, "TCP Ping begin.");
     int retVal;
+    int rawPing[6] = {};
 
     std::string host, addr, addrstr;
     int port;
 
-    host = node->server;
-    port = node->port;
+    host = node.server;
+    port = node.port;
     writeLog(LOG_TYPE_TCPING, "Ping target: " + host + ":" + std::to_string(port) + ".");
 
     bool IPv6 = isIPv6(host);
@@ -43,7 +44,7 @@ int tcping(nodeInfo *node)
     {
         writeLog(LOG_TYPE_TCPING, "Host name provided. Resolving into IP address.");
         addr = hostnameToIPAddr(host);
-        if(addr == "")
+        if(addr.empty())
             return SPEEDTEST_ERROR_NORESOLVE;
     }
     else
@@ -67,17 +68,17 @@ int tcping(nodeInfo *node)
         if(retVal != SOCKET_ERROR)
         {
             succeedcounter++;
-            node->rawPing[loopcounter] = deltatime;
+            rawPing[loopcounter] = deltatime;
             totduration += deltatime;
             writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + std::to_string(port) + "/tcp - Port is open - time=" + std::to_string(deltatime) + "ms");
         }
         else
         {
             failcounter++;
-            node->rawPing[loopcounter] = 0;
+            rawPing[loopcounter] = 0;
             writeLog(LOG_TYPE_TCPING, "Probing " + addrstr + ":" + std::to_string(port) + "/tcp - No response - time=" + std::to_string(deltatime) + "ms");
         }
-        draw_progress_tping(loopcounter, node->rawPing);
+        draw_progress_tping(loopcounter, rawPing);
         loopcounter++;
         if(loopcounter < times_to_ping)
         {
@@ -89,17 +90,18 @@ int tcping(nodeInfo *node)
 
     }
     std::cerr << std::endl;
+    std::move(std::begin(rawPing), std::end(rawPing), node.rawPing);
     float pingval = 0.0;
     if(succeedcounter > 0)
         pingval = totduration * 1.0 / succeedcounter;
     char strtmp[16] = {};
     float pkLoss = failcounter * 100.0 / times_to_ping;
     snprintf(strtmp, sizeof(strtmp), "%0.2f%%", pkLoss);
-    node->pkLoss.assign(strtmp);
+    node.pkLoss.assign(strtmp);
     snprintf(strtmp, sizeof(strtmp), "%0.2f", pingval);
-    node->avgPing.assign(strtmp);
+    node.avgPing.assign(strtmp);
     writeLog(LOG_TYPE_TCPING, "Ping statistics for " + addrstr + ":" + std::to_string(port) + " : " \
              + std::to_string(loopcounter) + " probes sent, " + std::to_string(succeedcounter) + " successful, " + std::to_string(failcounter) + " failed. " \
-             + "(" + node->pkLoss + " fail)");
+             + "(" + node.pkLoss + " fail)");
     return SPEEDTEST_MESSAGE_GOTPING;
 }

@@ -110,7 +110,7 @@ void writeLog(int type, std::string content, int level)
         typestr = "[RENDER]";
         break;
     }
-    content = timestr + typestr + content;
+    content = timestr + typestr + content + "\n";
     fileWrite(logPath, content, false);
 }
 
@@ -153,7 +153,7 @@ void resultEOF(std::string traffic, int worknodes, int totnodes)
 
 void exportResult(std::string outpath, std::string utiljspath, std::string stylepath, bool export_with_maxspeed)
 {
-    if(utiljspath == "")
+    if(utiljspath.empty())
         return;
     std::string strInput;
     vector<std::string> params;
@@ -179,7 +179,7 @@ void exportResult(std::string outpath, std::string utiljspath, std::string style
     outfile<<"</script></head><body onload=\"loadevent()\"><table id=\"table\" rules=\"all\">";
     while(getline(result_content_stream, strInput))
     {
-        if(strInput == "")
+        if(strInput.empty())
             continue;
         if(strFind(strInput, "avgspeed"))
             continue;

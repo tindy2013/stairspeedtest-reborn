@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <algorithm>
+#include <atomic>
 
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
@@ -17,9 +18,7 @@
 #include "renderer.h"
 #include "speedtestutil.h"
 
-typedef std::lock_guard<std::mutex> guarded_mutex;
-std::mutex start_flag_mutex;
-bool start_flag = false;
+std::atomic<bool> start_flag = false;
 
 //variables from main
 extern std::vector<nodeInfo> allNodes;
@@ -32,25 +31,13 @@ extern string_array custom_exclude_remarks, custom_include_remarks;
 
 //functions from main
 void addNodes(std::string link, bool multilink);
-void rewriteNodeID(std::vector<nodeInfo> *nodes);
-void batchTest(std::vector<nodeInfo> *nodes);
+void rewriteNodeID(std::vector<nodeInfo> &nodes);
+void batchTest(std::vector<nodeInfo> &nodes);
 
 //webui variables
 std::vector<nodeInfo> targetNodes, testedNodes;
 std::string server_status = "stopped";
 nodeInfo current_node;
-
-bool safe_get_start_flag()
-{
-    guarded_mutex guard(start_flag_mutex);
-    return start_flag;
-}
-
-void safe_set_start_flag(bool target)
-{
-    guarded_mutex guard(start_flag_mutex);
-    start_flag = target;
-}
 
 nodeInfo find_node(std::string &group, std::string &remarks, std::string &server, int &server_port)
 {
@@ -86,7 +73,7 @@ void ssrspeed_regenerate_node_list(rapidjson::Document &json)
             }
         }
     }
-    rewriteNodeID(&targetNodes);
+    rewriteNodeID(targetNodes);
 }
 
 double ssrspeed_get_speed_number(std::string speed)
@@ -107,6 +94,7 @@ double ssrspeed_get_speed_number(std::string speed)
 
 void json_write_node(rapidjson::Writer<rapidjson::StringBuffer> &writer, nodeInfo &node)
 {
+    geoIPInfo inbound = node.inboundGeoIP.get(), outbound = node.outboundGeoIP.get();
     int counter = 0, total = 0;
     writer.Key("group");
     writer.String(node.group.data());
@@ -154,16 +142,18 @@ void json_write_node(rapidjson::Writer<rapidjson::StringBuffer> &writer, nodeInf
     writer.Key("address");
     writer.String(std::string(node.server + ":" + std::to_string(node.port)).data());
     writer.Key("info");
-    writer.String("N/A");
+    writer.String(std::string((inbound.country.size() ? inbound.country : std::string("N/A")) + " " + \
+                              (inbound.city.size() ? inbound.city : std::string("N/A")) + ", " + \
+                              (inbound.organization.size() ? inbound.organization : std::string("N/A"))).data());
     writer.EndObject();
     writer.Key("outbound");
     writer.StartObject();
     writer.Key("address");
-    writer.String(node.outboundGeoIP.ip.data());
+    writer.String(outbound.ip.data());
     writer.Key("info");
-    writer.String(std::string((node.outboundGeoIP.country.size() ? node.outboundGeoIP.country : std::string("N/A")) + " " + \
-                              (node.outboundGeoIP.city.size() ? node.outboundGeoIP.city : std::string("N/A")) + ", " + \
-                              (node.outboundGeoIP.organization.size() ? node.outboundGeoIP.organization : std::string("N/A"))).data());
+    writer.String(std::string((outbound.country.size() ? outbound.country : std::string("N/A")) + " " + \
+                              (outbound.city.size() ? outbound.city : std::string("N/A")) + ", " + \
+                              (outbound.organization.size() ? outbound.organization : std::string("N/A"))).data());
     writer.EndObject();
     writer.EndObject();
     writer.Key("dspeed");
@@ -180,7 +170,7 @@ std::string ssrspeed_generate_results(std::vector<nodeInfo> &nodes)
 
     writer.StartObject();
     writer.Key("status");
-    writer.String(server_status.data());
+    writer.String(start_flag ? "running" : "stopped");
     writer.Key("current");
     writer.StartObject();
     for(nodeInfo &x : nodes)
@@ -300,7 +290,7 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
 
     append_response("GET", "/status", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        return server_status;
+        return start_flag ? "running" : "stopped";
     });
 
     append_response("GET", "/", "REDIRECT", [](RESPONSE_CALLBACK_ARGS) -> std::string
@@ -325,7 +315,7 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
 
     append_response("POST", "/readsubscriptions", "text/plain;charset=utf-8", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        if(server_status == "running")
+        if(start_flag)
             return "running";
         rapidjson::Document json;
         std::string suburl;
@@ -340,7 +330,7 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
     {
         eraseElements(allNodes);
         fileWrite("received.txt", getFormData(postdata), true);
-        if(server_status == "running")
+        if(start_flag)
             return "running";
         else
         {
@@ -353,7 +343,9 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
 
     append_response("POST", "/start", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        server_status = "running";
+        if(start_flag)
+            return "running";
+        start_flag = true;
         rapidjson::Document json;
         json.Parse(postdata.data());
         std::string test_mode = GetMember(json, "testMode"), sort_method = GetMember(json, "sortMethod"), group = GetMember(json, "group"), exp_color = GetMember(json, "colors");
@@ -365,12 +357,12 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
         std::transform(sort_method.begin(), sort_method.end(), sort_method.begin(), ::tolower);
         export_sort_method = replace_all_distinct(sort_method, "reverse_", "r");
         custom_group = group;
-        if(exp_color != "")
+        if(exp_color.size())
             export_color_style = exp_color;
 
         ssrspeed_regenerate_node_list(json);
-        batchTest(&targetNodes);
-        server_status = "stopped";
+        batchTest(targetNodes);
+        start_flag = false;
         return "done";
     });
 

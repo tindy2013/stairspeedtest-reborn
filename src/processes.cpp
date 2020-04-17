@@ -75,7 +75,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     {
         GetCurrentDirectory(512, curdir);
         path = std::string(curdir) + "\\";
-        if(runpath != "")
+        if(runpath.size())
             path += runpath + "\\";
     }
     cmdstr = const_cast<char*>(command.data());
@@ -84,7 +84,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     if(retval == FALSE)
         return false;
 
-    sleep(100); //slow down to prevent some problem
+    sleep(800); //slow down to prevent some problem
     DWORD ExitCode = STILL_ACTIVE;
 
     do

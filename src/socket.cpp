@@ -62,6 +62,17 @@ int connect_timeout = 3000;
 /* packet operation macro */
 #define PUT_BYTE(ptr, data) (*(unsigned char* )(ptr) = (unsigned char)(data))
 
+SOCKET initSocket(int af, int type, int protocol)
+{
+    SOCKET s = socket(af, type, protocol);
+    int one = 1;
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(int));
+#ifdef SO_NOSIGPIPE
+    setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, (char *)&one, sizeof(int));
+#endif
+    return s;
+}
+
 int Send(SOCKET sHost, const char* data, int len, int flags)
 {
 #ifdef _WIN32
@@ -144,7 +155,7 @@ int connect_adv(SOCKET sockfd, const struct sockaddr* addr, int addrsize)
 {
     int ret = -1;
     int error = 1;
-    timeval tm;
+    struct timeval tm;
     fd_set set;
 
     int len = sizeof(int);
@@ -394,7 +405,7 @@ int connectThruHTTP(SOCKET sHost, std::string username, std::string password, st
     char bufRecv[BUF_SIZE] = {};
     std::string request = "CONNECT " + dsthost + ":" + std::to_string(dstport) + " HTTP/1.1\r\n";
     std::string authstr = "Authorization: Basic " + base64_encode(username + ":" + password) + "\r\n";
-    if(username != "" && password != "")
+    if(username.size() && password.size())
         request += authstr;
     request += "\r\n";
 

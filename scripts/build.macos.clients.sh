@@ -36,6 +36,8 @@ cd ../..
 
 git clone https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
+git checkout -b latest origin/Akkariiin/develop
+./autogen.sh > /dev/null
 export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
 export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
 CC=cc ./configure --disable-documentation --with-openssl=/usr/local/opt/openssl@1.1 > /dev/null

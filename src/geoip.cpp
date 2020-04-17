@@ -16,7 +16,7 @@ geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
     geoIPInfo info;
     Document json;
 
-    if(address == "")
+    if(address.empty())
     {
         writeLog(LOG_TYPE_GEOIP, "No address provided, getting GeoIP through proxy '" + proxy + "'.");
         strRet = webGet("https://api.ip.sb/geoip", proxy);
@@ -29,7 +29,7 @@ geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
             {
                 writeLog(LOG_TYPE_GEOIP, "Found host name. Resolving into IP address.");
                 address = hostnameToIPAddr(ip);
-                if(address == "")
+                if(address.empty())
                 {
                     writeLog(LOG_TYPE_GEOIP, "Host name resolve error. Leaving.");
                     return info;
@@ -43,7 +43,7 @@ geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
         writeLog(LOG_TYPE_GEOIP, "Getting GeoIP of '" + address + "' through proxy '" + proxy + "'.");
         strRet = webGet("https://api.ip.sb/geoip/" + address, proxy);
     }
-    if(strRet == "")
+    if(strRet.empty())
     {
         writeLog(LOG_TYPE_GEOIP, "No GeoIP result. Leaving.");
         return info;

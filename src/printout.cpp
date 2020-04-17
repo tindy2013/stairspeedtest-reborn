@@ -127,7 +127,7 @@ std::string lookUp(int index, bool rpcmode)
     }
 }
 
-void printMsg(int index, nodeInfo *node, bool rpcmode)
+void printMsg(int index, nodeInfo &node, bool rpcmode)
 {
     std::string printout;
     printout = lookUp(index, rpcmode);
@@ -135,16 +135,16 @@ void printMsg(int index, nodeInfo *node, bool rpcmode)
     {
         return;
     }
-    printout = replace_all_distinct(printout, "?group?", trim(node->group));
-    printout = replace_all_distinct(printout, "?remarks?", trim(node->remarks));
-    printout = replace_all_distinct(printout, "?id?", std::to_string(node->id));
-    printout = replace_all_distinct(printout, "?avgping?", node->avgPing);
-    printout = replace_all_distinct(printout, "?pkloss?", node->pkLoss);
-    printout = replace_all_distinct(printout, "?siteping?", node->sitePing);
-    printout = replace_all_distinct(printout, "?speed?", node->avgSpeed);
-    printout = replace_all_distinct(printout, "?maxspeed?", node->maxSpeed);
-    printout = replace_all_distinct(printout, "?ulspeed?", node->ulSpeed);
-    printout = replace_all_distinct(printout, "?traffic?", node->traffic);
+    printout = replace_all_distinct(printout, "?group?", trim(node.group));
+    printout = replace_all_distinct(printout, "?remarks?", trim(node.remarks));
+    printout = replace_all_distinct(printout, "?id?", std::to_string(node.id));
+    printout = replace_all_distinct(printout, "?avgping?", node.avgPing);
+    printout = replace_all_distinct(printout, "?pkloss?", node.pkLoss);
+    printout = replace_all_distinct(printout, "?siteping?", node.sitePing);
+    printout = replace_all_distinct(printout, "?speed?", node.avgSpeed);
+    printout = replace_all_distinct(printout, "?maxspeed?", node.maxSpeed);
+    printout = replace_all_distinct(printout, "?ulspeed?", node.ulSpeed);
+    printout = replace_all_distinct(printout, "?traffic?", node.traffic);
     if(rpcmode)
         printout = replace_all_distinct(printout, "\\", "\\\\");
     std::cout<<printout;

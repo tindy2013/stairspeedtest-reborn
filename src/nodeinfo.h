@@ -2,8 +2,50 @@
 #define NODEINFO_H_INCLUDED
 
 #include <string>
+#include <future>
 
 #include "geoip.h"
+
+class GeoIPHelper
+{
+public:
+
+    void set(std::shared_future<geoIPInfo> future)
+    {
+        _priv_inter_future = future;
+        _priv_set = true;
+    }
+
+    geoIPInfo get()
+    {
+        if(!_priv_set)
+            return geoIPInfo();
+        if(!_priv_fetched)
+        {
+            _priv_inter_store = _priv_inter_future.get();
+            _priv_fetched = true;
+        }
+        return _priv_inter_store;
+    }
+
+    GeoIPHelper()
+    {
+        _priv_fetched = false;
+    }
+
+    GeoIPHelper(std::shared_future<geoIPInfo> future)
+    {
+        _priv_fetched = false;
+        set(future);
+    }
+
+    ~GeoIPHelper() = default;
+
+private:
+    bool _priv_fetched = false, _priv_set = false;
+    std::shared_future<geoIPInfo> _priv_inter_future = std::future<geoIPInfo>();
+    geoIPInfo _priv_inter_store;
+};
 
 struct nodeInfo
 {
@@ -28,8 +70,8 @@ struct nodeInfo
     int rawSitePing[10] = {};
     std::string sitePing = "0.00";
     std::string traffic;
-    geoIPInfo inboundGeoIP;
-    geoIPInfo outboundGeoIP;
+    GeoIPHelper inboundGeoIP;
+    GeoIPHelper outboundGeoIP;
     std::string testFile;
     std::string ulTarget;
 };

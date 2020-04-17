@@ -168,7 +168,7 @@ std::string secondToString(int duration)
 
 int getSpeed(std::string speed)
 {
-    if(speed == "")
+    if(speed.empty())
         return 0;
     double speedval = 1.0;
     if(speed.find("MB") != std::string::npos)
@@ -260,7 +260,7 @@ void test()
 */
 #ifndef _FAST_RENDER
 
-std::string exportRender(std::string resultpath, std::vector<nodeInfo> nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style)
+std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style)
 {
     std::string pngname = replace_all_distinct(resultpath, ".log", ".png");
     nodeInfo node;
