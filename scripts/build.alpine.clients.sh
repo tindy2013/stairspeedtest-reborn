@@ -38,7 +38,7 @@ gcc ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a -o ssr-l
 mv ssr-local ../../base/tools/clients/
 cd ../..
 
-if [[ `uname -m` = "x86_64" ]];then
+if [[ "$ARCH" = "x86_64" ]];then
     curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip
     curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_amd64.zip
     else if [[ "$ARCH" = "x86" ]];then

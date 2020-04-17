@@ -18,6 +18,7 @@ cd ..
 
 cmake .
 make -j4
+rm stairspeedtest
 g++ -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o  -static -lpcre2-8 -levent -lyaml-cpp -lPNGwriter -lpng -lfreetype -lcurl -lnghttp2 -lssl -lcrypto -lz -lbz2 -ldl -lpthread -O3 -s  
 
 if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
@@ -26,6 +27,6 @@ if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
 	cd base
 	chmod +rx stairspeedtest *.sh
 	chmod +r *
-
-	tar czf ../stairspeedtest_reborn_linux64.tar.gz *
+  cd ..
+  mv base stairspeedtest
 fi

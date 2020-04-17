@@ -33,6 +33,7 @@ cp /usr/local/lib/libfreetype.a .
 export CMAKE_CXX_FLAGS="-I/usr/local/include -I/usr/local/opt/openssl@1.1/include -I/usr/local/opt/curl/include"
 cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 .
 make -j8
+rm stairspeedtest
 c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o libpcre2-8.a libevent.a libcurl.a libPNGwriter.a libpng.a libfreetype.a libz.a libssl.a libcrypto.a libyaml-cpp.a libbz2.a -ldl -lpthread -O3
 
 if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
@@ -41,9 +42,8 @@ if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
 	cd base
 	chmod +rx stairspeedtest *.sh
 	chmod +r *
-
-	tar czf ../stairspeedtest_reborn_darwin64.tar.gz *
-	cd ..
+  cd ..
+  mv base stairspeedtest
 fi
 
 set +xe
