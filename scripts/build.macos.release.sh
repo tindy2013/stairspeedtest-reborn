@@ -8,7 +8,7 @@ git clone https://github.com/curl/curl
 cd curl
 #./buildconf > /dev/null
 #./configure --with-ssl=/usr/local/opt/openssl@1.1 --without-mbedtls --disable-ldap --disable-ldaps --disable-rtsp --without-libidn2 > /dev/null
-cmake -DHTTP_ONLY=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 . > /dev/null
+cmake -DHTTP_ONLY=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 -DCMAKE_USE_LIBSSH2=OFF . > /dev/null
 make -j8 > /dev/null
 cd ..
 
