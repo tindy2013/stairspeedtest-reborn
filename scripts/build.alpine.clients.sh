@@ -1,8 +1,9 @@
 #!/bin/bash
+
 mkdir base/tools/clients
 
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool curl
-apk add openssl-dev openssl-libs-static libev-dev pcre-dev libsodium-dev libsodium-static c-ares-dev libevent-dev libevent-static mbedtls-dev mbedtls-static
+apk add openssl-dev openssl-libs-static libev-dev pcre-dev libsodium-dev libsodium-static c-ares-dev libevent-dev libevent-static mbedtls-dev mbedtls-static boost-dev boost-static mariadb-dev mariadb-static
 
 git clone https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
@@ -37,6 +38,14 @@ cd src
 gcc ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a -o ssr-local -lpcre -lssl -lcrypto -lev -lsodium -s -static
 mv ssr-local ../../base/tools/clients/
 cd ../..
+
+git clone https://github.com/trojan-gfw/trojan
+cd trojan
+cmake -DDEFAULT_CONFIG=config.json -DFORCE_TCP_FASTOPEN=ON .
+make -j4
+g++ CMakeFiles/trojan.dir/src/*.o CMakeFiles/trojan.dir/src/core/*.o CMakeFiles/trojan.dir/src/proto/*.o CMakeFiles/trojan.dir/src/session/*.o CMakeFiles/trojan.dir/src/ssl/*.o -o trojan -static -lmysqlclient -lboost_program_options -lssl -lcrypto -lz -s
+mv trojan ../base/tools/clients/
+cd ..
 
 if [[ "$ARCH" = "x86_64" ]];then
     curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-64.zip

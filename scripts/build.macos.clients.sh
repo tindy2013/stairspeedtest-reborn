@@ -57,6 +57,10 @@ unzip v2ray-macos.zip v2ray v2ctl
 mv v2ray base/tools/clients
 mv v2ctl base/tools/clients
 
+curl -LO https://github.com/trojan-gfw/trojan/releases/download/v1.15.1/trojan-1.15.1-macos.zip
+unzip trojan*.zip trojan/trojan
+mv trojan/trojan base/tools/clients
+
 curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-darwin_amd64.zip
 unzip websocketd-0.3.0-darwin_amd64.zip websocketd
 mv websocketd base/tools/gui/
