@@ -33,6 +33,7 @@ IF(HAVE_MSG_NOSIGNAL)
 ENDIF()
 
 ADD_EXECUTABLE(stairspeedtest 
+	src/confbuild.cpp
 	src/geoip.cpp
 	src/logger.cpp
 	src/main.cpp

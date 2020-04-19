@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <queue>
 #include <signal.h>
 
 #include "misc.h"
@@ -23,7 +24,7 @@ typedef pid_t HANDLE;
 
 //Runner runner;
 
-HANDLE hProc = 0;
+std::queue<HANDLE> handles;
 #ifdef _WIN32
 HANDLE job = 0;
 #else
@@ -84,7 +85,7 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     if(retval == FALSE)
         return false;
 
-    sleep(800); //slow down to prevent some problem
+    sleep(600); //slow down to prevent some problem
     DWORD ExitCode = STILL_ACTIVE;
 
     do
@@ -102,11 +103,12 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     AssignProcessToJobObject(job, pi.hProcess);
     SetInformationJobObject(job, JobObjectExtendedLimitInformation, &job_limits, sizeof(job_limits));
 
-    hProc = pi.hProcess;
+    // save handle to queue
+    handles.push(pi.hProcess);
     if(wait)
     {
-        WaitForSingleObject(hProc, INFINITE);
-        CloseHandle(hProc);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
     }
     return retval;
 
@@ -132,16 +134,21 @@ bool runProgram(std::string command, std::string runpath, bool wait)
 
 void killByHandle()
 {
-#ifdef _WIN32
-    if(hProc != NULL)
+    while(!handles.empty())
     {
-        if(TerminateProcess(hProc, 0))
-            CloseHandle(hProc);
-    }
+        HANDLE hProc = handles.front();
+#ifdef _WIN32
+        if(hProc != NULL)
+        {
+            if(TerminateProcess(hProc, 0))
+                CloseHandle(hProc);
+        }
 #else
-    if(hProc != 0)
-        kill(hProc, SIGTERM);
+        if(hProc != 0)
+            kill(hProc, SIGTERM);
 #endif // _WIN32
+        handles.pop();
+    }
 }
 
 /*

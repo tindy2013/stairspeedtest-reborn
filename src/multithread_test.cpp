@@ -25,94 +25,9 @@ const int times_to_ping = 10, fail_limit = 2;
 
 //for use of multi-thread socket test
 typedef std::lock_guard<std::mutex> guarded_mutex;
-//int received_bytes = 0;
 std::atomic_int received_bytes = 0;
-//int launched = 0, still_running = 0;
 std::atomic_int launched = 0, still_running = 0;
-//bool EXIT_FLAG = false;
 std::atomic_bool EXIT_FLAG = false;
-std::mutex thread_count_mutex, launched_mutex;
-
-#ifdef _WIN32
-CRITICAL_SECTION received_mutex, exit_flag_mutex;
-
-static inline void Lock(CRITICAL_SECTION &x)
-{
-    EnterCriticalSection(&x);
-}
-static inline void Unlock(CRITICAL_SECTION &x)
-{
-    LeaveCriticalSection(&x);
-}
-#else
-std::mutex received_mutex, exit_flag_mutex;
-
-static inline void Lock(std::mutex &x)
-{
-    x.lock();
-}
-static inline void Unlock(std::mutex &x)
-{
-    x.unlock();
-}
-#endif // _WIN32
-
-static inline void launch_acc()
-{
-    guarded_mutex guard(launched_mutex);
-    launched++;
-}
-
-static inline void running_acc()
-{
-    guarded_mutex guard(thread_count_mutex);
-    still_running++;
-}
-
-static inline void running_dec()
-{
-    guarded_mutex guard(thread_count_mutex);
-    still_running--;
-}
-
-static inline int safe_read_running()
-{
-    int retVal;
-    guarded_mutex guard(thread_count_mutex);
-    retVal = still_running;
-    return retVal;
-}
-
-static inline int safe_read_launched()
-{
-    int retVal;
-    guarded_mutex guard(launched_mutex);
-    retVal = launched;
-    return retVal;
-}
-
-static inline bool safe_read_exit_flag()
-{
-    bool retVal;
-    Lock(exit_flag_mutex);
-    retVal = EXIT_FLAG;
-    Unlock(exit_flag_mutex);
-    return retVal;
-}
-
-static inline void safe_set_exit_flag()
-{
-    Lock(exit_flag_mutex);
-    EXIT_FLAG = true;
-    Unlock(exit_flag_mutex);
-}
-
-static inline void append_recv_bytes(int received)
-{
-    Lock(received_mutex);
-    received_bytes += received;
-    Unlock(received_mutex);
-}
 
 static inline void draw_progress_dl(int progress, int this_bytes)
 {
@@ -233,11 +148,6 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
                 }
                 if(cur_len == 0)
                     break;
-                /*
-                append_recv_bytes(cur_len);
-                if(safe_read_exit_flag())
-                    break;
-                */
                 received_bytes += cur_len;
                 if(EXIT_FLAG)
                     break;
@@ -266,11 +176,6 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
             }
             if(cur_len == 0)
                 break;
-            /*
-            append_recv_bytes(cur_len);
-            if(safe_read_exit_flag())
-                break;
-            */
             received_bytes += cur_len;
             if(EXIT_FLAG)
                 break;
@@ -279,15 +184,14 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
 
 end:
     closesocket(sHost);
-    //running_dec();
     still_running--;
     return 0;
 }
 
 int _thread_upload(std::string host, int port, std::string uri, std::string localaddr, int localport, std::string username, std::string password, bool useTLS = false)
 {
-    launch_acc();
-    running_acc();
+    launched++;
+    still_running++;
     int retVal, cur_len;
     SOCKET sHost;
     std::string request = "POST " + uri + " HTTP/1.1\r\n"
@@ -336,8 +240,8 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
                 {
                     break;
                 }
-                append_recv_bytes(cur_len);
-                if(safe_read_exit_flag())
+                received_bytes += cur_len;
+                if(EXIT_FLAG)
                     break;
             }
         }
@@ -359,25 +263,25 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
             {
                 break;
             }
-            append_recv_bytes(cur_len);
-            if(safe_read_exit_flag())
+            received_bytes += cur_len;
+            if(EXIT_FLAG)
                 break;
         }
     }
 
 end:
     closesocket(sHost);
-    running_dec();
+    still_running--;
     return 0;
 }
 
 int _thread_upload_curl(nodeInfo *node, std::string url, std::string proxy)
 {
-    launch_acc();
-    running_acc();
+    launched++;
+    still_running++;
     long retVal = curlPost(url, rand_str(8388608), proxy);
     node->ulSpeed = speedCalc(retVal * 1.0);
-    running_dec();
+    still_running--;
     return 0;
 }
 
@@ -408,18 +312,13 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
 
     int running;
     std::thread threads[thread_count];
-    /*
-#ifdef _WIN32
-    InitializeCriticalSection(&received_mutex);
-    InitializeCriticalSection(&exit_flag_mutex);
-#endif // _WIN32
-    */
+    launched = 0;
     for(i = 0; i != thread_count; i++)
     {
         writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + std::to_string(i + 1) + ".");
         threads[i] = std::thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
     }
-    while(!safe_read_launched())
+    while(!launched)
         sleep(20); //wait until any one of the threads start up
 
     writeLog(LOG_TYPE_FILEDL, "All threads launched. Start accumulating data.");
@@ -428,14 +327,6 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     for(i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
-        /*
-        Lock(received_mutex); //stop the receive
-        this_bytes = (received_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
-        transferred_bytes = received_bytes;
-        //cerr<<this_bytes<<" "<<last_bytes<<endl;
-        sleep(5); //slow down to prevent some problem
-        Unlock(received_mutex);
-        */
         cur_recv_bytes = received_bytes;
         this_bytes = (cur_recv_bytes - transferred_bytes) * 2; //these bytes were received in 0.5s
         transferred_bytes = cur_recv_bytes;
@@ -449,7 +340,6 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
         {
             last_bytes = this_bytes;
         }
-        //running = safe_read_running();
         running = still_running;
         writeLog(LOG_TYPE_FILEDL, "Running threads: " + std::to_string(running) + ", total received bytes: " + std::to_string(transferred_bytes) \
                  + ", current received bytes: " + std::to_string(this_bytes) + ".");
@@ -459,23 +349,14 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     }
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
-    //safe_set_exit_flag(); //terminate all threads right now
     EXIT_FLAG = true; //terminate all threads right now
-    //Lock(received_mutex); //lock it to prevent any further data writing
-    cur_recv_bytes = received_bytes;
+    cur_recv_bytes = received_bytes; //save current received byte
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
-    //cerr<<deltatime<<" "<<received_bytes<<endl;
-    //sleep(1); //slow down to prevent some problem
-    /*
-    node.totalRecvBytes = received_bytes;
-    node.avgSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
-    */
     node.totalRecvBytes = cur_recv_bytes;
     node.avgSpeed = speedCalc(cur_recv_bytes * 1000.0 / deltatime);
     node.maxSpeed = speedCalc(max_speed);
-    //Unlock(received_mutex); //unlock to make threads continue running
     if(node.avgSpeed == "0.00B")
     {
         node.avgSpeed = "N/A";
@@ -489,13 +370,8 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
             threads[i].join();//wait until all threads has exited
         writeLog(LOG_TYPE_FILEDL, "Thread #" + std::to_string(i + 1) + " has exited.");
     }
+    /// don't for threads to exit, killing the client will make connect/send/recv fail and stop
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test completed.");
-    /*
-#ifdef _WIN32
-    DeleteCriticalSection(&received_mutex);
-    DeleteCriticalSection(&exit_flag_mutex);
-#endif // _WIN32
-    */
     return 0;
 }
 
@@ -504,7 +380,7 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     writeLog(LOG_TYPE_FILEUL, "Upload test started.");
     //prep up vars first
     std::string host, uri, testfile = node.ulTarget;
-    int port = 0, i;
+    int port = 0, i, running;
     bool useTLS = false;
 
     writeLog(LOG_TYPE_FILEUL, "Upload destination: " + testfile);
@@ -524,33 +400,27 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
         writeLog(LOG_TYPE_FILEUL, "Found HTTP URL.");
     }
 
-#ifdef _WIN32
-    InitializeCriticalSection(&received_mutex);
-    InitializeCriticalSection(&exit_flag_mutex);
-#endif // _WIN32
-
-    int running;
     std::thread workers[2];
+    launched = 0;
     for(i = 0; i < 1; i++)
     {
         writeLog(LOG_TYPE_FILEUL, "Starting up worker thread #" + std::to_string(i + 1) + ".");
         workers[i] = std::thread(_thread_upload, host, port, uri, localaddr, localport, username, password, useTLS);
     }
-    while(!safe_read_launched())
+    while(!launched)
         sleep(20); //wait until worker thread starts up
 
     writeLog(LOG_TYPE_FILEUL, "Worker threads launched. Start accumulating data.");
     auto start = steady_clock::now();
-    int transferred_bytes = 0, this_bytes = 0;
+    int transferred_bytes = 0, this_bytes = 0, cur_sent_bytes = 0;
     for(i = 1; i < 11; i++)
     {
         sleep(1000); //accumulate data
-        Lock(received_mutex); //stop the process
-        this_bytes = received_bytes - transferred_bytes;
-        transferred_bytes = received_bytes;
+        cur_sent_bytes = received_bytes;
+        this_bytes = cur_sent_bytes - transferred_bytes;
+        transferred_bytes = cur_sent_bytes;
         sleep(1); //slow down to prevent some problem
-        Unlock(received_mutex);
-        running = safe_read_running();
+        running = still_running;
         writeLog(LOG_TYPE_FILEUL, "Running worker threads: " + std::to_string(running) + ", total sent bytes: " + std::to_string(transferred_bytes) \
                  + ", current sent bytes: " + std::to_string(this_bytes) + ".");
         if(!running)
@@ -559,28 +429,26 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     }
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEUL, "Test completed. Terminate worker threads.");
-    safe_set_exit_flag(); //terminate worker thread right now
-    Lock(received_mutex); //lock it to prevent any further data writing
+    EXIT_FLAG = true; //terminate worker thread right now
+    this_bytes = received_bytes; //save current uploaded data
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
     int deltatime = duration.count() + 1;//add 1 to prevent some error
     sleep(5); //slow down to prevent some problem
-    node.ulSpeed = speedCalc(received_bytes * 1000.0 / deltatime);
+    node.ulSpeed = speedCalc(this_bytes * 1000.0 / deltatime);
     if(node.ulSpeed == "0.00B")
     {
         node.ulSpeed = "N/A";
     }
-    writeLog(LOG_TYPE_FILEUL, "Uploaded " + std::to_string(received_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
-    node.totalRecvBytes += received_bytes;
-    Unlock(received_mutex); //unlock to make worker thread continue running
+    writeLog(LOG_TYPE_FILEUL, "Uploaded " + std::to_string(this_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
+    node.totalRecvBytes += this_bytes;
+    /*
     for(auto &x : workers)
         if(x.joinable())
             x.join();//wait until worker thread has exited
+    */
+    /// don't for threads to exit, killing the client will make connect/send/recv fail and stop
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
-#ifdef _WIN32
-    DeleteCriticalSection(&received_mutex);
-    DeleteCriticalSection(&exit_flag_mutex);
-#endif // _WIN32
     return 0;
 }
 
@@ -590,21 +458,17 @@ int upload_test_curl(nodeInfo &node, std::string localaddr, int localport, std::
     std::string url = node.ulTarget;
     std::string proxy = buildSocks5ProxyString(localaddr, localport, username, password);
     writeLog(LOG_TYPE_FILEUL, "Starting up worker thread.");
-#ifdef _WIN32
-    InitializeCriticalSection(&received_mutex);
-    InitializeCriticalSection(&exit_flag_mutex);
-#endif // _WIN32
+    launched = 0;
     std::thread worker = std::thread(_thread_upload_curl, &node, url, proxy);
-    while(!safe_read_launched())
+    while(!launched)
         sleep(20); //wait until worker thread starts up
 
     writeLog(LOG_TYPE_FILEUL, "Worker thread launched. Wait for it to exit.");
-    int progress = 0, running = 0;
+    int progress = 0;
     while(true)
     {
         sleep(200);
-        running = safe_read_running();
-        if(!running)
+        if(!still_running)
             break;
         draw_progress_icon(progress);
         progress++;
@@ -612,13 +476,12 @@ int upload_test_curl(nodeInfo &node, std::string localaddr, int localport, std::
     std::cerr<<std::endl;
 
     writeLog(LOG_TYPE_FILEUL, "Reported upload speed: " + node.ulSpeed);
+    /*
     if(worker.joinable())
         worker.join();//wait until worker thread has exited
+    */
+    /// don't for threads to exit, killing the client will make connect/send/recv fail and stop
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
-#ifdef _WIN32
-    DeleteCriticalSection(&received_mutex);
-    DeleteCriticalSection(&exit_flag_mutex);
-#endif // _WIN32
     return 0;
 }
 

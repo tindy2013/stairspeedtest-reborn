@@ -334,7 +334,7 @@ void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
             return "running";
         else
         {
-            if(explodeConfContent(getFormData(postdata), override_conf_port, socksport, ss_libev, ssr_libev, allNodes, custom_exclude_remarks, custom_include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+            if(explodeConfContent(getFormData(postdata), override_conf_port, ss_libev, ssr_libev, allNodes) == SPEEDTEST_ERROR_UNRECOGFILE)
                 return "error";
             else
                 return ssrspeed_generate_web_configs(allNodes);

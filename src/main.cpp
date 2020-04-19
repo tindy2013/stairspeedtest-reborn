@@ -155,10 +155,12 @@ void clientCheck()
     std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
     std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
     std::string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
+    std::string trojan_path = "tools\\clients\\trojan\\trojan-core.exe";
 #else
     std::string v2core_path = "tools/clients/v2ray";
     std::string ssr_libev_path = "tools/clients/ssr-local";
     std::string ss_libev_path = "tools/clients/ss-local";
+    std::string trojan_path = "tools/clients/trojan";
 #endif // _WIN32
 
     if(fileExist(v2core_path))
@@ -191,9 +193,19 @@ void clientCheck()
         avail_status[SPEEDTEST_MESSAGE_FOUNDSSR] = 0;
         writeLog(LOG_TYPE_WARN, "ShadowsocksR-libev not found at path " + ssr_libev_path);
     }
+    if(fileExist(trojan_path))
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDTROJAN] = 1;
+        writeLog(LOG_TYPE_INFO, "Found Trojan at path " + ssr_libev_path);
+    }
+    else
+    {
+        avail_status[SPEEDTEST_MESSAGE_FOUNDTROJAN] = 0;
+        writeLog(LOG_TYPE_WARN, "Trojan not found at path " + ssr_libev_path);
+    }
 }
 
-int runClient(int client, std::string runpath)
+int runClient(int client)
 {
 #ifdef _WIN32
     std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -config config.json";
@@ -206,6 +218,8 @@ int runClient(int client, std::string runpath)
     std::string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
     std::string ss_win_dir = "tools\\clients\\shadowsocks-win\\";
     std::string ss_win_path = ss_win_dir + "shadowsocks-win.exe";
+
+    std::string trojan_path = "tools\\clients\\trojan\\trojan-core.exe -c config.json";
 
     switch(client)
     {
@@ -239,10 +253,15 @@ int runClient(int client, std::string runpath)
             runProgram(ss_win_path, ss_win_dir, false);
         }
         break;
+    case SPEEDTEST_MESSAGE_FOUNDTROJAN:
+        writeLog(LOG_TYPE_INFO, "Starting up trojan...");
+        runProgram(trojan_path, "", false);
+        break;
     }
 #else
     std::string v2core_path = "tools/clients/v2ray -config config.json";
     std::string ssr_libev_path = "tools/clients/ssr-local -c config.json";
+    std::string trojan_path = "tools/clients/trojan -c config.json";
 
     std::string ss_libev_dir = "tools/clients/";
     std::string ss_libev_path = "./ss-local -c ../../config.json";
@@ -260,6 +279,10 @@ int runClient(int client, std::string runpath)
     case SPEEDTEST_MESSAGE_FOUNDSS:
         writeLog(LOG_TYPE_INFO, "Starting up shadowsocks-libev...");
         runProgram(ss_libev_path, ss_libev_dir, false);
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDTROJAN:
+        writeLog(LOG_TYPE_INFO, "Starting up trojan...");
+        runProgram(trojan_path, "", false);
         break;
     }
 #endif // _WIN32
@@ -314,6 +337,7 @@ int killClient(int client)
     std::string v2core_name = "v2ray";
     std::string ss_libev_name = "ss-local";
     std::string ssr_libev_name = "ssr-local";
+    std::string trojan_name = "trojan";
 
     switch(client)
     {
@@ -328,6 +352,10 @@ int killClient(int client)
     case SPEEDTEST_MESSAGE_FOUNDSS:
         writeLog(LOG_TYPE_INFO, "Killing shadowsocks-libev...");
         killProgram(ss_libev_name);
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDTROJAN:
+        writeLog(LOG_TYPE_INFO, "Killing trojan...");
+        killProgram(trojan_name);
         break;
     }
 #endif
@@ -592,8 +620,11 @@ int singleTest(nodeInfo &node)
         testport = socksport;
         writeLog(LOG_TYPE_INFO, "Writing config file...");
         fileWrite("config.json", node.proxyStr, true);
-        if(node.linkType != -1 && avail_status[node.linkType] == 1)
-            runClient(node.linkType, "");
+        if(node.linkType == SPEEDTEST_MESSAGE_FOUNDVMESS && avail_status[node.linkType] == 1)
+            runClient(node.linkType);
+        else if(node.linkType != -1 && avail_status[node.linkType] == 1)
+            for(int i = 0; i < def_thread_count; i++)
+                runClient(node.linkType);
     }
     proxy = buildSocks5ProxyString(testserver, testport, username, password);
 
@@ -730,7 +761,6 @@ void batchTest(std::vector<nodeInfo> &nodes)
     long long tottraffic = 0;
     cur_node_id = -1;
 
-    node_count = nodes.size();
     writeLog(LOG_TYPE_INFO, "Total node(s) found: " + std::to_string(node_count));
     if(node_count == 0)
     {
@@ -881,8 +911,8 @@ void addNodes(std::string link, bool multilink)
         if(strSub.size())
         {
             writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
-            explodeConfContent(strSub, override_conf_port, socksport, ss_libev, ssr_libev, nodes, custom_exclude_remarks, custom_include_remarks);
-            rewriteNodeGroupID(nodes, curGroupID);
+            explodeConfContent(strSub, override_conf_port, ss_libev, ssr_libev, nodes);
+            filterNodes(nodes, custom_exclude_remarks, custom_include_remarks, curGroupID);
             copyNodes(nodes, allNodes);
         }
         else
@@ -905,14 +935,14 @@ void addNodes(std::string link, bool multilink)
         }
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConf(link, override_conf_port, socksport, ss_libev, ssr_libev, nodes, custom_exclude_remarks, custom_include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConf(link, override_conf_port, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
         }
         else
         {
-            rewriteNodeGroupID(nodes, curGroupID);
+            filterNodes(nodes, custom_exclude_remarks, custom_include_remarks, curGroupID);
             copyNodes(nodes, allNodes);
         }
         break;
@@ -924,14 +954,14 @@ void addNodes(std::string link, bool multilink)
         fileContent = base64_decode(fileContent.substr(fileContent.find(",") + 1));
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConfContent(fileContent, override_conf_port, socksport, ss_libev, ssr_libev, nodes, custom_exclude_remarks, custom_include_remarks) == SPEEDTEST_ERROR_UNRECOGFILE)
+        if(explodeConfContent(fileContent, override_conf_port, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
         {
             printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
             writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
         }
         else
         {
-            rewriteNodeGroupID(nodes, curGroupID);
+            filterNodes(nodes, custom_exclude_remarks, custom_include_remarks, curGroupID);
             copyNodes(nodes, allNodes);
         }
         break;
@@ -940,7 +970,7 @@ void addNodes(std::string link, bool multilink)
         {
             node_count = 1;
             printMsg(linkType, node, rpcmode);
-            explode(link, ss_libev, ssr_libev, override_conf_port, socksport, node);
+            explode(link, ss_libev, ssr_libev, override_conf_port, node);
             if(custom_group.size() != 0)
                 node.group = custom_group;
             if(node.server.empty())
@@ -960,6 +990,31 @@ void addNodes(std::string link, bool multilink)
             printMsgDirect(SPEEDTEST_ERROR_NORECOGLINK, rpcmode);
         }
     }
+}
+
+void setcd(std::string &file)
+{
+    char szTemp[1024] = {}, filename[256] = {};
+    std::string path;
+#ifdef _WIN32
+    char *pname = NULL;
+    DWORD retVal = GetFullPathName(file.data(), 1023, szTemp, &pname);
+    if(!retVal)
+        return;
+    strcpy(filename, pname);
+    strrchr(szTemp, '\\')[1] = '\0';
+#else
+    char *ret = realpath(file.data(), szTemp);
+    if(ret == NULL)
+        return;
+    ret = strcpy(filename, strrchr(szTemp, '/') + 1);
+    if(ret == NULL)
+        return;
+    strrchr(szTemp, '/')[1] = '\0';
+#endif // _WIN32
+    file.assign(filename);
+    path.assign(szTemp);
+    chdir(path.data());
 }
 
 int main(int argc, char* argv[])
@@ -988,6 +1043,10 @@ int main(int argc, char* argv[])
     std::cout << std::setprecision(2);
     signal(SIGINT, signalHandler);
 
+#ifndef _DEBUG
+    std::string prgpath = argv[0];
+    setcd(prgpath); //switch to program directory
+#endif // _DEBUG
     chkArg(argc, argv);
 
     makeDir("logs");
@@ -1076,6 +1135,7 @@ int main(int argc, char* argv[])
     rewriteNodeID(allNodes); //reset all index
     for(nodeInfo &x : allNodes)
         x.remarks = trim(removeEmoji(x.remarks)); //remove all emojis
+    node_count = allNodes.size();
     if(allNodes.size() > 1) //group or multi-link
     {
         batchTest(allNodes);
