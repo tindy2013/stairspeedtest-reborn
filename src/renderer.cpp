@@ -330,7 +330,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
 
     //calculate the width of all columns
     int group_width = 0, remarks_width = 0, pkLoss_width = 0, avgPing_width = 0, avgSpeed_width = 0,  sitePing_width = 0, maxSpeed_width = 0, onlines = 0, final_width = 0, test_duration = 0;
-    int group_widths[MAX_NODES_COUNT], remarks_widths[MAX_NODES_COUNT], pkLoss_widths[MAX_NODES_COUNT], avgPing_widths[MAX_NODES_COUNT], avgSpeed_widths[MAX_NODES_COUNT], sitePing_widths[MAX_NODES_COUNT], maxSpeed_widths[MAX_NODES_COUNT];
+    std::vector<int> group_widths, remarks_widths, pkLoss_widths, avgPing_widths, avgSpeed_widths, sitePing_widths, maxSpeed_widths;
     long long total_traffic = 0;
     std::string longest_group, longest_remarks;
     int longest_group_len = 0, longest_remarks_len = 0;
@@ -354,23 +354,23 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         }
         if(i == 0)
         {
-            pkLoss_widths[i] = getWidth(&png, font, fontsize, nodes[i].pkLoss);
-            avgPing_widths[i] = getWidth(&png, font, fontsize, nodes[i].avgPing);
-            avgSpeed_widths[i] = getWidth(&png, font, fontsize, nodes[i].avgSpeed);
+            pkLoss_widths.push_back(getWidth(&png, font, fontsize, nodes[i].pkLoss));
+            avgPing_widths.push_back(getWidth(&png, font, fontsize, nodes[i].avgPing));
+            avgSpeed_widths.push_back(getWidth(&png, font, fontsize, nodes[i].avgSpeed));
             if(export_as_new_style)
-                sitePing_widths[i] = getWidth(&png, font, fontsize, nodes[i].sitePing);
+                sitePing_widths.push_back(getWidth(&png, font, fontsize, nodes[i].sitePing));
             if(export_with_maxSpeed)
-                maxSpeed_widths[i] = getWidth(&png, font, fontsize, nodes[i].maxSpeed);
+                maxSpeed_widths.push_back(getWidth(&png, font, fontsize, nodes[i].maxSpeed));
         }
         else
         {
-            pkLoss_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].pkLoss);
-            avgPing_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].avgPing);
-            avgSpeed_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].avgSpeed);
+            pkLoss_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].pkLoss));
+            avgPing_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].avgPing));
+            avgSpeed_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].avgSpeed));
             if(export_as_new_style)
-                sitePing_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].sitePing);
+                sitePing_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].sitePing));
             if(export_with_maxSpeed)
-                maxSpeed_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].maxSpeed);
+                maxSpeed_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].maxSpeed));
         }
         //group_width = max(group_widths[i] + center_align_offset, group_width);
         //remarks_width = max(remarks_widths[i] + center_align_offset, remarks_width);
@@ -388,9 +388,9 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
             onlines++;
     }
     //only calculate the width of the group/remark title line
-    remarks_widths[0] = getWidth(&png, font, fontsize, node.remarks);
+    remarks_widths.push_back(getWidth(&png, font, fontsize, node.remarks));
     remarks_width = std::max(getWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset) + 4;
-    group_widths[0] = getWidth(&png, font, fontsize, node.group);
+    group_widths.push_back(getWidth(&png, font, fontsize, node.group));
     group_width = std::max(getWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset) + 4;
 
     int width_all[8] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading

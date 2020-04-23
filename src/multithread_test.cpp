@@ -85,10 +85,9 @@ static inline void draw_progress_gping(int progress, int *values)
 
 int _thread_download(std::string host, int port, std::string uri, std::string localaddr, int localport, std::string username, std::string password, bool useTLS = false)
 {
-    //launch_acc();
-    //running_acc();
     launched++;
     still_running++;
+    defer(still_running--;);
     char bufRecv[BUF_SIZE];
     int retVal, cur_len/*, recv_len = 0*/;
     SOCKET sHost;
@@ -98,14 +97,11 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
 
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
-        goto end;
-    if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
-        goto end;
+        return -1;
+    defer(closesocket(sHost););
     setTimeout(sHost, 5000);
-    if(connectSocks5(sHost, username, password) == -1)
-        goto end;
-    if(connectThruSocks(sHost, host, port) == -1)
-        goto end;
+    if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
+        return -1;
 
     if(useTLS)
     {
@@ -116,11 +112,12 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
         if(ctx == NULL)
         {
             ERR_print_errors_fp(stderr);
-            goto end;
+            return -1;
         }
+        defer(SSL_CTX_free(ctx););
 
-        //SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
         ssl = SSL_new(ctx);
+        defer(SSL_free(ssl););
         SSL_set_fd(ssl, sHost);
 
         if(SSL_connect(ssl) != 1)
@@ -131,7 +128,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
         {
             retVal = SSL_write(ssl, request.data(), request.size());
             if(retVal == SOCKET_ERROR)
-                goto end;
+                return -1;
             while(1)
             {
                 cur_len = SSL_read(ssl, bufRecv, BUF_SIZE - 1);
@@ -153,13 +150,12 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
                     break;
             }
         }
-        SSL_clear(ssl);
     }
     else
     {
         retVal = Send(sHost, request.data(), request.size(), 0);
         if (SOCKET_ERROR == retVal)
-            goto end;
+            return -1;
         while(1)
         {
             cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
@@ -181,10 +177,6 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
                 break;
         }
     }
-
-end:
-    closesocket(sHost);
-    still_running--;
     return 0;
 }
 
@@ -192,6 +184,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
 {
     launched++;
     still_running++;
+    defer(still_running--;);
     int retVal, cur_len;
     SOCKET sHost;
     std::string request = "POST " + uri + " HTTP/1.1\r\n"
@@ -201,14 +194,11 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
 
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
-        goto end;
+        return -1;
+    defer(closesocket(sHost););
     setTimeout(sHost, 5000);
-    if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
-        goto end;
-    if(connectSocks5(sHost, username, password) == -1)
-        goto end;
-    if(connectThruSocks(sHost, host, port) == -1)
-        goto end;
+    if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
+        return -1;
 
     if(useTLS)
     {
@@ -219,10 +209,12 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
         if(ctx == NULL)
         {
             ERR_print_errors_fp(stderr);
-            goto end;
+            return -1;
         }
+        defer(SSL_CTX_free(ctx););
 
         ssl = SSL_new(ctx);
+        defer(SSL_free(ssl););
         SSL_set_fd(ssl, sHost);
 
         if(SSL_connect(ssl) != 1)
@@ -245,16 +237,12 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
                     break;
             }
         }
-        SSL_clear(ssl);
     }
     else
     {
         retVal = Send(sHost, request.data(), request.size(), 0);
         if (SOCKET_ERROR == retVal)
-        {
-            closesocket(sHost);
             return -1;
-        }
         while(1)
         {
             post_data = rand_str(128);
@@ -268,10 +256,6 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
                 break;
         }
     }
-
-end:
-    closesocket(sHost);
-    still_running--;
     return 0;
 }
 
@@ -554,7 +538,9 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
             }
             else
             {
+                defer(SSL_CTX_free(ctx););
                 ssl = SSL_new(ctx);
+                defer(SSL_free(ssl););
                 SSL_set_fd(ssl, sHost);
 
                 if(SSL_connect(ssl) != 1)
@@ -584,17 +570,13 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
                         writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
                     }
                 }
-                SSL_clear(ssl);
             }
         }
         else
         {
             retVal = Send(sHost, request.data(), request.size(), 0);
             if (SOCKET_ERROR == retVal)
-            {
-                closesocket(sHost);
                 return -1;
-            }
             cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
             auto end = steady_clock::now();
             auto duration = duration_cast<milliseconds>(end - start);

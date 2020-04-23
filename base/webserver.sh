@@ -1,4 +1,3 @@
 #!/bin/bash
-export filepath=`realpath "$0"`
-cd `dirname -- $filepath`
+cd "$(dirname "$0")"
 ./stairspeedtest /web

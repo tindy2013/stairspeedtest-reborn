@@ -1823,6 +1823,11 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, const std::string 
         processed = true;
     }
 
+    if(!processed && explodeLog(sub, nodes) != -1)
+    {
+        processed = true;
+    }
+
     //try to parse as normal subscription
     if(!processed)
     {

@@ -9,9 +9,9 @@ brew reinstall libev libsodium c-ares mbedtls
 git clone https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
 git submodule update --init
-./autogen.sh
-CC=cc ./configure --disable-documentation
-make -j8
+./autogen.sh > /dev/null
+CC=cc ./configure --disable-documentation > /dev/null
+make -j8 > /dev/null
 cd src
 cp /usr/local/lib/libpcre.a .
 cp /usr/local/lib/libmbedtls.a .

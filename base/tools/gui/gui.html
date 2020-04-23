@@ -530,7 +530,7 @@
 					return parseFloat(obj1.ping) - parseFloat(obj2.ping);
 				},
 				speedSort: function (obj1, obj2) {
-					return getSpeed(obj1.speed) - getSpeed(obj2.speed);
+					return this.getSpeed(obj1.speed) - this.getSpeed(obj2.speed);
 				}
 			}
 		});

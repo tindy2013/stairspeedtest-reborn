@@ -16,8 +16,13 @@
 #define PATH_SLASH "//"
 #endif // _WIN32
 
+#define concat(a,b) a ## b
+#define do_concat(a,b) concat(a,b)
+#define defer(x) std::shared_ptr<void> do_concat(__defer_deleter_,__LINE__) (nullptr, [&](...){x});
+
 typedef std::string::size_type string_size;
 typedef std::vector<std::string> string_array;
+typedef std::map<std::string, std::string> string_map;
 typedef const std::string &refCnstStr;
 
 static const std::string base64_chars =
