@@ -78,6 +78,7 @@ int curGroupID = 0;
 
 //declarations
 
+int explodeLog(std::string log, std::vector<nodeInfo> &nodes);
 int tcping(nodeInfo &node);
 void getTestFile(nodeInfo &node, std::string proxy, std::vector<downloadLink> &downloadFiles, std::vector<linkMatchRule> &matchRules, std::string defaultTestFile);
 void ssrspeed_webserver_routine(std::string listen_address, int listen_port);
@@ -935,16 +936,18 @@ void addNodes(std::string link, bool multilink)
         }
         writeLog(LOG_TYPE_INFO, "Parsing configuration file data...");
         printMsgDirect(SPEEDTEST_MESSAGE_PARSING, rpcmode);
-        if(explodeConf(link, override_conf_port, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+
+        if(explodeLog(fileGet(link), nodes) == -1)
         {
-            printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
-            writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
+            if(explodeConf(link, override_conf_port, ss_libev, ssr_libev, nodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+            {
+                printMsgDirect(SPEEDTEST_ERROR_UNRECOGFILE, rpcmode);
+                writeLog(LOG_TYPE_ERROR, "Invalid configuration file!");
+                break;
+            }
         }
-        else
-        {
-            filterNodes(nodes, custom_exclude_remarks, custom_include_remarks, curGroupID);
-            copyNodes(nodes, allNodes);
-        }
+        filterNodes(nodes, custom_exclude_remarks, custom_include_remarks, curGroupID);
+        copyNodes(nodes, allNodes);
         break;
     case SPEEDTEST_MESSAGE_FOUNDUPD:
         printMsgDirect(SPEEDTEST_MESSAGE_FOUNDUPD, rpcmode);

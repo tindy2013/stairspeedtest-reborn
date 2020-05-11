@@ -7,6 +7,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "string_hash.h"
+
 #ifdef _WIN32
 #include <unistd.h>
 #define PATH_SLASH "\\"
@@ -29,6 +31,77 @@ static const std::string base64_chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
+
+class tribool
+{
+private:
+
+    int _M_VALUE = -1;
+
+public:
+
+    tribool() { clear(); }
+
+    template <typename T> tribool(const T &value) { set(value); }
+
+    tribool(const tribool &value) { *this = value; }
+
+    ~tribool() = default;
+
+    tribool& operator=(const tribool &src)
+    {
+        _M_VALUE = src._M_VALUE;
+        return *this;
+    }
+
+    template <typename T> tribool& operator=(const T &value)
+    {
+        set(value);
+        return *this;
+    }
+
+    operator bool() const { return _M_VALUE == 1; }
+
+    bool is_undef() { return _M_VALUE == -1; }
+
+    template <typename T> void define(const T &value)
+    {
+        if(_M_VALUE == -1)
+            set(value);
+    }
+
+    bool get(const bool &def_value = false)
+    {
+        if(_M_VALUE == -1)
+            return def_value;
+        return _M_VALUE;
+    }
+
+    template <typename T> bool set(const T &value)
+    {
+        _M_VALUE = value;
+        return _M_VALUE;
+    }
+
+    bool set(const std::string &str)
+    {
+        switch(hash_(str))
+        {
+        case "true"_hash:
+            _M_VALUE = 1;
+            break;
+        case "false"_hash:
+            _M_VALUE = 0;
+            break;
+        default:
+            _M_VALUE = -1;
+            break;
+        }
+        return _M_VALUE;
+    }
+
+    void clear() { _M_VALUE = -1; }
+};
 
 std::string UrlEncode(const std::string& str);
 std::string UrlDecode(const std::string& str);
@@ -53,10 +126,11 @@ bool is_str_utf8(const std::string &data);
 std::string getFormData(const std::string &raw_data);
 
 void sleep(int interval);
-bool regValid(const std::string &target);
+bool regValid(const std::string &reg);
 bool regFind(const std::string &src, const std::string &match);
-std::string regReplace(const std::string &src, const std::string &match, const std::string &rep);
+std::string regReplace(const std::string &src, const std::string &match, const std::string &rep, bool global = true);
 bool regMatch(const std::string &src, const std::string &match);
+int regGetMatch(const std::string &src, const std::string &match, size_t group_count, ...);
 std::string regTrim(const std::string &src);
 std::string speedCalc(double speed);
 std::string getMD5(const std::string &data);

@@ -13,7 +13,7 @@
 #include <windows.h>
 #include <tlhelp32.h>
 #else
-#include <spawn.h>
+//#include <spawn.h>
 #endif // _WIN32
 
 #include "processes.h"

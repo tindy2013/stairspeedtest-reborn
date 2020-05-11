@@ -16,7 +16,7 @@ std::string config_ssr_libev = R"({"server":"?server?","server_port":?port?,"pro
 std::string base_vmess = R"({"inbounds":[{"port":?localport?,"listen":"127.0.0.1","protocol":"socks"}],"outbounds":[{"tag":"proxy","protocol":"vmess","settings":{"vnext":[{"address":"?add?","port":?port?,"users":[{"id":"?id?","alterId":?aid?,"email":"t@t.tt","security":"?cipher?"}]}]},"streamSettings":{"network":"?net?","security":"?tls?","tlsSettings":?tlsset?,"tcpSettings":?tcpset?,"wsSettings":?wsset?},"mux":{"enabled":true}}],"routing":{"domainStrategy":"IPIfNonMatch"}})";
 std::string wsset_vmess = R"({"connectionReuse":true,"path":"?path?","headers":{"Host":"?host?"?edge?}})";
 std::string tcpset_vmess = R"({"connectionReuse":true,"header":{"type":"?type?","request":{"version":"1.1","method":"GET","path":["?path?"],"headers":{"Host":["?host?"],"User-Agent":["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36","Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46"],"Accept-Encoding":["gzip, deflate"],"Connection":["keep-alive"],"Pragma":"no-cache"}}}})";
-std::string tlsset_vmess = R"({"serverName":"?serverName?","allowInsecure":false,"allowInsecureCiphers":false})";
+std::string tlsset_vmess = R"({"serverName":"?serverName?","allowInsecure":?verify?,"allowInsecureCiphers":false})";
 std::string base_trojan = R"({"run_type":"client","local_addr":"127.0.0.1","local_port":?localport?,"remote_addr":"?server?","remote_port":?port?,"password":["?password?"],"ssl":{"verify":?verify?,"verify_hostname":?verify?,"sni":"?host?"},"tcp":{"reuse_port":true}})";
 
 int explodeLog(std::string log, std::vector<nodeInfo> &nodes)
@@ -25,9 +25,11 @@ int explodeLog(std::string log, std::vector<nodeInfo> &nodes)
     std::vector<std::string> nodeList, vArray;
     std::string strTemp;
     nodeInfo node;
+    if(!startsWith(log, "[Basic]"))
+        return -1;
     ini.Parse(log);
 
-    if(!ini.SectionExist("Basic"))
+    if(!ini.SectionExist("Basic") || !ini.ItemExist("Basic", "GenerationTime") || !ini.ItemExist("Basic", "Tester"))
         return -1;
 
     nodeList = ini.GetSections();
@@ -59,7 +61,7 @@ int explodeLog(std::string log, std::vector<nodeInfo> &nodes)
     return 0;
 }
 
-std::string vmessConstruct(std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string edge, std::string tls)
+std::string vmessConstruct(std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string edge, std::string tls, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_vmess;
     std::string wsset = wsset_vmess;
@@ -93,6 +95,8 @@ std::string vmessConstruct(std::string add, std::string port, std::string type, 
     if(host.size())
     {
         tlsset = replace_all_distinct(tlsset, "?serverName?", host);
+        scv.define(true);
+        tlsset = replace_all_distinct(tlsset, "?verify?", scv ? "false" : "true");
         base = replace_all_distinct(base, "?tlsset?", tlsset);
     }
 
@@ -104,7 +108,7 @@ std::string vmessConstruct(std::string add, std::string port, std::string type, 
     return base;
 }
 
-std::string ssrConstruct(std::string group, std::string remarks, std::string remarks_base64, std::string server, std::string port, std::string protocol, std::string method, std::string obfs, std::string password, std::string obfsparam, std::string protoparam, bool libev)
+std::string ssrConstruct(std::string group, std::string remarks, std::string remarks_base64, std::string server, std::string port, std::string protocol, std::string method, std::string obfs, std::string password, std::string obfsparam, std::string protoparam, bool libev, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_ssr_win;
     std::string config = config_ssr_win;
@@ -133,7 +137,7 @@ std::string ssrConstruct(std::string group, std::string remarks, std::string rem
     return base;
 }
 
-std::string ssConstruct(std::string server, std::string port, std::string password, std::string method, std::string plugin, std::string pluginopts, std::string remarks, bool libev)
+std::string ssConstruct(std::string server, std::string port, std::string password, std::string method, std::string plugin, std::string pluginopts, std::string remarks, bool libev, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_ss_win;
     std::string config = config_ss_win;
@@ -162,30 +166,33 @@ std::string ssConstruct(std::string server, std::string port, std::string passwo
     return base;
 }
 
-std::string socksConstruct(std::string remarks, std::string server, std::string port, std::string username, std::string password)
+std::string socksConstruct(std::string remarks, std::string server, std::string port, std::string username, std::string password, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     return "user=" + username + "&pass=" + password;
 }
 
-std::string httpConstruct(std::string remarks, std::string server, std::string port, std::string username, std::string password, bool tls)
+std::string httpConstruct(std::string remarks, std::string server, std::string port, std::string username, std::string password, bool tls, tribool scv = tribool())
 {
     return "user=" + username + "&pass=" + password;
 }
 
-std::string trojanConstruct(std::string remarks, std::string server, std::string port, std::string password, std::string host, bool tlssecure)
+std::string trojanConstruct(std::string remarks, std::string server, std::string port, std::string password, std::string host, bool tlssecure, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_trojan;
+    scv.define(true);
     base = replace_all_distinct(base, "?server?", server);
     base = replace_all_distinct(base, "?port?", port);
     base = replace_all_distinct(base, "?password?", password);
-    if(host.empty())
-        base = replace_all_distinct(base, "?verify?", "false");
-    else
-    {
-        base = replace_all_distinct(base, "?verify?", "true");
+    base = replace_all_distinct(base, "?verify?", scv ? "false" : "true");
+    if(!host.empty())
         base = replace_all_distinct(base, "?host?", host);
-    }
     base = replace_all_distinct(base, "?localport?", std::to_string(socksport));
 
     return base;
+}
+
+std::string snellConstruct(std::string remarks, std::string server, std::string port, std::string password, std::string obfs, std::string host, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+{
+    //no clients available, ignore
+    return std::string();
 }
