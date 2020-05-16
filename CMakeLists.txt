@@ -41,7 +41,6 @@ ADD_EXECUTABLE(stairspeedtest
 	src/multithread_test.cpp
 	src/printout.cpp
 	src/processes.cpp
-	src/rapidjson_extra.cpp
 	src/renderer.cpp
 	src/rulematch.cpp
 	src/socket.cpp

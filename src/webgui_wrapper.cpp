@@ -5,9 +5,6 @@
 #include <algorithm>
 #include <atomic>
 
-#include <rapidjson/document.h>
-#include <rapidjson/writer.h>
-
 #include "webserver.h"
 #include "misc.h"
 #include "webget.h"

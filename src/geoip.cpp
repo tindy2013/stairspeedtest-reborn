@@ -1,5 +1,3 @@
-#include <rapidjson/document.h>
-
 #include "webget.h"
 #include "geoip.h"
 #include "misc.h"
