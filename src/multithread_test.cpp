@@ -87,7 +87,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
 {
     launched++;
     still_running++;
-    defer(still_running--;);
+    defer(still_running--;)
     char bufRecv[BUF_SIZE];
     int retVal, cur_len/*, recv_len = 0*/;
     SOCKET sHost;
@@ -98,7 +98,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    defer(closesocket(sHost););
+    defer(closesocket(sHost);)
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
         return -1;
@@ -114,10 +114,10 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
             ERR_print_errors_fp(stderr);
             return -1;
         }
-        defer(SSL_CTX_free(ctx););
+        defer(SSL_CTX_free(ctx);)
 
         ssl = SSL_new(ctx);
-        defer(SSL_free(ssl););
+        defer(SSL_free(ssl);)
         SSL_set_fd(ssl, sHost);
 
         if(SSL_connect(ssl) != 1)
@@ -184,7 +184,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
 {
     launched++;
     still_running++;
-    defer(still_running--;);
+    defer(still_running--;)
     int retVal, cur_len;
     SOCKET sHost;
     std::string request = "POST " + uri + " HTTP/1.1\r\n"
@@ -195,7 +195,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    defer(closesocket(sHost););
+    defer(closesocket(sHost);)
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
         return -1;
@@ -211,10 +211,10 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
             ERR_print_errors_fp(stderr);
             return -1;
         }
-        defer(SSL_CTX_free(ctx););
+        defer(SSL_CTX_free(ctx);)
 
         ssl = SSL_new(ctx);
-        defer(SSL_free(ssl););
+        defer(SSL_free(ssl);)
         SSL_set_fd(ssl, sHost);
 
         if(SSL_connect(ssl) != 1)
@@ -538,9 +538,9 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
             }
             else
             {
-                defer(SSL_CTX_free(ctx););
+                defer(SSL_CTX_free(ctx);)
                 ssl = SSL_new(ctx);
-                defer(SSL_free(ssl););
+                defer(SSL_free(ssl);)
                 SSL_set_fd(ssl, sHost);
 
                 if(SSL_connect(ssl) != 1)

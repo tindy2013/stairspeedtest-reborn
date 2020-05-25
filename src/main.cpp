@@ -197,12 +197,12 @@ void clientCheck()
     if(fileExist(trojan_path))
     {
         avail_status[SPEEDTEST_MESSAGE_FOUNDTROJAN] = 1;
-        writeLog(LOG_TYPE_INFO, "Found Trojan at path " + ssr_libev_path);
+        writeLog(LOG_TYPE_INFO, "Found Trojan at path " + trojan_path);
     }
     else
     {
         avail_status[SPEEDTEST_MESSAGE_FOUNDTROJAN] = 0;
-        writeLog(LOG_TYPE_WARN, "Trojan not found at path " + ssr_libev_path);
+        writeLog(LOG_TYPE_WARN, "Trojan not found at path " + trojan_path);
     }
 }
 
@@ -292,10 +292,7 @@ int runClient(int client)
 
 int killClient(int client)
 {
-    //TerminateProcess(hProc, 0);
 #ifdef _WIN32
-    killByHandle();
-    /*
     std::string v2core_name = "v2-core.exe";
     std::string ss_libev_name = "ss-libev.exe";
     std::string ssr_libev_name = "ssr-libev.exe";
@@ -333,7 +330,6 @@ int killClient(int client)
         }
         break;
     }
-    */
 #else
     std::string v2core_name = "v2ray";
     std::string ss_libev_name = "ss-local";
@@ -383,12 +379,9 @@ void readConf(std::string path)
         ini.GetAll("include_remark", custom_include_remarks);
 
     ini.EnterSection("advanced");
-    if(ini.ItemExist("speedtest_mode"))
-        speedtest_mode = ini.Get("speedtest_mode");
-    if(ini.ItemExist("test_site_ping"))
-        test_site_ping = ini.GetBool("test_site_ping");
-    if(ini.ItemExist("test_upload"))
-        test_upload = ini.GetBool("test_upload");
+    ini.GetIfExist("speedtest_mode", speedtest_mode);
+    ini.GetBoolIfExist("test_site_ping", test_site_ping);
+    ini.GetBoolIfExist("test_upload", test_upload);
 #ifdef _WIN32
     if(ini.ItemExist("preferred_ss_client"))
     {
@@ -403,24 +396,16 @@ void readConf(std::string path)
             ssr_libev = false;
     }
 #endif // _WIN32
-    if(ini.ItemExist("override_conf_port"))
-        override_conf_port = ini.Get("override_conf_port");
-    if(ini.ItemExist("thread_count"))
-        def_thread_count = stoi(ini.Get("thread_count"));
+    ini.GetIfExist("override_conf_port", override_conf_port);
+    ini.GetIntIfExist("thread_count", def_thread_count);
 
     ini.EnterSection("export");
-    if(ini.ItemExist("export_with_maxspeed"))
-        export_with_maxspeed = ini.GetBool("export_with_maxspeed");
-    if(ini.ItemExist("export_sort_method"))
-        export_sort_method = ini.Get("export_sort_method");
-    if(ini.ItemExist("multilink_export_as_one_image"))
-        multilink_export_as_one_image = ini.GetBool("multilink_export_as_one_image");
-    if(ini.ItemExist("single_test_force_export"))
-        single_test_force_export = ini.GetBool("single_test_force_export");
-    if(ini.ItemExist("export_as_new_style"))
-        export_as_new_style = ini.GetBool("export_as_new_style");
-    if(ini.ItemExist("export_color_style"))
-        export_color_style = ini.Get("export_color_style");
+    ini.GetBoolIfExist("export_with_maxspeed", export_with_maxspeed);
+    ini.GetIfExist("export_sort_method", export_sort_method);
+    ini.GetBoolIfExist("multilink_export_as_one_image", multilink_export_as_one_image);
+    ini.GetBoolIfExist("single_test_force_export", single_test_force_export);
+    ini.GetBoolIfExist("export_as_new_style", export_as_new_style);
+    ini.GetIfExist("export_color_style", export_color_style);
     if(ini.ItemExist("custom_color_groups"))
     {
         vChild = split(ini.Get("custom_color_groups"), "|");
@@ -450,8 +435,7 @@ void readConf(std::string path)
             }
         }
     }
-    if(ini.ItemExist("export_as_ssrspeed"))
-        export_as_ssrspeed = ini.GetBool("export_as_ssrspeed");
+    ini.GetBoolIfExist("export_as_ssrspeed", export_as_ssrspeed);
 
     ini.EnterSection("rules");
     if(ini.ItemPrefixExist("test_file_urls"))
@@ -496,12 +480,9 @@ void readConf(std::string path)
     }
 
     ini.EnterSection("webserver");
-    if(ini.ItemExist("webserver_mode"))
-        webserver_mode = ini.GetBool("webserver_mode");
-    if(ini.ItemExist("listen_address"))
-        listen_address = ini.Get("listen_address");
-    if(ini.ItemExist("listen_port"))
-        listen_port = ini.GetInt("listen_port");
+    ini.GetBoolIfExist("webserver_mode", webserver_mode);
+    ini.GetIfExist("listen_address", listen_address);
+    ini.GetIntIfExist("listen_port", listen_port);
 }
 
 void signalHandler(int signum)
@@ -581,12 +562,15 @@ void saveResult(std::vector<nodeInfo> &nodes)
 int singleTest(nodeInfo &node)
 {
     int retVal = 0;
-    std::string logdata = "", testserver, username, password, proxy;
+    std::string logdata, testserver, username, password, proxy;
     int testport;
     node.ulTarget = def_upload_target; //for now only use default
     cur_node_id = node.id;
 
-    auto start = steady_clock::now();
+    writeLog(LOG_TYPE_INFO, "Received server. Group: " + node.group + " Name: " + node.remarks);
+    defer(printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);)
+    time_point<steady_clock> start = steady_clock::now(), end;
+    seconds lapse;
     if(node.proxyStr == "LOG") //import from result
     {
         if(!rpcmode)
@@ -598,15 +582,16 @@ int singleTest(nodeInfo &node)
             addTrans("?total?", std::to_string(node_count));
             printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
         }
-        writeLog(LOG_TYPE_INFO, "Received server. Group: " + node.group + " Name: " + node.remarks);
         printMsg(SPEEDTEST_MESSAGE_GOTPING, node, rpcmode);
         printMsg(SPEEDTEST_MESSAGE_GOTGPING, node, rpcmode);
         printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
         printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
         writeLog(LOG_TYPE_INFO, "Average speed: " + node.avgSpeed + "  Max speed: " + node.maxSpeed + "  Upload speed: " + node.ulSpeed + "  Traffic used in bytes: " + std::to_string(node.totalRecvBytes));
-        printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
         return SPEEDTEST_ERROR_NONE;
     }
+    defer(node.duration = lapse.count();)
+    defer(lapse = duration_cast<seconds>(end - start);)
+    defer(end = steady_clock::now();)
 
     if(node.linkType == SPEEDTEST_MESSAGE_FOUNDSOCKS)
     {
@@ -627,6 +612,7 @@ int singleTest(nodeInfo &node)
             for(int i = 0; i < def_thread_count; i++)
                 runClient(node.linkType);
     }
+    defer(killByHandle();)
     proxy = buildSocks5ProxyString(testserver, testport, username, password);
 
     //printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
@@ -639,7 +625,6 @@ int singleTest(nodeInfo &node)
         addTrans("?total?", std::to_string(node_count));
         printMsgWithDict(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, dict, trans);
     }
-    writeLog(LOG_TYPE_INFO, "Received server. Group: " + node.group + " Name: " + node.remarks);
     writeLog(LOG_TYPE_INFO, "Now started fetching GeoIP info...");
     printMsg(SPEEDTEST_MESSAGE_STARTGEOIP, node, rpcmode);
     node.inboundGeoIP.set(std::async(std::launch::async, [node](){return getGeoIPInfo(node.server, "");}));
@@ -654,19 +639,12 @@ int singleTest(nodeInfo &node)
         {
             writeLog(LOG_TYPE_ERROR, "Node address resolve error.");
             printMsg(SPEEDTEST_ERROR_NORESOLVE, node, rpcmode);
-            auto end = steady_clock::now();
-            auto duration = duration_cast<seconds>(end - start);
-            node.duration = duration.count();
             return SPEEDTEST_ERROR_NORESOLVE;
         }
         if(node.pkLoss == "100.00%")
         {
             writeLog(LOG_TYPE_ERROR, "Cannot connect to this node.");
             printMsg(SPEEDTEST_ERROR_NOCONNECTION, node, rpcmode);
-            killClient(node.linkType);
-            auto end = steady_clock::now();
-            auto duration = duration_cast<seconds>(end - start);
-            node.duration = duration.count();
             return SPEEDTEST_ERROR_NOCONNECTION;
         }
         logdata = std::accumulate(std::next(std::begin(node.rawPing)), std::end(node.rawPing), std::to_string(node.rawPing[0]), [](std::string a, int b){return std::move(a) + " " + std::to_string(b);});
@@ -728,10 +706,6 @@ int singleTest(nodeInfo &node)
                 writeLog(LOG_TYPE_ERROR, "Speedtest returned no speed 2 times.");
                 printMsg(SPEEDTEST_ERROR_NOSPEED, node, rpcmode);
                 printMsg(SPEEDTEST_MESSAGE_GOTSPEED, node, rpcmode);
-                killClient(node.linkType);
-                auto end = steady_clock::now();
-                auto duration = duration_cast<seconds>(end - start);
-                node.duration = duration.count();
                 return SPEEDTEST_ERROR_NOSPEED;
             }
         }
@@ -745,12 +719,7 @@ int singleTest(nodeInfo &node)
         printMsg(SPEEDTEST_MESSAGE_GOTUPD, node, rpcmode);
     }
     writeLog(LOG_TYPE_INFO, "Average speed: " + node.avgSpeed + "  Max speed: " + node.maxSpeed + "  Upload speed: " + node.ulSpeed + "  Traffic used in bytes: " + std::to_string(node.totalRecvBytes));
-    printMsg(SPEEDTEST_MESSAGE_GOTRESULT, node, rpcmode);
     node.online = true;
-    killClient(node.linkType);
-    auto end = steady_clock::now();
-    auto duration = duration_cast<seconds>(end - start);
-    node.duration = duration.count();
     sleep(300);
     return SPEEDTEST_ERROR_NONE;
 }
@@ -832,10 +801,7 @@ void rewriteNodeID(std::vector<nodeInfo> &nodes)
 
 void rewriteNodeGroupID(std::vector<nodeInfo> &nodes, int groupID)
 {
-    for(auto &x : nodes)
-    {
-        x.groupID = groupID;
-    }
+    std::for_each(nodes.begin(), nodes.end(), [&](nodeInfo &x){ x.groupID = groupID; });
 }
 
 std::string removeEmoji(std::string remark)
@@ -1044,7 +1010,6 @@ int main(int argc, char* argv[])
     std::string curPNGPath, curPNGPathPrefix;
     std::cout << std::fixed;
     std::cout << std::setprecision(2);
-    signal(SIGINT, signalHandler);
 
 #ifndef _DEBUG
     std::string prgpath = argv[0];
@@ -1077,10 +1042,13 @@ int main(int argc, char* argv[])
 
     if(!rpcmode)
         SetConsoleTitle("Stair Speedtest Reborn " VERSION);
+    /*
     //kill any client before testing
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+    killClient(SPEEDTEST_MESSAGE_FOUNDTROJAN);
+    */
     clientCheck();
     socksport = checkPort(socksport);
     writeLog(LOG_TYPE_INFO, "Using local port: " + std::to_string(socksport));

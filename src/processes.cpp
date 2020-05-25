@@ -113,9 +113,6 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     return retval;
 
 #else
-    char curdir[1024] = {};
-    getcwd(curdir, 1023);
-    chdir(runpath.data());
     /*
     const char* cargs[4] = {"sh", "-c", command.data(), NULL};
     posix_spawn_file_actions_t file_actions;
@@ -125,8 +122,27 @@ bool runProgram(std::string command, std::string runpath, bool wait)
     posix_spawn(&hProc, "/bin/sh", &file_actions, NULL, const_cast<char* const*>(cargs), NULL);
     */
     command = command + " > /dev/null 2>&1";
-    pPipe = popen(command.data(), "r");
-    chdir(curdir);
+    //pPipe = popen(command.data(), "r");
+    HANDLE pid;
+    int status;
+    switch(pid = fork())
+    {
+    case -1: /// error
+        return false;
+    case 0: /// child
+    {
+        char curdir[1024] = {};
+        getcwd(curdir, 1023);
+        chdir(runpath.data());
+        execl("/bin/sh", "/bin/sh", "-c", command.data(), NULL);
+        _exit(127);
+    }
+    default: /// parent
+        if(wait)
+            waitpid(pid, &status, 0);
+        else
+            handles.emplace(pid);
+    }
     return true;
 #endif // _WIN32
 
