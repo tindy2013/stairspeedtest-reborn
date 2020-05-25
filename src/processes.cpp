@@ -14,6 +14,7 @@
 #include <tlhelp32.h>
 #else
 //#include <spawn.h>
+#include <sys/wait.h>
 #endif // _WIN32
 
 #include "processes.h"
