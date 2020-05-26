@@ -132,10 +132,11 @@ bool runProgram(std::string command, std::string runpath, bool wait)
         return false;
     case 0: /// child
     {
+        signal(SIGINT, SIG_DFL);
         char curdir[1024] = {};
         getcwd(curdir, 1023);
         chdir(runpath.data());
-        execl("/bin/sh", "/bin/sh", "-c", command.data(), NULL);
+        execl("/bin/sh", "sh", "-c", command.data(), NULL);
         _exit(127);
     }
     default: /// parent
@@ -162,7 +163,7 @@ void killByHandle()
         }
 #else
         if(hProc != 0)
-            kill(hProc, SIGTERM);
+            kill(hProc, SIGINT);
 #endif // _WIN32
         handles.pop();
     }

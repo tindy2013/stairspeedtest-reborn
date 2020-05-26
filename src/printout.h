@@ -1,13 +1,6 @@
 #ifndef PRINTOUT_H_INCLUDED
 #define PRINTOUT_H_INCLUDED
 
-#include <string>
-#include <vector>
-#include <unistd.h>
-
-#include "misc.h"
-#include "nodeinfo.h"
-
 enum
 {
     SPEEDTEST_ERROR_UNDEFINED = -13,
@@ -75,9 +68,5 @@ enum
 #define HTTP_DEFAULT_GROUP "HTTPProvider"
 #define TROJAN_DEFAULT_GROUP "TrojanProvider"
 #define SNELL_DEFAULT_GROUP "SnellProvider"
-
-void printMsg(int index, nodeInfo &node, bool rpcmode);
-void printMsgWithDict(int index, bool rpcmode, std::vector<std::string> dict, std::vector<std::string> trans);
-void printMsgDirect(int index, bool rpcmode);
 
 #endif // PRINTOUT_H_INCLUDED

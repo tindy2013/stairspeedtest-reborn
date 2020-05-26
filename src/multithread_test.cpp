@@ -426,12 +426,9 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     }
     writeLog(LOG_TYPE_FILEUL, "Uploaded " + std::to_string(this_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
     node.totalRecvBytes += this_bytes;
-    /*
     for(auto &x : workers)
         if(x.joinable())
             x.join();//wait until worker thread has exited
-    */
-    /// don't for threads to exit, killing the client will make connect/send/recv fail and stop
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
     return 0;
 }
@@ -569,8 +566,8 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
         else
         {
             retVal = Send(sHost, request.data(), request.size(), 0);
-            if (SOCKET_ERROR == retVal)
-                return -1;
+            if(SOCKET_ERROR == retVal)
+                writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
             cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
             failed = cur_len <= 0;
         }
