@@ -495,7 +495,7 @@ void signalHandler(int signum)
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
     */
     killByHandle();
-    writeLog(LOG_TYPE_INFO, "Received SIGINT. Exit right now.");
+    writeLog(LOG_TYPE_INFO, "Received signal. Exit right now.");
     logEOF();
 
     exit(signum);

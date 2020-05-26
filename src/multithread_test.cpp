@@ -485,43 +485,60 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
 
     writeLog(LOG_TYPE_GPING, "Website ping started. Target: '" + target + "' . Proxy: '" + localaddr + ":" + std::to_string(localport) + "' .");
     int loopcounter = 0, succeedcounter = 0, failcounter = 0, totduration = 0;
+    bool failed = true;
     while(loopcounter < times_to_ping)
     {
+        failed = true;
+        rawSitePing[loopcounter] = 0;
         if(failcounter >= fail_limit)
         {
             writeLog(LOG_TYPE_GPING, "Fail limit exceeded. Stop now.");
             break;
         }
-        auto start = steady_clock::now();
+        defer(loopcounter++;)
+        defer(draw_progress_gping(loopcounter, rawSitePing);)
+        time_point<steady_clock> start = steady_clock::now(), end;
+        milliseconds lapse;
+        int deltatime = 0;
+        defer(
+            end = steady_clock::now();
+            lapse = duration_cast<milliseconds>(end - start);
+            deltatime = lapse.count();
+            if(failed)
+            {
+                failcounter++;
+                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
+            }
+            else
+            {
+                succeedcounter++;
+                rawSitePing[loopcounter] = deltatime;
+                totduration += deltatime;
+                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
+            }
+        )
         sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
         if(INVALID_SOCKET == sHost)
         {
-            failcounter++;
-            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: Could not create socket.");
-            goto end;
+            continue;
         }
+        defer(closesocket(sHost);)
         if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR)
         {
-            failcounter++;
-            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: Connect to SOCKS5 server " + localaddr + ":" + std::to_string(localport) + " failed.");
-            goto end;
+            continue;
         }
         setTimeout(sHost, 5000);
         if(connectSocks5(sHost, username, password) == -1)
         {
-            failcounter++;
-            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: SOCKS5 server authentication failed.");
-            goto end;
+            continue;
         }
         if(connectThruSocks(sHost, host, port) == -1)
         {
-            failcounter++;
-            rawSitePing[loopcounter] = 0;
             writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
-            goto end;
+            continue;
         }
 
         if(useTLS)
@@ -531,11 +548,7 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
 
             ctx = SSL_CTX_new(TLS_client_method());
             if(ctx == NULL)
-            {
-                failcounter++;
-                rawSitePing[loopcounter] = 0;
                 writeLog(LOG_TYPE_GPING, "OpenSSL: " + std::string(ERR_error_string(ERR_get_error(), NULL)));
-            }
             else
             {
                 defer(SSL_CTX_free(ctx);)
@@ -544,31 +557,12 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
                 SSL_set_fd(ssl, sHost);
 
                 if(SSL_connect(ssl) != 1)
-                {
-                    failcounter++;
-                    rawSitePing[loopcounter] = 0;
                     writeLog(LOG_TYPE_GPING, "ERROR: Connect to " + host + ":" + std::to_string(port) + " through SOCKS5 server failed.");
-                }
                 else
                 {
                     SSL_write(ssl, request.data(), request.size());
                     cur_len = SSL_read(ssl, bufRecv, BUF_SIZE - 1);
-                    auto end = steady_clock::now();
-                    auto duration = duration_cast<milliseconds>(end - start);
-                    int deltatime = duration.count();
-                    if(cur_len <= 0)
-                    {
-                        failcounter++;
-                        rawSitePing[loopcounter] = 0;
-                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
-                    }
-                    else
-                    {
-                        succeedcounter++;
-                        rawSitePing[loopcounter] = deltatime;
-                        totduration += deltatime;
-                        writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
-                    }
+                    failed = cur_len <= 0;
                 }
             }
         }
@@ -578,28 +572,8 @@ int sitePing(nodeInfo &node, std::string localaddr, int localport, std::string u
             if (SOCKET_ERROR == retVal)
                 return -1;
             cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
-            auto end = steady_clock::now();
-            auto duration = duration_cast<milliseconds>(end - start);
-            int deltatime = duration.count();
-            if(cur_len <= 0)
-            {
-                failcounter++;
-                rawSitePing[loopcounter] = 0;
-                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Fail - time=" + std::to_string(deltatime) + "ms");
-            }
-            else
-            {
-                succeedcounter++;
-                rawSitePing[loopcounter] = deltatime;
-                totduration += deltatime;
-                writeLog(LOG_TYPE_GPING, "Accessing '" + target + "' - Success - time=" + std::to_string(deltatime) + "ms");
-
-            }
+            failed = cur_len <= 0;
         }
-end:
-        draw_progress_gping(loopcounter, rawSitePing);
-        loopcounter++;
-        closesocket(sHost);
     }
     std::cerr<<std::endl;
     std::move(std::begin(rawSitePing), std::end(rawSitePing), node.rawSitePing);
