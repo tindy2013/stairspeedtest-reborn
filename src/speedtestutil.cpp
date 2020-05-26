@@ -1956,21 +1956,21 @@ int explodeConfContent(std::string content, const std::string &custom_port, bool
 void explode(std::string link, bool sslibev, bool ssrlibev, const std::string &custom_port, nodeInfo &node)
 {
     // TODO: replace strFind with startsWith if appropriate
-    if(strFind(link, "ssr://"))
+    if(startsWith(link, "ssr://"))
         explodeSSR(link, sslibev, ssrlibev, custom_port, node);
-    else if(strFind(link, "vmess://") || strFind(link, "vmess1://"))
+    else if(startsWith(link, "vmess://") || startsWith(link, "vmess1://"))
         explodeVmess(link, custom_port, node);
-    else if(strFind(link, "ss://"))
+    else if(startsWith(link, "ss://"))
         explodeSS(link, sslibev, custom_port, node);
-    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
+    else if(startsWith(link, "socks://") || startsWith(link, "https://t.me/socks") || startsWith(link, "tg://socks"))
         explodeSocks(link, custom_port, node);
-    else if(strFind(link, "https://t.me/http") || strFind(link, "tg://http")) //telegram style http link
+    else if(startsWith(link, "https://t.me/http") || startsWith(link, "tg://http")) //telegram style http link
         explodeHTTP(link, custom_port, node);
-    else if(strFind(link, "Netch://"))
+    else if(startsWith(link, "Netch://"))
         explodeNetch(link, sslibev, ssrlibev, custom_port, node);
-    else if(strFind(link, "trojan://"))
+    else if(startsWith(link, "trojan://"))
         explodeTrojan(link, custom_port, node);
-    else if(strFind(link, "http://") || strFind(link, "https://"))
+    else if(startsWith(link, "http://") || startsWith(link, "https://"))
         explodeHTTPSub(link, custom_port, node);
 }
 

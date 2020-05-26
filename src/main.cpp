@@ -793,17 +793,19 @@ void addNodes(std::string link, bool multilink)
 
     link = replace_all_distinct(link, "\"", "");
     writeLog(LOG_TYPE_INFO, "Received Link.");
-    if(strFind(link, "vmess://") || strFind(link, "vmess1://"))
+    if(startsWith(link, "vmess://") || startsWith(link, "vmess1://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDVMESS;
-    else if(strFind(link, "ss://"))
+    else if(startsWith(link, "ss://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSS;
-    else if(strFind(link, "ssr://"))
+    else if(startsWith(link, "ssr://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
-    else if(strFind(link, "socks://") || strFind(link, "https://t.me/socks") || strFind(link, "tg://socks"))
+    else if(startsWith(link, "socks://") || startsWith(link, "https://t.me/socks") || startsWith(link, "tg://socks"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSOCKS;
-    else if(strFind(link, "http://") || strFind(link, "https://") || strFind(link, "surge:///install-config"))
+    else if(startsWith(link, "trojan://"))
+        linkType = SPEEDTEST_MESSAGE_FOUNDTROJAN;
+    else if(startsWith(link, "http://") || startsWith(link, "https://") || startsWith(link, "surge:///install-config"))
         linkType = SPEEDTEST_MESSAGE_FOUNDSUB;
-    else if(strFind(link, "Netch://"))
+    else if(startsWith(link, "Netch://"))
         linkType = SPEEDTEST_MESSAGE_FOUNDNETCH;
     else if(link == "data:upload")
         linkType = SPEEDTEST_MESSAGE_FOUNDUPD;
@@ -1036,7 +1038,8 @@ int main(int argc, char* argv[])
     else
     {
         getline(std::cin, link);
-        writeLog(LOG_TYPE_INFO, "Input data: " + ACPToUTF8(link));
+        link = ACPToUTF8(link);
+        writeLog(LOG_TYPE_INFO, "Input data: " + link);
         if(rpcmode)
         {
             string_array webargs = split(link, "^");
@@ -1089,7 +1092,7 @@ int main(int argc, char* argv[])
                 printMsg(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, pngpath);
                 writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
                 if(rpcmode)
-                    printMsg(SPEEDTEST_MESSAGE_PICDATA, rpcmode, fileToBase64(pngpath));
+                    printMsg(SPEEDTEST_MESSAGE_PICDATA, rpcmode, "data:image/png;base64," + fileToBase64(pngpath));
             }
             else
             {
@@ -1119,8 +1122,8 @@ int main(int argc, char* argv[])
     }
     else if(allNodes.size() == 1)
     {
-        if(rpcmode)
-            printMsg(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, std::to_string(allNodes[0].id), allNodes[0].group, allNodes[0].remarks);
+        writeLog(LOG_TYPE_INFO, "Speedtest will now begin.");
+        printMsg(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
         singleTest(allNodes[0]);
         if(single_test_force_export)
         {
@@ -1131,7 +1134,7 @@ int main(int argc, char* argv[])
             printMsg(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, pngpath);
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
             if(rpcmode)
-                printMsg(SPEEDTEST_MESSAGE_PICDATA, rpcmode, fileToBase64(pngpath));
+                printMsg(SPEEDTEST_MESSAGE_PICDATA, rpcmode, "data:image/png;base64," + fileToBase64(pngpath));
         }
         writeLog(LOG_TYPE_INFO, "Single node test completed.");
     }
