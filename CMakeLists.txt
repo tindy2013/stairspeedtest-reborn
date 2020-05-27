@@ -39,7 +39,7 @@ ADD_EXECUTABLE(stairspeedtest
 	src/main.cpp
 	src/misc.cpp
 	src/multithread_test.cpp
-	src/printout.cpp
+	src/printmsg.cpp
 	src/processes.cpp
 	src/renderer.cpp
 	src/rulematch.cpp
