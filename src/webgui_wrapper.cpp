@@ -25,6 +25,7 @@ extern bool ssr_libev, ss_libev;
 extern std::vector<color> custom_color_groups;
 extern std::vector<int> custom_color_bounds;
 extern string_array custom_exclude_remarks, custom_include_remarks;
+extern unsigned int node_count;
 
 //functions from main
 void addNodes(std::string link, bool multilink);
@@ -70,6 +71,7 @@ void ssrspeed_regenerate_node_list(rapidjson::Document &json)
             }
         }
     }
+    node_count = json["configs"].Size();
     rewriteNodeID(targetNodes);
 }
 
@@ -225,6 +227,9 @@ std::string ssrspeed_generate_web_configs(std::vector<nodeInfo> &nodes)
             break;
         case SPEEDTEST_MESSAGE_FOUNDVMESS:
             writer.String("V2Ray");
+            break;
+        case SPEEDTEST_MESSAGE_FOUNDTROJAN:
+            writer.String("Trojan");
             break;
         default:
             writer.String("Unknown");

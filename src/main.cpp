@@ -490,11 +490,12 @@ void signalHandler(int signum)
 {
     std::cerr << "Interrupt signal (" << signum << ") received.\n";
 
-    /*
+#ifdef __APPLE__
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
     killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
-    */
+    killClient(SPEEDTEST_MESSAGE_FOUNDTROJAN);
+#endif // __APPLE__
     killByHandle();
     writeLog(LOG_TYPE_INFO, "Received signal. Exit right now.");
     logEOF();
@@ -601,6 +602,9 @@ int singleTest(nodeInfo &node)
         if(node.linkType != -1 && avail_status[node.linkType] == 1)
             runClient(node.linkType);
     }
+#ifdef __APPLE__
+    defer(killClient(node.linkType);)
+#endif // __APPLE__
     defer(killByHandle();)
     proxy = buildSocks5ProxyString(testserver, testport, username, password);
 
@@ -1012,13 +1016,14 @@ int main(int argc, char* argv[])
 
     if(!rpcmode)
         SetConsoleTitle("Stair Speedtest Reborn " VERSION);
-    /*
+
     //kill any client before testing
-    killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
+#ifdef __APPLE__
     killClient(SPEEDTEST_MESSAGE_FOUNDSS);
     killClient(SPEEDTEST_MESSAGE_FOUNDSSR);
+    killClient(SPEEDTEST_MESSAGE_FOUNDVMESS);
     killClient(SPEEDTEST_MESSAGE_FOUNDTROJAN);
-    */
+#endif // __APPLE__
     clientCheck();
     socksport = checkPort(socksport);
     writeLog(LOG_TYPE_INFO, "Using local port: " + std::to_string(socksport));
