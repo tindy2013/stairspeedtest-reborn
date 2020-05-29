@@ -8,6 +8,8 @@
 #include "renderer.h"
 #include "version.h"
 #include "nodeinfo.h"
+#include "string_hash.h"
+#include "misc.h"
 
 using namespace std::chrono;
 
@@ -168,30 +170,33 @@ std::string secondToString(int duration)
 
 int getSpeed(std::string speed)
 {
-    if(speed.empty())
+    if(speed.empty() || speed == "N/A")
         return 0;
     double speedval = 1.0;
-    if(speed.find("MB") != std::string::npos)
-        speedval = 1048576.0 * stof(speed.substr(0, speed.size() - 2));
-    else if(speed.find("KB") != std::string::npos)
-        speedval = 1024.0 * stof(speed.substr(0, speed.size() - 2));
-    else if(speed.find("B") != std::string::npos)
-        speedval = 1.0 * stof(speed.substr(0, speed.size() - 1));
+    const string_array units = {"B", "KB", "MB", "GB"};
+    for(size_t index = units.size() - 1; index >= 0; index--)
+    {
+        if(endsWith(speed, units[index]))
+            speedval = std::pow(1024, index) * to_number<float>(speed.substr(0, speed.size() - units[index].size()), 0.0);
+    }
     return (int)speedval;
 }
 
 bool comparer(nodeInfo &a, nodeInfo &b)
 {
-    if(export_sort_method_render == "speed")
+    switch(hash_(export_sort_method_render))
+    {
+    case "speed"_hash:
         return getSpeed(a.avgSpeed) < getSpeed(b.avgSpeed);
-    else if(export_sort_method_render == "rspeed")
+    case "rspeed"_hash:
         return getSpeed(a.avgSpeed) > getSpeed(b.avgSpeed);
-    else if(export_sort_method_render == "ping")
+    case "ping"_hash:
         return stof(a.avgPing) < stof(b.avgPing);
-    else if(export_sort_method_render == "rping")
+    case "rping"_hash:
         return stof(a.avgPing) > stof(b.avgPing);
-    else
+    default:
         return a.groupID < b.groupID || a.id < b.id;
+    }
 }
 
 void getColor(color lc, color rc, float level, color *finalcolor)
@@ -230,8 +235,8 @@ void loadDefaultColor(std::string type)
 {
     if(type == "rainbow")
     {
-        std::vector<color>().swap(colorgroup);
-        std::vector<int>().swap(bounds);
+        eraseElements(colorgroup);
+        eraseElements(bounds);
         for(int i = 0; i < 8; i++)
         {
             colorgroup.push_back(arrayToColor(rainbow_colorgroup[i]));
@@ -240,8 +245,8 @@ void loadDefaultColor(std::string type)
     }
     else if(type == "original")
     {
-        std::vector<color>().swap(colorgroup);
-        std::vector<int>().swap(bounds);
+        eraseElements(colorgroup);
+        eraseElements(bounds);
         for(int i = 0; i < 5; i++)
         {
             colorgroup.push_back(arrayToColor(def_colorgroup[i]));
@@ -340,8 +345,8 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         //store them all into arrays first
         //don't calculate all remarks and group widths
         //instead we use longest group/remarks to calculate width
-        //group_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].group);
-        //remarks_widths[i] = getTextWidth(&png, font, fontsize, nodes[i].remarks);
+        //group_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].group));
+        //remarks_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].remarks));
         if(getTextLength(nodes[i].group) > longest_group_len)
         {
             longest_group = nodes[i].group;
@@ -425,6 +430,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
+    writeLog(0, "All values generated. Start exporting image...", LOG_LEVEL_INFO);
 
     //initialize the file
     //pngwriter png(total_width, total_height, 1.0, pngname.data());

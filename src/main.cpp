@@ -752,7 +752,7 @@ void batchTest(std::vector<nodeInfo> &nodes)
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
             printMsg(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, pngpath);
             if(rpcmode)
-                printMsg(SPEEDTEST_MESSAGE_PICDATA, rpcmode, fileToBase64(pngpath));
+                printMsg(SPEEDTEST_MESSAGE_PICDATA, rpcmode, "data:image/png;base64," + fileToBase64(pngpath));
         }
     }
     cur_node_id = -1;
