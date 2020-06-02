@@ -34,9 +34,8 @@ cc -Xlinker -unexported_symbol -Xlinker "*" obfs_local*.o ../libcork/.libs/libco
 mv simple-obfs ../../base/tools/clients
 cd ../..
 
-git clone https://github.com/shadowsocksrr/shadowsocksr-libev --depth=1
+git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
-git checkout -b latest origin/Akkariiin/develop
 ./autogen.sh > /dev/null
 export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
 export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"

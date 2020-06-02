@@ -1,6 +1,7 @@
 #!/bin/bash
-
 mkdir base/tools/clients
+
+set -xe
 
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool curl
 apk add openssl-dev openssl-libs-static libev-dev pcre-dev libsodium-dev libsodium-static c-ares-dev libevent-dev libevent-static mbedtls-dev mbedtls-static boost-dev boost-static mariadb-dev mariadb-static
@@ -28,9 +29,8 @@ gcc ss_local*.o .libs/libshadowsocks-libev.a -o ss-local -lpcre -lmbedtls -lmbed
 mv ss-local ../../base/tools/clients/
 cd ../..
 
-git clone https://github.com/shadowsocksrr/shadowsocksr-libev --depth=1
+git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
-git checkout -b latest origin/Akkariiin/develop
 ./autogen.sh
 ./configure --disable-documentation
 make -j4
