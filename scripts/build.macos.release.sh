@@ -4,7 +4,7 @@ set -xe
 brew reinstall make cmake automake autoconf libtool
 brew reinstall libpng freetype rapidjson pcre2 libevent zlib bzip2 pkgconfig
 
-git clone https://github.com/curl/curl
+git clone https://github.com/curl/curl --depth=1
 cd curl
 #./buildconf > /dev/null
 #./configure --with-ssl=/usr/local/opt/openssl@1.1 --without-mbedtls --disable-ldap --disable-ldaps --disable-rtsp --without-libidn2 > /dev/null
@@ -12,13 +12,13 @@ cmake -DHTTP_ONLY=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -DOPENSSL_ROOT_
 make -j8 > /dev/null
 cd ..
 
-git clone https://github.com/jbeder/yaml-cpp
+git clone https://github.com/jbeder/yaml-cpp --depth=1
 cd yaml-cpp
 cmake -DYAML_CPP_BUILD_TESTS=OFF -DYAML_CPP_BUILD_TOOLS=OFF . > /dev/null
 make install -j8 > /dev/null
 cd ..
 
-git clone https://github.com/pngwriter/pngwriter
+git clone https://github.com/pngwriter/pngwriter --depth=1
 cd pngwriter > /dev/null
 cmake . > /dev/null
 sudo make install -j8 > /dev/null

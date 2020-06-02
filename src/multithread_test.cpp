@@ -5,6 +5,7 @@
 #include <mutex>
 #include <atomic>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -161,7 +162,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
             cur_len = Recv(sHost, bufRecv, BUF_SIZE - 1, 0);
             if(cur_len < 0)
             {
-                if(errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN)
+                if(errno == EWOULDBLOCK || errno == EAGAIN)
                 {
                     continue;
                 }
@@ -259,6 +260,32 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     return 0;
 }
 
+struct thread_args
+{
+    std::string host;
+    int port = 0;
+    std::string uri;
+    std::string localaddr;
+    int localport;
+    std::string username;
+    std::string password;
+    bool useTLS = false;
+};
+
+void* _thread_download_caller(void *arg)
+{
+    thread_args *args = (thread_args*)arg;
+    _thread_download(args->host, args->port, args->uri, args->localaddr, args->localport, args->username, args->password, args->useTLS);
+    return 0;
+}
+
+void* _thread_upload_caller(void *arg)
+{
+    thread_args *args = (thread_args*)arg;
+    _thread_upload(args->host, args->port, args->uri, args->localaddr, args->localport, args->username, args->password, args->useTLS);
+    return 0;
+}
+
 int _thread_upload_curl(nodeInfo *node, std::string url, std::string proxy)
 {
     launched++;
@@ -295,12 +322,15 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     }
 
     int running;
-    std::thread threads[thread_count];
+    thread_args args = {host, port, uri, localaddr, localport, username, password, useTLS};
+    //std::thread threads[thread_count];
+    pthread_t threads[thread_count];
     launched = 0;
     for(i = 0; i != thread_count; i++)
     {
         writeLog(LOG_TYPE_FILEDL, "Starting up thread #" + std::to_string(i + 1) + ".");
-        threads[i] = std::thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
+        //threads[i] = std::thread(_thread_download, host, port, uri, localaddr, localport, username, password, useTLS);
+        pthread_create(&threads[i], NULL, _thread_download_caller, &args);
     }
     while(!launched)
         sleep(20); //wait until any one of the threads start up
@@ -350,11 +380,18 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     writeLog(LOG_TYPE_FILEDL, "Downloaded " + std::to_string(cur_recv_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
     for(int i = 0; i < thread_count; i++)
     {
+        /*
         if(threads[i].joinable())
             threads[i].join();//wait until all threads has exited
+        */
+#ifdef _WIN32
+        pthread_kill(threads[i], SIGINT);
+#else
+        pthread_kill(threads[i], SIGUSR1);
+#endif
+        pthread_join(threads[i], NULL);
         writeLog(LOG_TYPE_FILEDL, "Thread #" + std::to_string(i + 1) + " has exited.");
     }
-    /// don't for threads to exit, killing the client will make connect/send/recv fail and stop
     writeLog(LOG_TYPE_FILEDL, "Multi-thread download test completed.");
     return 0;
 }
@@ -384,12 +421,15 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
         writeLog(LOG_TYPE_FILEUL, "Found HTTP URL.");
     }
 
-    std::thread workers[2];
+    //std::thread workers[2];
+    pthread_t workers[2];
+    thread_args args = {host, port, uri, localaddr, localport, username, password, useTLS};
     launched = 0;
     for(i = 0; i < 1; i++)
     {
         writeLog(LOG_TYPE_FILEUL, "Starting up worker thread #" + std::to_string(i + 1) + ".");
-        workers[i] = std::thread(_thread_upload, host, port, uri, localaddr, localport, username, password, useTLS);
+        //workers[i] = std::thread(_thread_upload, host, port, uri, localaddr, localport, username, password, useTLS);
+        pthread_create(&workers[i], NULL, _thread_upload_caller, &args);
     }
     while(!launched)
         sleep(20); //wait until worker thread starts up
@@ -426,9 +466,20 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     }
     writeLog(LOG_TYPE_FILEUL, "Uploaded " + std::to_string(this_bytes) + " bytes in " + std::to_string(deltatime) + " milliseconds.");
     node.totalRecvBytes += this_bytes;
+    /*
     for(auto &x : workers)
         if(x.joinable())
             x.join();//wait until worker thread has exited
+    */
+    for(int i = 0; i < 1; i++)
+    {
+#ifdef _WIN32
+        pthread_kill(workers[i], SIGINT);
+#else
+        pthread_kill(workers[i], SIGUSR1);
+#endif // _WIN32
+        pthread_join(workers[i], NULL);
+    }
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
     return 0;
 }

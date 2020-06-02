@@ -5,7 +5,7 @@ mkdir base/tools/clients
 apk add gcc g++ build-base linux-headers cmake make autoconf automake libtool curl
 apk add openssl-dev openssl-libs-static libev-dev pcre-dev libsodium-dev libsodium-static c-ares-dev libevent-dev libevent-static mbedtls-dev mbedtls-static boost-dev boost-static mariadb-dev mariadb-static
 
-git clone https://github.com/shadowsocks/simple-obfs
+git clone https://github.com/shadowsocks/simple-obfs --depth=1
 cd simple-obfs
 git submodule init
 git submodule update
@@ -17,7 +17,7 @@ gcc obfs_local*.o ../libcork/.libs/libcork.a -o simple-obfs -lev -s -static
 mv simple-obfs ../../base/tools/clients/
 cd ../..
 
-git clone https://github.com/shadowsocks/shadowsocks-libev
+git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1
 cd shadowsocks-libev
 git submodule update --init
 ./autogen.sh
@@ -28,7 +28,7 @@ gcc ss_local*.o .libs/libshadowsocks-libev.a -o ss-local -lpcre -lmbedtls -lmbed
 mv ss-local ../../base/tools/clients/
 cd ../..
 
-git clone https://github.com/shadowsocksrr/shadowsocksr-libev
+git clone https://github.com/shadowsocksrr/shadowsocksr-libev --depth=1
 cd shadowsocksr-libev
 git checkout -b latest origin/Akkariiin/develop
 ./autogen.sh
@@ -39,7 +39,7 @@ gcc ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a -o ssr-l
 mv ssr-local ../../base/tools/clients/
 cd ../..
 
-git clone https://github.com/trojan-gfw/trojan
+git clone https://github.com/trojan-gfw/trojan --depth=1
 cd trojan
 cmake -DDEFAULT_CONFIG=config.json -DFORCE_TCP_FASTOPEN=ON .
 make -j4

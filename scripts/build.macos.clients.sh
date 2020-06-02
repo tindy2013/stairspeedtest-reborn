@@ -6,7 +6,7 @@ set -xe
 brew reinstall make cmake automake autoconf libtool
 brew reinstall libev libsodium c-ares mbedtls
 
-git clone https://github.com/shadowsocks/shadowsocks-libev
+git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1
 cd shadowsocks-libev
 git submodule update --init
 ./autogen.sh > /dev/null
@@ -22,7 +22,7 @@ cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-lib
 mv ss-local ../../base/tools/clients
 cd ../..
 
-git clone https://github.com/shadowsocks/simple-obfs
+git clone https://github.com/shadowsocks/simple-obfs --depth=1
 cd simple-obfs
 git submodule update --init
 ./autogen.sh > /dev/null
@@ -34,7 +34,7 @@ cc -Xlinker -unexported_symbol -Xlinker "*" obfs_local*.o ../libcork/.libs/libco
 mv simple-obfs ../../base/tools/clients
 cd ../..
 
-git clone https://github.com/shadowsocksrr/shadowsocksr-libev
+git clone https://github.com/shadowsocksrr/shadowsocksr-libev --depth=1
 cd shadowsocksr-libev
 git checkout -b latest origin/Akkariiin/develop
 ./autogen.sh > /dev/null

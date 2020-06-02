@@ -1005,6 +1005,7 @@ int main(int argc, char* argv[])
     //along with some console window info
     SetConsoleOutputCP(65001);
 #else
+    signal(SIGUSR1, SIG_IGN);
     signal(SIGCHLD, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);

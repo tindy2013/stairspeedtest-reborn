@@ -172,14 +172,18 @@ int getSpeed(std::string speed)
 {
     if(speed.empty() || speed == "N/A")
         return 0;
-    double speedval = 1.0;
+    int speedval = 0;
     const string_array units = {"B", "KB", "MB", "GB"};
-    for(size_t index = units.size() - 1; index >= 0; index--)
+    size_t index = units.size();
+    while(index--)
     {
         if(endsWith(speed, units[index]))
+        {
             speedval = std::pow(1024, index) * to_number<float>(speed.substr(0, speed.size() - units[index].size()), 0.0);
+            break;
+        }
     }
-    return (int)speedval;
+    return speedval;
 }
 
 bool comparer(nodeInfo &a, nodeInfo &b)
