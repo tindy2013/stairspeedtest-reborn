@@ -290,8 +290,8 @@ int _thread_upload_curl(nodeInfo *node, std::string url, std::string proxy)
 {
     launched++;
     still_running++;
-    long retVal = curlPost(url, rand_str(8388608), proxy);
-    node->ulSpeed = speedCalc(retVal * 1.0);
+    //long retVal = webPost(url, rand_str(8388608), proxy);
+    //node->ulSpeed = speedCalc(retVal * 1.0);
     still_running--;
     return 0;
 }

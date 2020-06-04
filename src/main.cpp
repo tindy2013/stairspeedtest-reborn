@@ -77,6 +77,9 @@ int avail_status[5] = {0, 0, 0, 0, 0};
 unsigned int node_count = 0;
 int curGroupID = 0;
 
+int global_log_level = LOG_LEVEL_ERROR;
+bool serve_cache_on_fetch_fail = false, print_debug_info = false;
+
 //declarations
 
 int explodeLog(std::string log, std::vector<nodeInfo> &nodes);
@@ -826,7 +829,7 @@ void addNodes(std::string link, bool multilink)
             getline(std::cin, strInput);
             if(strInput.size())
             {
-                custom_group = ACPToUTF8(strInput);
+                custom_group = rpcmode ? strInput : ACPToUTF8(strInput);
                 writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
             }
         }
@@ -869,7 +872,7 @@ void addNodes(std::string link, bool multilink)
             getline(std::cin, strInput);
             if(strInput.size())
             {
-                custom_group = ACPToUTF8(strInput);
+                custom_group = rpcmode ? strInput : ACPToUTF8(strInput);
                 writeLog(LOG_TYPE_INFO, "Received custom group: " + custom_group);
             }
         }
@@ -1044,7 +1047,8 @@ int main(int argc, char* argv[])
     else
     {
         getline(std::cin, link);
-        link = ACPToUTF8(link);
+        if(!rpcmode)
+            link = ACPToUTF8(link);
         writeLog(LOG_TYPE_INFO, "Input data: " + link);
         if(rpcmode)
         {

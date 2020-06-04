@@ -1,29 +1,38 @@
 #include <iostream>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <mutex>
 
 #include <curl/curl.h>
 
 #include "webget.h"
+#include "version.h"
+#include "misc.h"
 #include "logger.h"
-#include "socket.h"
 
-const int times_to_ping = 3;
+#ifdef _WIN32
+#ifndef _stat
+#define _stat stat
+#endif // _stat
+#endif // _WIN32
 
-void draw_progress_sping(int progress, int *values)
-{
-    std::cerr<<"\r[";
-    for(int i = 0; i <= progress; i++)
-    {
-        std::cerr<<(values[i] == 0 ? "*" : "-");
-    }
-    if(progress == times_to_ping - 1)
-    {
-        std::cerr<<"]";
-    }
-    std::cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
-}
+extern bool print_debug_info, serve_cache_on_fetch_fail;
+extern int global_log_level;
+
+typedef std::lock_guard<std::mutex> guarded_mutex;
+std::mutex cache_rw_lock;
 
 std::string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
+
+static inline void curl_init()
+{
+    static bool init = false;
+    if(!init)
+    {
+        curl_global_init(CURL_GLOBAL_ALL);
+        init = true;
+    }
+}
 
 static int writer(char *data, size_t size, size_t nmemb, std::string *writerData)
 {
@@ -35,267 +44,283 @@ static int writer(char *data, size_t size, size_t nmemb, std::string *writerData
     return size * nmemb;
 }
 
-static size_t writer_dummy(void *ptr, size_t size, size_t nmemb, void *data)
+static int size_checker(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
-    /* we are not interested in the downloaded bytes itself,
-       so we only return the size we would have saved ... */
-    (void)ptr;  /* unused */
-    (void)data; /* unused */
-    return (size_t)(size * nmemb);
+    if(dltotal > 1048576.0)
+        return 1;
+    return 0;
 }
 
-std::string httpGet(std::string host, std::string addr, std::string uri)
+static inline void curl_set_common_options(CURL *curl_handle, const char *url)
 {
-    std::string recvdata = "", strTmp = "";
-    char bufRecv[BUF_SIZE];
-    int retVal = 0, cur_len = 0;
-    SOCKET sHost;
-
-    sHost = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if(INVALID_SOCKET == sHost)
-        return std::string();
-    startConnect(sHost, addr, 80);
-
-    std::string content = "GET " + uri + " HTTP/1.1\r\n"
-                          "Host: " + host + "\r\n"
-                          "User-Agent: " + user_agent_str + "\r\n"
-                          "Accept: */*\r\n\r\n";
-
-    setTimeout(sHost, 1000);
-    retVal = send_simple(sHost, content);
-    if((unsigned)retVal != content.size())
-    {
-        closesocket(sHost);
-        return std::string();
-    }
-    while(1)
-    {
-        ZeroMemory(bufRecv, BUF_SIZE);
-        cur_len = Recv(sHost, bufRecv, BUF_SIZE, 0);
-        if(cur_len < 0)
-        {
-            if(errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN)
-                continue;
-            else
-                break;
-        }
-        if(cur_len == 0)
-            break;
-        recvdata += bufRecv;
-    }
-    closesocket(sHost);
-    return recvdata;
-
-}
-
-std::string httpsGet(std::string host, std::string addr, std::string uri)
-{
-    std::string recvdata;
-    SSL_CTX *ctx;
-    SSL *ssl;
-    SOCKET sHost;
-
-    SSL_load_error_strings();
-    SSL_library_init();
-    OpenSSL_add_all_algorithms();
-    ctx = SSL_CTX_new(TLS_client_method());
-    ssl = SSL_new(ctx);
-    if(ctx == NULL)
-    {
-        ERR_print_errors_fp(stdout);
-        return std::string();
-    }
-    if((sHost = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        std::cerr<<"socket error "<<errno<<std::endl;
-        return std::string();
-    }
-    if(startConnect(sHost, addr, 443) != 0)
-    {
-        std::cerr<<"Connect err "<<errno<<std::endl;
-        return std::string();
-    }
-
-    SSL_set_fd(ssl, sHost);
-    if(SSL_connect(ssl) != 1)
-    {
-        ERR_print_errors_fp(stderr);
-    }
-    else
-    {
-        //cerr<<"connected with "<<SSL_get_cipher(ssl)<<" encryption."<<endl;
-        std::string data = "GET " + uri + " HTTP/1.1\r\n"
-                           "Host: " + host + "\r\n"
-                           "User-Agent: " + user_agent_str + "\r\n"
-                           "Accept: */*\r\n\r\n";
-        std::cerr<<data<<std::endl;
-        SSL_write(ssl, data.data(), data.size());
-        int len;
-        char tmpbuf[BUF_SIZE];
-        while(true)
-        {
-            ZeroMemory(tmpbuf, BUF_SIZE);
-            len = SSL_read(ssl, tmpbuf, BUF_SIZE-1);
-            if(len <= 0)
-                break;
-            recvdata += tmpbuf;
-        }
-    }
-    SSL_clear(ssl);
-    closesocket(sHost);
-    return recvdata;
-}
-
-std::string curlGet(std::string url, std::string proxy)
-{
-    CURL *curl_handle;
-    std::string data;
-
-    curl_global_init(CURL_GLOBAL_ALL);
-
-    curl_handle = curl_easy_init();
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
-    curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, global_log_level == LOG_LEVEL_VERBOSE ? 1L : 0L);
+    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_MAXREDIRS, 20L);
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 10L);
+    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 15L);
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
+    curl_easy_setopt(curl_handle, CURLOPT_MAXFILESIZE, 1048576L);
+    curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, size_checker);
+}
+
+static std::string curlGet(const std::string &url, const std::string &proxy, std::string &response_headers, CURLcode &return_code)
+{
+    CURL *curl_handle;
+    std::string data, new_url = url;
+    struct curl_slist *list = NULL;
+    long retVal = 0;
+
+    curl_init();
+
+    curl_handle = curl_easy_init();
+    if(proxy.size())
+    {
+        if(startsWith(proxy, "cors:"))
+        {
+            list = curl_slist_append(list, "X-Requested-With: stairspeedtest-reborn " VERSION);
+            curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+            new_url = proxy.substr(5) + url;
+        }
+        else
+            curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
+    }
+    curl_set_common_options(curl_handle, new_url.data());
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &data);
-    if(proxy.size())
-        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, writer);
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, &response_headers);
 
-    curl_easy_perform(curl_handle);
+    unsigned int fail_count = 0, max_fails = 1;
+    while(max_fails > fail_count)
+    {
+        return_code = curl_easy_perform(curl_handle);
+        if(return_code == CURLE_OK)
+            break;
+        else
+            fail_count++;
+    }
+
+    curl_easy_getinfo(curl_handle, CURLINFO_HTTP_CODE, &retVal);
     curl_easy_cleanup(curl_handle);
+
+    if(return_code != CURLE_OK || retVal != 200)
+        data.clear();
+    data.shrink_to_fit();
 
     return data;
 }
 
-long curlPost(std::string url, std::string data, std::string proxy)
+// data:[<mediatype>][;base64],<data>
+static std::string dataGet(const std::string &url)
 {
-    CURL *curl_handle;
-    double retVal = 0.0;
+    if (!startsWith(url, "data:"))
+        return std::string();
+    std::string::size_type comma = url.find(',');
+    if (comma == std::string::npos || comma == url.size() - 1)
+        return std::string();
 
-    CURLcode res = curl_global_init(CURL_GLOBAL_ALL);
-
-    curl_handle = curl_easy_init();
-
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
-    curl_easy_setopt(curl_handle, CURLOPT_HEADER, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
-    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data.data());
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, data.size());
-    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 10L);
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
-    if(proxy.size())
-        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
-
-    res = curl_easy_perform(curl_handle);
-
-    if(res == CURLE_OK)
-    {
-        res = curl_easy_getinfo(curl_handle, CURLINFO_SPEED_UPLOAD, &retVal);
+    std::string data = UrlDecode(url.substr(comma + 1));
+    if (endsWith(url.substr(0, comma), ";base64")) {
+        return urlsafe_base64_decode(data);
+    } else {
+        return data;
     }
-
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
-    return retVal;
 }
 
-std::string buildSocks5ProxyString(std::string addr, int port, std::string username, std::string password)
+std::string buildSocks5ProxyString(const std::string &addr, int port, const std::string &username, const std::string &password)
 {
     std::string authstr = username.size() && password.size() ? username + ":" + password + "@" : "";
     std::string proxystr = "socks5://" + authstr + addr + ":" + std::to_string(port);
     return proxystr;
 }
 
-std::string webGet(std::string url, std::string proxy)
+std::string webGet(const std::string &url, const std::string &proxy, std::string &response_headers, unsigned int cache_ttl)
 {
-    return curlGet(url, proxy);
-    /*
-    std::string host,uri, addr;
-    bool https = regmatch(url, "^https(.*)");
-
-    url = regreplace(url, "^(http|https)://", "");
-    host = url.substr(0, url.find("/"));
-    uri = url.substr(url.find("/"));
-
-    if(!regmatch(host, "\\d+.\\d+.\\d+.\\d")) addr = hostname2ipv4(host, 80); else addr = host;
-    if(!addr.size()) return std::string();
-
-    if(https) return httpsGet(host, addr, uri); else return httpGet(host, addr, uri);
-    */
-}
-
-double getLoadPageTime(std::string url, long timeout, std::string proxy)
-{
-    CURL *curl_handle;
-    CURLcode res;
-    double time_total = 0.0;
-    curl_global_init(CURL_GLOBAL_ALL);
-    curl_handle = curl_easy_init();
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.data());
-    curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer_dummy);
-    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
-    curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, timeout);
-    curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
-    res = curl_easy_perform(curl_handle);
-    if(CURLE_OK == res)
+    std::string content;
+    CURLcode return_code;
+    if (startsWith(url, "data:"))
+        return dataGet(url);
+    // cache system
+    if(cache_ttl > 0)
     {
-        double val;
-        res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME, &val);
-        if(val > 0.0)
-            time_total = val;
-    }
-    else
-        writeLog(LOG_TYPE_GPING, "Error while fetching '" + url + "' : " + std::string(curl_easy_strerror(res)));
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
-    return time_total;
-}
-
-int websitePing(nodeInfo *node, std::string url, std::string local_addr, int local_port, std::string user, std::string pass)
-{
-    double time_total = 0.0, retval = 0.0;
-    std::string proxystr = buildSocks5ProxyString(local_addr, local_port, user, pass);
-    writeLog(LOG_TYPE_GPING, "Website ping started. Test with proxy '" + proxystr + "'.");
-    int loop_times = 0, times_to_ping = 3, succeedcounter = 0, failcounter = 0;
-    while(loop_times < times_to_ping)
-    {
-        retval = getLoadPageTime(url, 5L, proxystr);
-        if(retval > 0)
+        md("cache");
+        const std::string url_md5 = getMD5(url);
+        const std::string path = "cache/" + url_md5, path_header = path + "_header";
+        struct stat result;
+        if(stat(path.data(), &result) == 0) // cache exist
         {
-            succeedcounter++;
-            time_total += retval * 1000.0;
-            node->rawSitePing[loop_times] = retval * 1000.0;
-            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Success - interval=" + std::to_string(node->rawSitePing[loop_times]) + "ms");
+            time_t mtime = result.st_mtime, now = time(NULL); // get cache modified time and current time
+            if(difftime(now, mtime) <= cache_ttl) // within TTL
+            {
+                writeLog(0, "CACHE HIT: '" + url + "', using local cache.");
+                guarded_mutex guard(cache_rw_lock);
+                response_headers = fileGet(path_header, true);
+                return fileGet(path, true);
+            }
+            writeLog(0, "CACHE MISS: '" + url + "', TTL timeout, creating new cache."); // out of TTL
+        }
+        else
+            writeLog(0, "CACHE NOT EXIST: '" + url + "', creating new cache.");
+        content = curlGet(url, proxy, response_headers, return_code); // try to fetch data
+        if(return_code == CURLE_OK) // success, save new cache
+        {
+            guarded_mutex guard(cache_rw_lock);
+            fileWrite(path, content, true);
+            fileWrite(path_header, response_headers, true);
         }
         else
         {
-            failcounter++;
-            node->rawSitePing[loop_times] = 0;
-            writeLog(LOG_TYPE_GPING, "Accessing '" + url + "' - Fail - interval=0ms");
+            if(fileExist(path) && serve_cache_on_fetch_fail) // failed, check if cache exist
+            {
+                writeLog(0, "Fetch failed. Serving cached content."); // cache exist, serving cache
+                guarded_mutex guard(cache_rw_lock);
+                content = fileGet(path, true);
+                response_headers = fileGet(path_header, true);
+            }
+            else
+                writeLog(0, "Fetch failed. No local cache available."); // cache not exist or not allow to serve cache, serving nothing
         }
-        loop_times++;
-        draw_progress_sping(loop_times - 1, node->rawSitePing);
-        sleep(200);
+        return content;
     }
-    std::cerr<<std::endl;
-    if(succeedcounter)
+    return curlGet(url, proxy, response_headers, return_code);
+}
+
+std::string webGet(const std::string &url, const std::string &proxy)
+{
+    std::string dummy;
+    return webGet(url, proxy, dummy);
+}
+
+std::string webGet(const std::string &url, const std::string &proxy, unsigned int cache_ttl)
+{
+    std::string dummy;
+    return webGet(url, proxy, dummy, cache_ttl);
+}
+
+int curlPost(const std::string &url, const std::string &data, const std::string &proxy, const string_array &request_headers, std::string *retData)
+{
+    CURL *curl_handle;
+    CURLcode res;
+    struct curl_slist *list = NULL;
+    long retVal = 0;
+
+    curl_init();
+    curl_handle = curl_easy_init();
+    list = curl_slist_append(list, "Content-Type: application/json;charset='utf-8'");
+    for(const std::string &x : request_headers)
+        list = curl_slist_append(list, x.data());
+
+    curl_set_common_options(curl_handle, url.data());
+    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data.data());
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, data.size());
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, retData);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
+    if(proxy.size())
+        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
+
+    res = curl_easy_perform(curl_handle);
+    curl_slist_free_all(list);
+
+    if(res == CURLE_OK)
     {
-        char strtmp[16] = {};
-        snprintf(strtmp, sizeof(strtmp), "%0.2f", time_total / succeedcounter * 1.0);
-        node->sitePing = strtmp;
+        res = curl_easy_getinfo(curl_handle, CURLINFO_HTTP_CODE, &retVal);
     }
-    writeLog(LOG_TYPE_GPING, "Website ping completed. Leaving.");
-    return 0;
+
+    curl_easy_cleanup(curl_handle);
+
+    return retVal;
+}
+
+int webPost(const std::string &url, const std::string &data, const std::string &proxy, const string_array &request_headers, std::string *retData)
+{
+    return curlPost(url, data, proxy, request_headers, retData);
+}
+
+int curlPatch(const std::string &url, const std::string &data, const std::string &proxy, const string_array &request_headers, std::string *retData)
+{
+    CURL *curl_handle;
+    CURLcode res;
+    long retVal = 0;
+    struct curl_slist *list = NULL;
+
+    curl_init();
+
+    curl_handle = curl_easy_init();
+
+    list = curl_slist_append(list, "Content-Type: application/json;charset='utf-8'");
+    for(const std::string &x : request_headers)
+        list = curl_slist_append(list, x.data());
+
+    curl_set_common_options(curl_handle, url.data());
+    curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "PATCH");
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data.data());
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, data.size());
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, writer);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, retData);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
+    if(proxy.size())
+        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
+
+    res = curl_easy_perform(curl_handle);
+    curl_slist_free_all(list);
+    if(res == CURLE_OK)
+    {
+        res = curl_easy_getinfo(curl_handle, CURLINFO_HTTP_CODE, &retVal);
+    }
+
+    curl_easy_cleanup(curl_handle);
+
+    return retVal;
+}
+
+int webPatch(const std::string &url, const std::string &data, const std::string &proxy, const string_array &request_headers, std::string *retData)
+{
+    return curlPatch(url, data, proxy, request_headers, retData);
+}
+
+int curlHead(const std::string &url, const std::string &proxy, const string_array &request_headers, std::string &response_headers)
+{
+    CURL *curl_handle;
+    CURLcode res;
+    long retVal = 0;
+    struct curl_slist *list = NULL;
+
+    curl_init();
+
+    curl_handle = curl_easy_init();
+
+    list = curl_slist_append(list, "Content-Type: application/json;charset='utf-8'");
+    for(const std::string &x : request_headers)
+        list = curl_slist_append(list, x.data());
+
+    curl_set_common_options(curl_handle, url.data());
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, writer);
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, &response_headers);
+    curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent_str.data());
+    if(proxy.size())
+        curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy.data());
+
+    res = curl_easy_perform(curl_handle);
+    curl_slist_free_all(list);
+    if(res == CURLE_OK)
+        res = curl_easy_getinfo(curl_handle, CURLINFO_HTTP_CODE, &retVal);
+
+    curl_easy_cleanup(curl_handle);
+
+    return retVal;
+}
+
+int webHead(const std::string &url, const std::string &proxy, const string_array &request_headers, std::string &response_headers)
+{
+    return curlHead(url, proxy, request_headers, response_headers);
 }
