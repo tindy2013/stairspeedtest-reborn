@@ -1,5 +1,6 @@
 #!/bin/bash
 mkdir base/tools/clients
+export MACOSX_DEPLOYMENT_TARGET=10.13
 
 set -xe
 

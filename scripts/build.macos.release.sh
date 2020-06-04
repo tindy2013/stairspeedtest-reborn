@@ -1,4 +1,5 @@
 #!/bin/bash
+export MACOSX_DEPLOYMENT_TARGET=10.13
 set -xe
 
 brew reinstall make cmake automake autoconf libtool
