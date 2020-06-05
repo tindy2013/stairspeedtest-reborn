@@ -16,7 +16,7 @@ std::string config_ssr_libev = R"({"server":"?server?","server_port":?port?,"pro
 std::string base_vmess = R"({"inbounds":[{"port":?localport?,"listen":"127.0.0.1","protocol":"socks"}],"outbounds":[{"tag":"proxy","protocol":"vmess","settings":{"vnext":[{"address":"?add?","port":?port?,"users":[{"id":"?id?","alterId":?aid?,"email":"t@t.tt","security":"?cipher?"}]}]},"streamSettings":{"network":"?net?","security":"?tls?","tlsSettings":?tlsset?,"tcpSettings":?tcpset?,"wsSettings":?wsset?},"mux":{"enabled":false}}],"routing":{"domainStrategy":"IPIfNonMatch"}})";
 std::string wsset_vmess = R"({"connectionReuse":true,"path":"?path?","headers":{"Host":"?host?"?edge?}})";
 std::string tcpset_vmess = R"({"connectionReuse":true,"header":{"type":"?type?","request":{"version":"1.1","method":"GET","path":["?path?"],"headers":{"Host":["?host?"],"User-Agent":["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36","Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46"],"Accept-Encoding":["gzip, deflate"],"Connection":["keep-alive"],"Pragma":"no-cache"}}}})";
-std::string tlsset_vmess = R"({"serverName":"?serverName?","allowInsecure":?verify?,"allowInsecureCiphers":false})";
+std::string tlsset_vmess = R"({"serverName":"?serverName?","allowInsecure":?verify?,"allowInsecureCiphers":true})";
 std::string base_trojan = R"({"run_type":"client","local_addr":"127.0.0.1","local_port":?localport?,"remote_addr":"?server?","remote_port":?port?,"password":["?password?"],"ssl":{"verify":?verify?,"verify_hostname":?verify?,"sni":"?host?"},"tcp":{"reuse_port":true}})";
 
 int explodeLog(std::string log, std::vector<nodeInfo> &nodes)

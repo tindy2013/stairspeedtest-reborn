@@ -4,6 +4,7 @@
 #include <iostream>
 #include <mutex>
 #include <atomic>
+#include <set>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -19,6 +20,8 @@
 
 using namespace std::chrono;
 
+std::set<SOCKET> opened_socket;
+
 #define MAX_FILE_SIZE 512*1024*1024
 
 //for use of site ping
@@ -29,6 +32,8 @@ typedef std::lock_guard<std::mutex> guarded_mutex;
 std::atomic_int received_bytes = 0;
 std::atomic_int launched = 0, still_running = 0;
 std::atomic_bool EXIT_FLAG = false;
+
+int terminateClient(int client);
 
 static inline void draw_progress_dl(int progress, int this_bytes)
 {
@@ -99,7 +104,8 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    defer(closesocket(sHost);)
+    opened_socket.insert(sHost);
+    //defer(closesocket(sHost);) // close socket in main thread
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
         return -1;
@@ -196,7 +202,8 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    defer(closesocket(sHost);)
+    opened_socket.insert(sHost);
+    //defer(closesocket(sHost);) // close socket on main thread
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
         return -1;
@@ -308,6 +315,7 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     urlParse(testfile, host, uri, port, useTLS);
     received_bytes = 0;
     EXIT_FLAG = false;
+    eraseElements(opened_socket);
 
     if(useTLS)
     {
@@ -364,6 +372,12 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
     EXIT_FLAG = true; //terminate all threads right now
+    auto iter = opened_socket.begin();
+    while(iter != opened_socket.end()) //close all sockets
+    {
+        closesocket(*iter);
+        iter = opened_socket.erase(iter);
+    }
     cur_recv_bytes = received_bytes; //save current received byte
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
@@ -384,11 +398,13 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
         if(threads[i].joinable())
             threads[i].join();//wait until all threads has exited
         */
+        /*
 #ifdef _WIN32
         pthread_kill(threads[i], SIGINT);
 #else
         pthread_kill(threads[i], SIGUSR1);
 #endif
+        */
         pthread_join(threads[i], NULL);
         writeLog(LOG_TYPE_FILEDL, "Thread #" + std::to_string(i + 1) + " has exited.");
     }
@@ -408,6 +424,7 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     urlParse(testfile, host, uri, port, useTLS);
     received_bytes = 0;
     EXIT_FLAG = false;
+    eraseElements(opened_socket);
 
     if(useTLS)
     {
@@ -454,6 +471,12 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEUL, "Test completed. Terminate worker threads.");
     EXIT_FLAG = true; //terminate worker thread right now
+    auto iter = opened_socket.begin();
+    while(iter != opened_socket.end()) //close all sockets
+    {
+        closesocket(*iter);
+        iter = opened_socket.erase(iter);
+    }
     this_bytes = received_bytes; //save current uploaded data
     auto end = steady_clock::now();
     auto duration = duration_cast<milliseconds>(end - start);
@@ -473,11 +496,13 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     */
     for(int i = 0; i < 1; i++)
     {
+        /*
 #ifdef _WIN32
         pthread_kill(workers[i], SIGINT);
 #else
         pthread_kill(workers[i], SIGUSR1);
 #endif // _WIN32
+        */
         pthread_join(workers[i], NULL);
     }
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");

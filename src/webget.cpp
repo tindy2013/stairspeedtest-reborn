@@ -95,10 +95,10 @@ static std::string curlGet(const std::string &url, const std::string &proxy, std
     curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, &response_headers);
 
     unsigned int fail_count = 0, max_fails = 1;
-    while(max_fails > fail_count)
+    while(true)
     {
         return_code = curl_easy_perform(curl_handle);
-        if(return_code == CURLE_OK)
+        if(return_code == CURLE_OK || max_fails >= fail_count)
             break;
         else
             fail_count++;
