@@ -38,10 +38,10 @@ cp /usr/local/lib/libpng.a .
 cp /usr/local/lib/libfreetype.a .
 
 export CMAKE_CXX_FLAGS="-I/usr/local/include -I/usr/local/opt/openssl@1.1/include -I/usr/local/opt/curl/include"
-cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 .
+cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 -DOPENSSL_USE_STATIC_LIBS=TRUE -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 .
 make -j8
 rm stairspeedtest
-c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o libpcre2-8.a libevent.a libcurl.a libPNGwriter.a libpng.a libfreetype.a libz.a libssl.a libcrypto.a libyaml-cpp.a libbz2.a -ldl -lpthread -O3
+c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o *.a -ldl -lpthread -O3
 
 if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
 	bash scripts/build.macos.clients.sh

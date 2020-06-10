@@ -19,7 +19,7 @@ cp /usr/local/lib/libmbedtls.a .
 cp /usr/local/lib/libmbedcrypto.a .
 cp /usr/local/lib/libev.a .
 cp /usr/local/lib/libsodium.a .
-cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-libev.a libpcre.a libmbedtls.a libmbedcrypto.a libev.a libsodium.a -o ss-local
+cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-libev.a *.a -o ss-local
 mv ss-local ../../base/tools/clients
 cd ../..
 
@@ -31,7 +31,7 @@ CC=cc ./configure --disable-documentation > /dev/null
 make -j8 > /dev/null
 cd src
 cp /usr/local/lib/libev.a .
-cc -Xlinker -unexported_symbol -Xlinker "*" obfs_local*.o ../libcork/.libs/libcork.a libev.a -o simple-obfs
+cc -Xlinker -unexported_symbol -Xlinker "*" obfs_local*.o ../libcork/.libs/libcork.a *.a -o simple-obfs
 mv simple-obfs ../../base/tools/clients
 cd ../..
 
@@ -48,7 +48,7 @@ cp /usr/local/opt/openssl@1.1/lib/libssl.a .
 cp /usr/local/opt/openssl@1.1/lib/libcrypto.a .
 cp /usr/local/lib/libsodium.a .
 cp /usr/local/lib/libev.a .
-cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a libpcre.a libssl.a libcrypto.a libsodium.a libev.a -o ssr-local
+cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a *.a -o ssr-local
 mv ssr-local ../../base/tools/clients
 cd ../..
 
