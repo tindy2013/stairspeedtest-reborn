@@ -6,20 +6,28 @@
 
 #include "geoip.h"
 
-class GeoIPHelper
+template <typename T> class FutureHelper
 {
 public:
 
-    void set(std::shared_future<geoIPInfo> future)
+    void set(std::shared_future<T> future)
     {
         _priv_inter_future = future;
+        _priv_fetched = false;
         _priv_set = true;
     }
 
-    geoIPInfo get()
+    void set(T content)
+    {
+        _priv_inter_store = content;
+        _priv_fetched = true;
+        _priv_set = true;
+    }
+
+    T get()
     {
         if(!_priv_set)
-            return geoIPInfo();
+            return T();
         if(!_priv_fetched)
         {
             _priv_inter_store = _priv_inter_future.get();
@@ -28,23 +36,39 @@ public:
         return _priv_inter_store;
     }
 
-    GeoIPHelper()
+    FutureHelper()
     {
         _priv_fetched = false;
     }
 
-    GeoIPHelper(std::shared_future<geoIPInfo> future)
+    FutureHelper(std::shared_future<T>&& future)
     {
-        _priv_fetched = false;
         set(future);
     }
 
-    ~GeoIPHelper() = default;
+    FutureHelper(T&& content)
+    {
+        set(content);
+    }
+
+    FutureHelper& operator= (std::shared_future<T>&& future)
+    {
+        set(future);
+        return *this;
+    }
+
+    FutureHelper& operator= (T&& content)
+    {
+        set(content);
+        return *this;
+    }
+
+    ~FutureHelper() = default;
 
 private:
     bool _priv_fetched = false, _priv_set = false;
-    std::shared_future<geoIPInfo> _priv_inter_future = std::future<geoIPInfo>();
-    geoIPInfo _priv_inter_store;
+    std::shared_future<T> _priv_inter_future = std::future<T>();
+    T _priv_inter_store;
 };
 
 struct nodeInfo
@@ -70,10 +94,11 @@ struct nodeInfo
     int rawSitePing[10] = {};
     std::string sitePing = "0.00";
     std::string traffic;
-    GeoIPHelper inboundGeoIP;
-    GeoIPHelper outboundGeoIP;
+    FutureHelper<geoIPInfo> inboundGeoIP;
+    FutureHelper<geoIPInfo> outboundGeoIP;
     std::string testFile;
     std::string ulTarget;
+    FutureHelper<std::string> natType {"Unknown"};
 };
 
 #endif // NODEINFO_H_INCLUDED

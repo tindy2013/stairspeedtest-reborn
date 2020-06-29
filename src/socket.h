@@ -58,4 +58,9 @@ int connectThruSocks(SOCKET sHost, std::string host, int port);
 int connectThruHTTP(SOCKET sHost, std::string username, std::string password, std::string dsthost, int dstport);
 int checkPort(int startport);
 
+std::string sockaddrToIPAddr(sockaddr *addr);
+uint16_t socks5_start_udp(SOCKET sHost, const std::string &address, const uint16_t port);
+int socks5_send_udp_data(SOCKET sHost, const std::string &server, uint16_t port, const std::string &dst_host, uint16_t dst_port, const std::string &data, const uint8_t fragment = 0);
+std::tuple<std::string, uint16_t> getSocksAddress(const std::string &data);
+
 #endif // SOCKET_H_INCLUDED

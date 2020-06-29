@@ -68,6 +68,7 @@ bool export_with_maxspeed = false;
 bool export_as_new_style = true;
 bool test_site_ping = true;
 bool test_upload = false;
+bool test_nat_type = true;
 bool multilink_export_as_one_image = false;
 bool single_test_force_export = false;
 bool verbose = false;
@@ -86,6 +87,7 @@ int explodeLog(std::string log, std::vector<nodeInfo> &nodes);
 int tcping(nodeInfo &node);
 void getTestFile(nodeInfo &node, std::string proxy, std::vector<downloadLink> &downloadFiles, std::vector<linkMatchRule> &matchRules, std::string defaultTestFile);
 void ssrspeed_webserver_routine(std::string listen_address, int listen_port);
+std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &stun_server = "stun.ekiga.net", uint16_t stun_port = 3478);
 
 //original codes
 
@@ -214,10 +216,10 @@ int runClient(int client)
 {
 #ifdef _WIN32
     std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -config config.json";
-    std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -c config.json";
+    std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -u -c config.json";
 
     std::string ss_libev_dir = "tools\\clients\\shadowsocks-libev\\";
-    std::string ss_libev_path = ss_libev_dir + "ss-libev.exe -c ..\\..\\..\\config.json";
+    std::string ss_libev_path = ss_libev_dir + "ss-libev.exe -u -c ..\\..\\..\\config.json";
 
     std::string ssr_win_dir = "tools\\clients\\shadowsocksr-win\\";
     std::string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
@@ -265,11 +267,11 @@ int runClient(int client)
     }
 #else
     std::string v2core_path = "tools/clients/v2ray -config config.json";
-    std::string ssr_libev_path = "tools/clients/ssr-local -c config.json";
+    std::string ssr_libev_path = "tools/clients/ssr-local -u -c config.json";
     std::string trojan_path = "tools/clients/trojan -c config.json";
 
     std::string ss_libev_dir = "tools/clients/";
-    std::string ss_libev_path = "./ss-local -c ../../config.json";
+    std::string ss_libev_path = "./ss-local -u -c ../../config.json";
 
     switch(client)
     {
@@ -363,6 +365,15 @@ int killClient(int client)
     return 0;
 }
 
+int terminateClient(int client)
+{
+    killByHandle();
+#ifdef __APPLE__
+    killClient(client);
+#endif // __APPLE__
+    return 0;
+}
+
 void readConf(std::string path)
 {
     downloadLink link;
@@ -386,6 +397,7 @@ void readConf(std::string path)
     ini.GetIfExist("speedtest_mode", speedtest_mode);
     ini.GetBoolIfExist("test_site_ping", test_site_ping);
     ini.GetBoolIfExist("test_upload", test_upload);
+    ini.GetBoolIfExist("test_nat_type", test_nat_type);
 #ifdef _WIN32
     if(ini.ItemExist("preferred_ss_client"))
     {
@@ -617,8 +629,10 @@ int singleTest(nodeInfo &node)
     sleep(200); /// wait for client startup
     writeLog(LOG_TYPE_INFO, "Now started fetching GeoIP info...");
     printMsg(SPEEDTEST_MESSAGE_STARTGEOIP, rpcmode, id);
-    node.inboundGeoIP.set(std::async(std::launch::async, [node](){return getGeoIPInfo(node.server, "");}));
-    node.outboundGeoIP.set(std::async(std::launch::async, [proxy](){return getGeoIPInfo("", proxy);}));
+    node.inboundGeoIP.set(std::async(std::launch::async, [node](){ return getGeoIPInfo(node.server, ""); }));
+    node.outboundGeoIP.set(std::async(std::launch::async, [proxy](){ return getGeoIPInfo("", proxy); }));
+    if(test_nat_type)
+        node.natType.set(std::async(std::launch::async, [&](){ return get_nat_type_thru_socks5(testserver, testport); }));
 
     printMsg(SPEEDTEST_MESSAGE_STARTPING, rpcmode, id);
     if(speedtest_mode != "speedonly")
@@ -751,7 +765,7 @@ void batchTest(std::vector<nodeInfo> &nodes)
         {
             printMsg(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
-            pngpath = exportRender(resultPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
+            pngpath = exportRender(resultPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, test_nat_type);
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
             printMsg(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, pngpath);
             if(rpcmode)
@@ -1098,7 +1112,7 @@ int main(int argc, char* argv[])
                 printMsg(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
                 writeLog(LOG_TYPE_INFO, "Now exporting result...");
                 curPNGPath = replace_all_distinct(resultPath, ".log", "") + "-multilink-all.png";
-                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
+                pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, test_nat_type);
                 printMsg(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, pngpath);
                 writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
                 if(rpcmode)
@@ -1119,7 +1133,7 @@ int main(int argc, char* argv[])
                         printMsg(SPEEDTEST_MESSAGE_PICSAVINGMULTI, rpcmode, std::to_string(i + 1));
                         writeLog(LOG_TYPE_INFO, "Now exporting result for group " + std::to_string(i + 1) + "...");
                         curPNGPath = curPNGPathPrefix + "-multilink-group" + std::to_string(i + 1) + ".png";
-                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
+                        pngpath = exportRender(curPNGPath, nodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, test_nat_type);
                         printMsg(SPEEDTEST_MESSAGE_PICSAVEDMULTI, rpcmode, std::to_string(i + 1), pngpath);
                         writeLog(LOG_TYPE_INFO, "Group " + std::to_string(i + 1) + " result saved to " + pngpath + " .");
                     }
@@ -1140,7 +1154,7 @@ int main(int argc, char* argv[])
             printMsg(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
             curPNGPath = "results" PATH_SLASH + getTime(1) + ".png";
-            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style);
+            pngpath = exportRender(curPNGPath, allNodes, export_with_maxspeed, export_sort_method, export_color_style, export_as_new_style, test_nat_type);
             printMsg(SPEEDTEST_MESSAGE_PICSAVED, rpcmode, pngpath);
             writeLog(LOG_TYPE_INFO, "Result saved to " + pngpath + " .");
             if(rpcmode)

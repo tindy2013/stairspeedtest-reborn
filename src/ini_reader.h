@@ -347,6 +347,7 @@ public:
     */
     string_array GetSections()
     {
+        /*
         string_array retData;
 
         for(auto &x : ini_content)
@@ -356,6 +357,8 @@ public:
         //std::transform(ini_content.begin(), ini_content.end(), back_inserter(retData), [](auto x) -> std::string {return x.first;});
 
         return retData;
+        */
+        return section_order;
     }
 
     /**

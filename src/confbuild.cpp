@@ -61,7 +61,7 @@ int explodeLog(std::string log, std::vector<nodeInfo> &nodes)
     return 0;
 }
 
-std::string vmessConstruct(std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string edge, std::string tls, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string vmessConstruct(std::string group, std::string remarks, std::string add, std::string port, std::string type, std::string id, std::string aid, std::string net, std::string cipher, std::string path, std::string host, std::string edge, std::string tls, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_vmess;
     std::string wsset = wsset_vmess;
@@ -137,7 +137,7 @@ std::string ssrConstruct(std::string group, std::string remarks, std::string rem
     return base;
 }
 
-std::string ssConstruct(std::string server, std::string port, std::string password, std::string method, std::string plugin, std::string pluginopts, std::string remarks, bool libev, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string ssConstruct(std::string group, std::string remarks, std::string server, std::string port, std::string password, std::string method, std::string plugin, std::string pluginopts, bool libev, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_ss_win;
     std::string config = config_ss_win;
@@ -166,17 +166,17 @@ std::string ssConstruct(std::string server, std::string port, std::string passwo
     return base;
 }
 
-std::string socksConstruct(std::string remarks, std::string server, std::string port, std::string username, std::string password, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string socksConstruct(std::string group, std::string remarks, std::string server, std::string port, std::string username, std::string password, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     return "user=" + username + "&pass=" + password;
 }
 
-std::string httpConstruct(std::string remarks, std::string server, std::string port, std::string username, std::string password, bool tls, tribool scv = tribool())
+std::string httpConstruct(std::string group, std::string remarks, std::string server, std::string port, std::string username, std::string password, bool tls, tribool scv = tribool())
 {
     return "user=" + username + "&pass=" + password;
 }
 
-std::string trojanConstruct(std::string remarks, std::string server, std::string port, std::string password, std::string host, bool tlssecure, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string trojanConstruct(std::string group, std::string remarks, std::string server, std::string port, std::string password, std::string host, bool tlssecure, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     std::string base = base_trojan;
     scv.define(true);
@@ -189,7 +189,7 @@ std::string trojanConstruct(std::string remarks, std::string server, std::string
     return base;
 }
 
-std::string snellConstruct(std::string remarks, std::string server, std::string port, std::string password, std::string obfs, std::string host, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string snellConstruct(std::string group, std::string remarks, std::string server, std::string port, std::string password, std::string obfs, std::string host, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
 {
     //no clients available, ignore
     return std::string();

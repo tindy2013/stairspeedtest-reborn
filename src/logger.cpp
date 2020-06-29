@@ -1,6 +1,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <mutex>
 
 #include "logger.h"
 #include "version.h"
@@ -14,6 +15,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #endif // _WIN32
+
+typedef std::lock_guard<std::mutex> guarded_mutex;
+std::mutex logger_mutex;
 
 std::string curtime, result_content;
 std::string resultPath, logPath;
@@ -73,6 +77,7 @@ void resultInit()
 
 void writeLog(int type, std::string content, int level)
 {
+    guarded_mutex guard(logger_mutex);
     std::string timestr = "[" + getTime(2) + "]", typestr = "[UNKNOWN]";
     switch(type)
     {
@@ -109,6 +114,8 @@ void writeLog(int type, std::string content, int level)
     case LOG_TYPE_RENDER:
         typestr = "[RENDER]";
         break;
+    case LOG_TYPE_STUN:
+        typestr = "[STUN]";
     }
     content = timestr + typestr + content + "\n";
     fileWrite(logPath, content, false);

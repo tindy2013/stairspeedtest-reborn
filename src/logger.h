@@ -17,7 +17,8 @@ enum
     LOG_TYPE_RULES,
     LOG_TYPE_GPING,
     LOG_TYPE_RENDER,
-    LOG_TYPE_FILEUL
+    LOG_TYPE_FILEUL,
+    LOG_TYPE_STUN
 };
 
 enum

@@ -8,6 +8,7 @@
 //#include <filesystem>
 #include <unistd.h>
 #include <stdarg.h>
+#include <sys/stat.h>
 
 /*
 #ifdef USE_STD_REGEX
@@ -658,28 +659,28 @@ int regGetMatch(const std::string &src, const std::string &match, size_t group_c
 bool regMatch(const std::string &src, const std::string &match)
 {
     jp::Regex reg;
-    reg.setPattern(match).addModifier("gm").addPcre2Option(PCRE2_ANCHORED|PCRE2_ENDANCHORED|PCRE2_UTF).compile();
+    reg.setPattern(match).addModifier("m").addPcre2Option(PCRE2_ANCHORED|PCRE2_ENDANCHORED|PCRE2_UTF).compile();
     if(!reg)
         return false;
-    return reg.match(src);
+    return reg.match(src, "g");
 }
 
 bool regFind(const std::string &src, const std::string &match)
 {
     jp::Regex reg;
-    reg.setPattern(match).addModifier("gm").addPcre2Option(PCRE2_UTF).compile();
+    reg.setPattern(match).addModifier("m").addPcre2Option(PCRE2_UTF).compile();
     if(!reg)
         return false;
-    return reg.match(src);
+    return reg.match(src, "g");
 }
 
 std::string regReplace(const std::string &src, const std::string &match, const std::string &rep, bool global)
 {
     jp::Regex reg;
-    reg.setPattern(match).addModifier("gm").addPcre2Option(PCRE2_UTF).compile();
+    reg.setPattern(match).addModifier("m").addPcre2Option(PCRE2_UTF|PCRE2_MULTILINE).compile();
     if(!reg)
         return src;
-    return reg.replace(src, rep, global ? "g" : "");
+    return reg.replace(src, rep, global ? "gx" : "x");
 }
 
 bool regValid(const std::string &reg)
@@ -691,10 +692,10 @@ bool regValid(const std::string &reg)
 int regGetMatch(const std::string &src, const std::string &match, size_t group_count, ...)
 {
     jp::Regex reg;
-    reg.setPattern(match).addModifier("gm").addPcre2Option(PCRE2_UTF).compile();
+    reg.setPattern(match).addModifier("m").addPcre2Option(PCRE2_UTF).compile();
     jp::VecNum vec_num;
     jp::RegexMatch rm;
-    size_t count = rm.setRegexObject(&reg).setSubject(src).setNumberedSubstringVector(&vec_num).match();
+    size_t count = rm.setRegexObject(&reg).setSubject(src).setNumberedSubstringVector(&vec_num).setModifier("g").match();
     if(!count)
         return -1;
     va_list vl;
@@ -796,21 +797,25 @@ std::string getMD5(const std::string &data)
     return result;
 }
 
+bool isInScope(const std::string &path)
+{
+#ifdef _WIN32
+    if(path.find(":\\") != path.npos || path.find("..") != path.npos)
+        return false;
+#else
+    if(path.find("/") == 0 || path.find("..") != path.npos)
+        return false;
+#endif // _WIN32
+    return true;
+}
+
 // TODO: Add preprocessor option to disable (open web service safety)
 std::string fileGet(const std::string &path, bool scope_limit)
 {
     std::string content;
 
-    if(scope_limit)
-    {
-#ifdef _WIN32
-        if(path.find(":\\") != path.npos || path.find("..") != path.npos)
-            return std::string();
-#else
-        if(path.find("/") == 0 || path.find("..") != path.npos)
-            return std::string();
-#endif // _WIN32
-    }
+    if(scope_limit && !isInScope(path))
+        return std::string();
 
     std::FILE *fp = std::fopen(path.c_str(), "rb");
     if(fp)
@@ -846,11 +851,14 @@ std::string fileGet(const std::string &path, bool scope_limit)
     return content;
 }
 
-bool fileExist(const std::string &path)
+bool fileExist(const std::string &path, bool scope_limit)
 {
     //using c++17 standard, but may cause problem on clang
     //return std::filesystem::exists(path);
-    return _access(path.data(), 4) != -1;
+    if(scope_limit && !isInScope(path))
+        return false;
+    struct stat st;
+    return stat(path.data(), &st) == 0 && S_ISREG(st.st_mode);
 }
 
 bool fileCopy(const std::string &source, const std::string &dest)
@@ -1138,4 +1146,18 @@ std::string UTF8ToCodePoint(const std::string &data)
         }
     }
     return ss.str();
+}
+
+std::string toLower(const std::string &str)
+{
+    std::string result;
+    std::transform(str.begin(), str.end(), std::back_inserter(result), [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+std::string toUpper(const std::string &str)
+{
+    std::string result;
+    std::transform(str.begin(), str.end(), std::back_inserter(result), [](unsigned char c) { return std::toupper(c); });
+    return result;
 }
