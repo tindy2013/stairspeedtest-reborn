@@ -65,7 +65,7 @@ int str_to_int(const std::string &str)
 std::tuple<uint16_t, uint16_t> socks5_init_udp(SOCKET s, SOCKET udp_s, const std::string &server, uint16_t server_port, const std::string &username = "", const std::string &password = "")
 {
     sockaddr_in srcaddr = {};
-    int len;
+    socklen_t len;
 
     setTimeout(s, 1000);
     setTimeout(udp_s, 600);
