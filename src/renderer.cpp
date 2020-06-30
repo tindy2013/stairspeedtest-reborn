@@ -308,7 +308,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     if(export_as_new_style)
     {
         height_line = 30;
-        text_y_offset = 8;
+        text_y_offset = 10;
     }
     const int center_align_offset = 8, vertical_delim_align_offset = 2;
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;

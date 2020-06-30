@@ -4,7 +4,7 @@
 #include <iostream>
 #include <mutex>
 #include <atomic>
-#include <set>
+#include <queue>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -20,7 +20,7 @@
 
 using namespace std::chrono;
 
-std::set<SOCKET> opened_socket;
+std::queue<SOCKET> opened_socket;
 
 #define MAX_FILE_SIZE 512*1024*1024
 
@@ -104,7 +104,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    opened_socket.insert(sHost);
+    opened_socket.push(sHost);
     //defer(closesocket(sHost);) // close socket in main thread
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
@@ -202,7 +202,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    opened_socket.insert(sHost);
+    opened_socket.push(sHost);
     //defer(closesocket(sHost);) // close socket on main thread
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
@@ -372,11 +372,10 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEDL, "Test completed. Terminate all threads.");
     EXIT_FLAG = true; //terminate all threads right now
-    auto iter = opened_socket.begin();
-    while(iter != opened_socket.end()) //close all sockets
+    while(!opened_socket.empty()) //close all sockets
     {
-        closesocket(*iter);
-        iter = opened_socket.erase(iter);
+        closesocket(opened_socket.front());
+        opened_socket.pop();
     }
     cur_recv_bytes = received_bytes; //save current received byte
     auto end = steady_clock::now();
@@ -471,11 +470,10 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     std::cerr<<std::endl;
     writeLog(LOG_TYPE_FILEUL, "Test completed. Terminate worker threads.");
     EXIT_FLAG = true; //terminate worker thread right now
-    auto iter = opened_socket.begin();
-    while(iter != opened_socket.end()) //close all sockets
+    while(!opened_socket.empty()) //close all sockets
     {
-        closesocket(*iter);
-        iter = opened_socket.erase(iter);
+        closesocket(opened_socket.front());
+        opened_socket.pop();
     }
     this_bytes = received_bytes; //save current uploaded data
     auto end = steady_clock::now();

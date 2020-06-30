@@ -87,7 +87,7 @@ int explodeLog(std::string log, std::vector<nodeInfo> &nodes);
 int tcping(nodeInfo &node);
 void getTestFile(nodeInfo &node, std::string proxy, std::vector<downloadLink> &downloadFiles, std::vector<linkMatchRule> &matchRules, std::string defaultTestFile);
 void ssrspeed_webserver_routine(std::string listen_address, int listen_port);
-std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &stun_server = "stun.ekiga.net", uint16_t stun_port = 3478);
+std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &username = "", const std::string &password = "", const std::string &stun_server = "stun.ekiga.net", uint16_t stun_port = 3478);
 
 //original codes
 
@@ -586,7 +586,7 @@ int singleTest(nodeInfo &node)
     std::string id = std::to_string(node.id + (rpcmode ? 0 : 1));
 
     writeLog(LOG_TYPE_INFO, "Received server. Group: " + node.group + " Name: " + node.remarks);
-    defer(printMsg(SPEEDTEST_MESSAGE_GOTRESULT, rpcmode, node.avgSpeed, node.maxSpeed, node.ulSpeed, node.pkLoss, node.avgPing, node.sitePing);)
+    defer(printMsg(SPEEDTEST_MESSAGE_GOTRESULT, rpcmode, node.avgSpeed, node.maxSpeed, node.ulSpeed, node.pkLoss, node.avgPing, node.sitePing, node.natType.get());)
     auto start = steady_clock::now();
     if(node.proxyStr == "LOG") //import from result
     {
@@ -632,7 +632,10 @@ int singleTest(nodeInfo &node)
     node.inboundGeoIP.set(std::async(std::launch::async, [node](){ return getGeoIPInfo(node.server, ""); }));
     node.outboundGeoIP.set(std::async(std::launch::async, [proxy](){ return getGeoIPInfo("", proxy); }));
     if(test_nat_type)
-        node.natType.set(std::async(std::launch::async, [&](){ return get_nat_type_thru_socks5(testserver, testport); }));
+    {
+        printMsg(SPEEDTEST_MESSAGE_STARTNAT, rpcmode, id);
+        node.natType.set(std::async(std::launch::async, [testserver, testport, username, password](){ return get_nat_type_thru_socks5(testserver, testport, username, password); }));
+    }
 
     printMsg(SPEEDTEST_MESSAGE_STARTPING, rpcmode, id);
     if(speedtest_mode != "speedonly")
@@ -670,6 +673,8 @@ int singleTest(nodeInfo &node)
         }
         else
             printMsg(SPEEDTEST_ERROR_GEOIPERR, rpcmode, id);
+        if(test_nat_type)
+            printMsg(SPEEDTEST_MESSAGE_GOTNAT, rpcmode, id, node.natType.get());
     }
 
     if(test_site_ping)

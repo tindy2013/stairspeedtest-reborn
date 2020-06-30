@@ -62,15 +62,15 @@ int str_to_int(const std::string &str)
 }
 
 //self_port, udp_port
-std::tuple<uint16_t, uint16_t> socks5_init_udp(SOCKET s, SOCKET udp_s, const std::string &server, uint16_t server_port)
+std::tuple<uint16_t, uint16_t> socks5_init_udp(SOCKET s, SOCKET udp_s, const std::string &server, uint16_t server_port, const std::string &username = "", const std::string &password = "")
 {
     sockaddr_in srcaddr = {};
     int len;
 
-    setTimeout(s, 500);
-    setTimeout(udp_s, 500);
-    startConnect(s, server, server_port);
-    connectSocks5(s, "", "");
+    setTimeout(s, 1000);
+    setTimeout(udp_s, 600);
+    if(startConnect(s, server, server_port) == SOCKET_ERROR || connectSocks5(s, username, password) == -1)
+        return std::make_tuple(0, 0);
     len = sizeof(srcaddr);
     if(getsockname(s, reinterpret_cast<sockaddr*>(&srcaddr), &len) < 0)
     {
@@ -79,7 +79,7 @@ std::tuple<uint16_t, uint16_t> socks5_init_udp(SOCKET s, SOCKET udp_s, const std
     }
     std::string self_ip = sockaddrToIPAddr(reinterpret_cast<sockaddr*>(&srcaddr));
 
-    uint16_t src_port = 65432;
+    uint16_t src_port = 0;
     memset(&srcaddr, 0, sizeof(srcaddr));
     srcaddr.sin_family = AF_INET;
     srcaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -101,7 +101,7 @@ std::tuple<uint16_t, uint16_t> socks5_init_udp(SOCKET s, SOCKET udp_s, const std
     src_port = srcaddr.sin_port;
     uint16_t self_port = src_port;
 
-    uint16_t udp_port = socks5_start_udp(s, "127.0.0.1", src_port);
+    uint16_t udp_port = socks5_start_udp(s, self_ip, src_port);
     return std::make_tuple(self_port, udp_port);
 }
 
@@ -124,56 +124,58 @@ std::string random_string(string_size length)
 STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &server, uint16_t udp_port, const std::string &target_server, uint16_t target_port, const std::string &send_data = "")
 {
     STUN_RESPONSE response;
-    int len;
-    sockaddr_in addr = {};
-
-    addr.sin_addr.s_addr = inet_addr(server.data());
-    addr.sin_port = udp_port;
-    addr.sin_family = AF_INET;
+    int len, sent_len;
 
     char msg_head[] = {0, 1};
-    std::string message, trans_id_str, send_data_len = long_to_str(send_data.size(), 2);
+    std::string message, trans_id_str = random_string(16), send_data_len = long_to_str(send_data.size(), 2);
+    message.assign(msg_head, 2);
+    message += send_data_len;
+    message += trans_id_str;
+    message += send_data;
 
-    int fail_count = 0, max_fails = 3;
+    int fail_count = 0, max_fails = 5;
     char buf[BUF_SIZE] = {};
+    bool passed = false;
+
+    std::string msg_type, recv_trans_id, attrs;
     while(fail_count < max_fails)
     {
-        trans_id_str = random_string(16);
-        message.assign(msg_head, 2);
-        message += send_data_len;
-        message += trans_id_str;
-        message += send_data;
-        defer(fail_count++;)
-        if(socks5_send_udp_data(udp_s, server, udp_port, target_server, target_port, message) < 0)
+        if((sent_len = socks5_send_udp_data(udp_s, server, udp_port, target_server, target_port, message)) < 0)
         {
-            //cerr<<"error on sendto: "<<WSAGetLastError()<<endl;
+            writeLog(LOG_TYPE_STUN, "Error on sendto: " + std::to_string(WSAGetLastError()));
+            fail_count++;
             continue;
         }
 
-        len = sizeof(addr);
-        if((len = recvfrom(udp_s, buf, 1023, 0, NULL, NULL)) < 0)
+        if((len = socks5_get_udp_data(udp_s, buf, BUF_SIZE - 1)) < 0)
         {
-            //cerr<<"error on recvfrom: "<<WSAGetLastError()<<endl;
+            writeLog(LOG_TYPE_STUN, "Error on recvfrom: " + std::to_string(WSAGetLastError()));
+            fail_count++;
             continue;
         }
+        msg_type.assign(buf, buf + 2);
+        recv_trans_id.assign(buf + 4, buf + 20);
+        attrs.assign(buf + 20, buf + len);
+        if(memcmp(msg_type.data(), BIND_RESPONSE_MSG, 2) != 0)
+        {
+            //cerr<<"return false response"<<endl;
+            writeLog(LOG_TYPE_STUN, "STUN returned false response. Returned: " + std::to_string((int)msg_type[0]) + " " + std::to_string((int)msg_type[1]));
+            fail_count++;
+            continue;
+        }
+        if(memcmp(recv_trans_id.data(), trans_id_str.data(), 16) != 0)
+        {
+            //cerr<<"return false trans_id"<<endl;
+            writeLog(LOG_TYPE_STUN, "STUN returned false trans_id. Probably the response from the last test. Try again...");
+            fail_count++;
+            continue;
+        }
+        passed = true;
         break;
     }
-    if(len <= 0)
+    if(!passed)
         return response;
-    std::string msg_type, recv_trans_id, attrs;
-    msg_type.assign(buf + 10, buf + 12);
-    recv_trans_id.assign(buf + 14, buf + 30);
-    attrs.assign(buf + 30, buf + len);
-    if(memcmp(msg_type.data(), BIND_RESPONSE_MSG, 2) != 0)
-    {
-        //cerr<<"return false response"<<endl;
-        return response;
-    }
-    if(memcmp(recv_trans_id.data(), trans_id_str.data(), 16) != 0)
-    {
-        //cerr<<"return false trans_id"<<endl;
-        return response;
-    }
+
     string_size pos = 0, attr_length = 0;
     std::string attr_type, attr_value;
     while(pos < attrs.size())
@@ -215,14 +217,14 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
     return response;
 }
 
-std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &stun_server, uint16_t stun_port)
+std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &username, const std::string &password, const std::string &stun_server, uint16_t stun_port)
 {
     writeLog(LOG_TYPE_STUN, "STUN on SOCKS5 server " + server + ":" + std::to_string(port) + " started. Using STUN server " + stun_server + ":" + std::to_string(stun_port) + ".");
     SOCKET s = initSocket(AF_INET, SOCK_STREAM, 0), udp_s = initSocket(AF_INET, SOCK_DGRAM, 0);
     defer(closesocket(s); closesocket(udp_s);)
     STUN_RESPONSE response;
     uint16_t self_port, udp_port;
-    std::tie(self_port, udp_port) = socks5_init_udp(s, udp_s, server, port);
+    std::tie(self_port, udp_port) = socks5_init_udp(s, udp_s, server, port, username, password);
     if(udp_port == 0)
     {
         writeLog(LOG_TYPE_STUN, "Failed to start UDP Association with SOCKS5 server. Leaving...");
@@ -237,7 +239,7 @@ std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, c
         writeLog(LOG_TYPE_STUN, "STUN Test 1 failed to get response. NAT type: UDP Blocked.");
         return NAT_TYPE_STR[UDP_BLOCKED];
     }
-    writeLog(LOG_TYPE_STUN, "Public end: " + response.src_ip + ":" + std::to_string(response.src_port));
+    writeLog(LOG_TYPE_STUN, "Public end: " + response.ext_ip + ":" + std::to_string(response.ext_port));
     std::string change_ip = response.change_ip, ext_ip = response.ext_ip, send_data;
     uint16_t change_port = response.change_port, ext_port = response.ext_port;
     send_data.assign((char*)CHANGE_REQUEST_IPPORT, 8);
@@ -258,7 +260,7 @@ std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, c
     std::tie(self_port, udp_port) = socks5_init_udp(s, udp_s, server, port);
     if(udp_port == 0)
     {
-        std::cerr<<"stun: error on starting udp"<<std::endl;
+        writeLog(LOG_TYPE_STUN, "Failed to start UDP Association with SOCKS5 server. Leaving...");
         return NAT_TYPE_STR[UNKNOWN];
     }
     */
@@ -268,6 +270,7 @@ std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, c
         writeLog(LOG_TYPE_STUN, "STUN Test 1 with CHANGED_IP failed to get response. Something is wrong. Leaving...");
         return NAT_TYPE_STR[UNKNOWN];
     }
+    writeLog(LOG_TYPE_STUN, "Public end: " + response.ext_ip + ":" + std::to_string(response.ext_port));
     if(response.ext_ip != ext_ip || response.ext_port != ext_port)
     {
         //std::cout<<"symmetric"<<std::endl;
