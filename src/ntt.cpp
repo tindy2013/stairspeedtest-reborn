@@ -142,14 +142,14 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
     {
         if((sent_len = socks5_send_udp_data(udp_s, server, udp_port, target_server, target_port, message)) < 0)
         {
-            writeLog(LOG_TYPE_STUN, "Error on sendto: " + std::to_string(WSAGetLastError()));
+            writeLog(LOG_TYPE_STUN, "Error on sendto.");
             fail_count++;
             continue;
         }
 
         if((len = socks5_get_udp_data(udp_s, buf, BUF_SIZE - 1)) < 0)
         {
-            writeLog(LOG_TYPE_STUN, "Error on recvfrom: " + std::to_string(WSAGetLastError()));
+            writeLog(LOG_TYPE_STUN, "Error on recvfrom.");
             fail_count++;
             continue;
         }
