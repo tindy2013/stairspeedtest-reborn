@@ -558,7 +558,7 @@ int socks5_send_udp_data(SOCKET sHost, const std::string &server, uint16_t port,
 int socks5_get_udp_data(SOCKET sHost, char *buf, int len)
 {
     char buffer[BUF_SIZE], *ptr = buffer;
-    int recv_len;
+    int recv_len, offset = 4;
     if((recv_len = recvfrom(sHost, buffer, BUF_SIZE - 1, 0, NULL, NULL)) == -1)
         return -1;
     if(buffer[0] != 0 || buffer[1] != 0) /// reserved
@@ -569,16 +569,21 @@ int socks5_get_udp_data(SOCKET sHost, char *buf, int len)
     switch(buffer[3])                           // case by ATYP
     {
     case 1:                                     // IP v4 ADDR
+        offset += 4;
         ptr += 4;
         break;
     case 3:                                     // DOMAINNAME
+        offset += *ptr + 1;
         ptr += *ptr + 1;
         break;
     case 4:                                     // IP v6 ADDR
+        offset += 16;
         ptr += 16;
         break;
     }
-    int reallen = std::min(recv_len - (int)(ptr - buf), len);
+    offset += 2;
+    ptr += 2; /// port
+    int reallen = std::min(recv_len - offset, len);
     memcpy(buf, ptr, reallen);
     return reallen;
 }
