@@ -37,8 +37,10 @@ ADD_EXECUTABLE(stairspeedtest
 	src/geoip.cpp
 	src/logger.cpp
 	src/main.cpp
+	src/md5.cpp
 	src/misc.cpp
 	src/multithread_test.cpp
+	src/ntt.cpp
 	src/printmsg.cpp
 	src/processes.cpp
 	src/renderer.cpp
