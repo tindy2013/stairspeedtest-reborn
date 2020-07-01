@@ -96,7 +96,7 @@ std::string vmessConstruct(std::string group, std::string remarks, std::string a
     {
         tlsset = replace_all_distinct(tlsset, "?serverName?", host);
         scv.define(true);
-        tlsset = replace_all_distinct(tlsset, "?verify?", scv ? "false" : "true");
+        tlsset = replace_all_distinct(tlsset, "?verify?", scv ? "true" : "false");
         base = replace_all_distinct(base, "?tlsset?", tlsset);
     }
 
