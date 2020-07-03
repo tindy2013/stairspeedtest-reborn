@@ -32,5 +32,6 @@ void filterNodes(std::vector<nodeInfo> &nodes, string_array &exclude_remarks, st
 bool getSubInfoFromHeader(std::string &header, std::string &result);
 bool getSubInfoFromNodes(std::vector<nodeInfo> &nodes, string_array &stream_rules, string_array &time_rules, std::string &result);
 bool getSubInfoFromSSD(std::string &sub, std::string &result);
+unsigned long long streamToInt(const std::string &stream);
 
 #endif // SPEEDTESTUTIL_H_INCLUDED
