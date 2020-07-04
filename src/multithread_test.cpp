@@ -89,6 +89,18 @@ static inline void draw_progress_gping(int progress, int *values)
     std::cerr<<" "<<progress + 1<<"/"<<times_to_ping<<" "<<values[progress]<<"ms";
 }
 
+static void SSL_Library_init()
+{
+    static bool init = false;
+    if(!init)
+        init = true;
+    else
+        return;
+    SSL_load_error_strings();
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+}
+
 int _thread_download(std::string host, int port, std::string uri, std::string localaddr, int localport, std::string username, std::string password, bool useTLS = false)
 {
     launched++;
@@ -320,9 +332,7 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     if(useTLS)
     {
         writeLog(LOG_TYPE_FILEDL, "Found HTTPS URL. Initializing OpenSSL library.");
-        SSL_load_error_strings();
-        SSL_library_init();
-        OpenSSL_add_all_algorithms();
+        SSL_Library_init();
     }
     else
     {
@@ -428,9 +438,7 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     if(useTLS)
     {
         writeLog(LOG_TYPE_FILEUL, "Found HTTPS URL. Initializing OpenSSL library.");
-        SSL_load_error_strings();
-        SSL_library_init();
-        OpenSSL_add_all_algorithms();
+        SSL_Library_init();
     }
     else
     {

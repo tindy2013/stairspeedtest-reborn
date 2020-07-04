@@ -272,7 +272,7 @@ std::string ssrspeed_generate_color()
     return sb.GetString();
 }
 
-void ssrspeed_webserver_routine(std::string listen_address, int listen_port)
+void ssrspeed_webserver_routine(const std::string &listen_address, int listen_port)
 {
     listener_args args = {listen_address, listen_port, 10, 4};
 

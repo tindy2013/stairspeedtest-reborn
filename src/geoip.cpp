@@ -7,7 +7,7 @@
 
 using namespace rapidjson;
 
-geoIPInfo getGeoIPInfo(std::string ip, std::string proxy)
+geoIPInfo getGeoIPInfo(const std::string &ip, const std::string &proxy)
 {
     writeLog(LOG_TYPE_GEOIP, "GeoIP parse begin.");
     std::string strRet, address = ip;

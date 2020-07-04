@@ -20,6 +20,6 @@ struct geoIPInfo
     std::string timezone;
 };
 
-geoIPInfo getGeoIPInfo(std::string ip, std::string proxy);
+geoIPInfo getGeoIPInfo(const std::string &ip, const std::string &proxy);
 
 #endif // GEOIP_H_INCLUDED
