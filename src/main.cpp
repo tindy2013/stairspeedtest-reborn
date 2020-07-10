@@ -766,7 +766,7 @@ void batchTest(std::vector<nodeInfo> &nodes)
         writeLog(LOG_TYPE_INFO, "All nodes tested. Total/Online nodes: " + std::to_string(node_count) + "/" + std::to_string(onlines) + " Traffic used: " + speedCalc(tottraffic * 1.0));
         //exportHTML();
         saveResult(nodes);
-        if(!multilink || (multilink && multilink_export_as_one_image))
+        if(webserver_mode || !multilink)
         {
             printMsg(SPEEDTEST_MESSAGE_PICSAVING, rpcmode);
             writeLog(LOG_TYPE_INFO, "Now exporting result...");
