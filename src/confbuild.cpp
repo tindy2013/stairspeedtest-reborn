@@ -73,15 +73,15 @@ std::string replace_first(std::string str, const std::string &old_value, const s
     return str.replace(pos, old_value.size(), new_value);
 }
 
-std::string vmessConstruct(const std::string &group, const std::string &remarks, const std::string &add, const std::string &port, const std::string &type, const std::string &id, const std::string &aid, const std::string &net, const std::string &cipher, const std::string &path, const std::string &host, const std::string &edge, const std::string &tls, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string vmessConstruct(const std::string &group, const std::string &remarks, const std::string &add, const std::string &port, const std::string &type, const std::string &id, const std::string &aid, const std::string &net, const std::string &cipher, const std::string &path, const std::string &host, const std::string &edge, const std::string &tls, tribool udp, tribool tfo, tribool scv, tribool tls13)
 {
     std::string base = base_vmess;
     base = replace_first(base, "?localport?", std::to_string(socksport));
     base = replace_first(base, "?add?", add);
     base = replace_first(base, "?port?", port);
     base = replace_first(base, "?id?", id);
-    base = replace_first(base, "?aid?", aid);
-    base = replace_first(base, "?net?", net);
+    base = replace_first(base, "?aid?", aid.empty() ? "0" : aid);
+    base = replace_first(base, "?net?", net.empty() ? "tcp" : net);
     base = replace_first(base, "?cipher?", cipher);
     switch(hash_(net))
     {
@@ -151,7 +151,7 @@ std::string vmessConstruct(const std::string &group, const std::string &remarks,
     return base;
 }
 
-std::string ssrConstruct(const std::string &group, const std::string &remarks, const std::string &remarks_base64, const std::string &server, const std::string &port, const std::string &protocol, const std::string &method, const std::string &obfs, const std::string &password, const std::string &obfsparam, const std::string &protoparam, bool libev, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string ssrConstruct(const std::string &group, const std::string &remarks, const std::string &remarks_base64, const std::string &server, const std::string &port, const std::string &protocol, const std::string &method, const std::string &obfs, const std::string &password, const std::string &obfsparam, const std::string &protoparam, bool libev, tribool udp, tribool tfo, tribool scv)
 {
     std::string base = base_ssr_win;
     std::string config = config_ssr_win;
@@ -178,7 +178,7 @@ std::string ssrConstruct(const std::string &group, const std::string &remarks, c
     return base;
 }
 
-std::string ssConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &method, const std::string &plugin, const std::string &pluginopts, bool libev, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string ssConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &method, const std::string &plugin, const std::string &pluginopts, bool libev, tribool udp, tribool tfo, tribool scv, tribool tls13)
 {
     std::string base = base_ss_win;
     std::string config = config_ss_win;
@@ -201,17 +201,17 @@ std::string ssConstruct(const std::string &group, const std::string &remarks, co
     return base;
 }
 
-std::string socksConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &username, const std::string &password, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string socksConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &username, const std::string &password, tribool udp, tribool tfo, tribool scv)
 {
     return "user=" + username + "&pass=" + password;
 }
 
-std::string httpConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &username, const std::string &password, bool tls, tribool scv = tribool())
+std::string httpConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &username, const std::string &password, bool tls, tribool tfo, tribool scv, tribool tls13)
 {
     return "user=" + username + "&pass=" + password;
 }
 
-std::string trojanConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &host, bool tlssecure, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string trojanConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &host, bool tlssecure, tribool udp, tribool tfo, tribool scv, tribool tls13)
 {
     std::string base = base_trojan;
     scv.define(true);
@@ -224,7 +224,7 @@ std::string trojanConstruct(const std::string &group, const std::string &remarks
     return base;
 }
 
-std::string snellConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &obfs, const std::string &host, tribool udp = tribool(), tribool tfo = tribool(), tribool scv = tribool())
+std::string snellConstruct(const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &obfs, const std::string &host, tribool udp, tribool tfo, tribool scv)
 {
     //no clients available, ignore
     return std::string();

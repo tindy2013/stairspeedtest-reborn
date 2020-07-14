@@ -327,7 +327,6 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     urlParse(testfile, host, uri, port, useTLS);
     received_bytes = 0;
     EXIT_FLAG = false;
-    eraseElements(opened_socket);
 
     if(useTLS)
     {
@@ -433,7 +432,6 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     urlParse(testfile, host, uri, port, useTLS);
     received_bytes = 0;
     EXIT_FLAG = false;
-    eraseElements(opened_socket);
 
     if(useTLS)
     {
