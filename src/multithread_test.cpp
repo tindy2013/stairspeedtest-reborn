@@ -29,11 +29,16 @@ const int times_to_ping = 10, fail_limit = 2;
 
 //for use of multi-thread socket test
 typedef std::lock_guard<std::mutex> guarded_mutex;
+std::mutex opened_socket_mutex;
 std::atomic_int received_bytes = 0;
 std::atomic_int launched = 0, still_running = 0;
 std::atomic_bool EXIT_FLAG = false;
 
-int terminateClient(int client);
+void push_socket(const SOCKET &s)
+{
+    guarded_mutex guard(opened_socket_mutex);
+    opened_socket.push(s);
+}
 
 static inline void draw_progress_dl(int progress, int this_bytes)
 {
@@ -116,7 +121,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    opened_socket.push(sHost);
+    push_socket(sHost);
     //defer(closesocket(sHost);) // close socket in main thread
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
@@ -214,7 +219,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
     if(INVALID_SOCKET == sHost)
         return -1;
-    opened_socket.push(sHost);
+    push_socket(sHost);
     //defer(closesocket(sHost);) // close socket on main thread
     setTimeout(sHost, 5000);
     if(startConnect(sHost, localaddr, localport) == SOCKET_ERROR || connectSocks5(sHost, username, password) == -1 || connectThruSocks(sHost, host, port) == -1)
