@@ -2004,6 +2004,7 @@ void explodeSub(std::string sub, bool sslibev, bool ssrlibev, const std::string 
                 continue;
             }
             nodes.emplace_back(std::move(node));
+            node = nodeInfo();
         }
     }
 }

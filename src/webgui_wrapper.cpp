@@ -86,11 +86,11 @@ void json_write_node(rapidjson::Writer<rapidjson::StringBuffer> &writer, nodeInf
     writer.Key("remarks");
     writer.String(node.remarks.data());
     writer.Key("loss");
-    writer.Double(to_number<double>(node.pkLoss.substr(0, node.pkLoss.size() - 1)) / 100.0);
+    writer.Double(stod(node.pkLoss.substr(0, node.pkLoss.size() - 1)) / 100.0);
     writer.Key("ping");
-    writer.Double(to_number<double>(node.avgPing) / 1000.0);
+    writer.Double(stod(node.avgPing) / 1000.0);
     writer.Key("gPing");
-    writer.Double(to_number<double>(node.sitePing) / 1000.0);
+    writer.Double(stod(node.sitePing) / 1000.0);
     writer.Key("rawSocketSpeed");
     writer.StartArray();
     for(auto &y : node.rawSpeed)
@@ -151,7 +151,7 @@ std::string ssrspeed_generate_results(std::vector<nodeInfo> &nodes)
 {
     rapidjson::StringBuffer sb;
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-    nodeInfo node;
+    nodeInfo *node = nullptr;
 
     writer.StartObject();
     writer.Key("status");
@@ -162,22 +162,22 @@ std::string ssrspeed_generate_results(std::vector<nodeInfo> &nodes)
     {
         if(x.id == cur_node_id)
         {
-            node = x;
+            node = &x;
         }
         if(x.id == current_node.id)
         {
             current_node = x;
         }
     }
-    if(node.linkType != -1)
-        json_write_node(writer, node);
-    if(current_node.groupID != node.groupID || current_node.id != node.id)
+    if(node && node->linkType != -1)
+        json_write_node(writer, *node);
+    if(node && (current_node.groupID != node->groupID || current_node.id != node->id))
     {
         if(current_node.linkType != -1)
         {
             testedNodes.push_back(current_node);
         }
-        current_node = node;
+        current_node = *node;
     }
     writer.EndObject();
 
