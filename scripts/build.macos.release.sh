@@ -5,13 +5,13 @@ set -xe
 brew reinstall make cmake automake autoconf libtool
 brew reinstall libpng freetype rapidjson pcre2 libevent zlib bzip2 pkgconfig
 
-git clone https://github.com/curl/curl --depth=1
-cd curl
+#git clone https://github.com/curl/curl --depth=1
+#cd curl
 #./buildconf > /dev/null
 #./configure --with-ssl=/usr/local/opt/openssl@1.1 --without-mbedtls --disable-ldap --disable-ldaps --disable-rtsp --without-libidn2 > /dev/null
-cmake -DHTTP_ONLY=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 -DCMAKE_USE_LIBSSH2=OFF . > /dev/null
-make -j8 > /dev/null
-cd ..
+#cmake -DHTTP_ONLY=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 -DCMAKE_USE_LIBSSH2=OFF . > /dev/null
+#make -j8 > /dev/null
+#cd ..
 
 git clone https://github.com/jbeder/yaml-cpp --depth=1
 cd yaml-cpp
@@ -25,8 +25,6 @@ cmake . > /dev/null
 sudo make install -j8 > /dev/null
 cd ..
 
-cp curl/lib/libcurl.a .
-cp yaml-cpp/libyaml-cpp.a .
 cp /usr/local/lib/libevent.a .
 cp /usr/local/opt/zlib/lib/libz.a .
 cp /usr/local/opt/openssl@1.1/lib/libssl.a .
@@ -41,7 +39,7 @@ export CMAKE_CXX_FLAGS="-I/usr/local/include -I/usr/local/opt/openssl@1.1/includ
 cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 -DOPENSSL_USE_STATIC_LIBS=TRUE -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 .
 make -j8
 rm stairspeedtest
-c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o *.a -ldl -lpthread -O3
+c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest -framework CoreFoundation -framework Security $(find CMakeFiles/stairspeedtest.dir/src/ -name "*.o") $(find . -name "*.a") -lcurl -ldl -lpthread -O3
 
 if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
 	bash scripts/build.macos.clients.sh
