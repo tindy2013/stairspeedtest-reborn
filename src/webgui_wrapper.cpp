@@ -86,11 +86,11 @@ void json_write_node(rapidjson::Writer<rapidjson::StringBuffer> &writer, nodeInf
     writer.Key("remarks");
     writer.String(node.remarks.data());
     writer.Key("loss");
-    writer.Double(stod(node.pkLoss.substr(0, node.pkLoss.size() - 1)) / 100.0);
+    writer.Double(to_number<double>(node.pkLoss.substr(0, node.pkLoss.size() - 1)) / 100.0);
     writer.Key("ping");
-    writer.Double(stod(node.avgPing) / 1000.0);
+    writer.Double(to_number<double>(node.avgPing) / 1000.0);
     writer.Key("gPing");
-    writer.Double(stod(node.sitePing) / 1000.0);
+    writer.Double(to_number<double>(node.sitePing) / 1000.0);
     writer.Key("rawSocketSpeed");
     writer.StartArray();
     for(auto &y : node.rawSpeed)

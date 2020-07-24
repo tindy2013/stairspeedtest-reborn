@@ -107,7 +107,7 @@ std::string vmessConstruct(const std::string &group, const std::string &remarks,
             std::string h2set = h2set_vmess;
             h2set = replace_first(h2set, "?path?", path);
             string_array hosts = split(host, ",");
-            h2set = replace_first(h2set, "?host?", std::accumulate(hosts.begin(), hosts.end(), std::string("\"" + host + "\""), [](auto before, auto current){ return before + ",\"" + current + "\""; }));
+            h2set = replace_first(h2set, "?host?", std::accumulate(std::next(hosts.begin()), hosts.end(), std::string("\"" + hosts[0] + "\""), [](auto before, auto current){ return before + ",\"" + current + "\""; }));
             base = replace_first(base, "?h2set?", h2set);
             break;
         }

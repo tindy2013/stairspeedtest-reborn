@@ -79,7 +79,7 @@ LOOKUP_ITEM SPEEDTEST_MESSAGES_RPC[] =
     {SPEEDTEST_MESSAGE_STARTGEOIP, "{\"info\":\"startgeoip\",\"id\":?0?}\n"},
     {SPEEDTEST_MESSAGE_GOTGEOIP, "{\"info\":\"gotgeoip\",\"id\":?0?,\"isp\":\"?1?\",\"location\":\"?2?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTNAT, "{\"info\":\"startnat\",\"id\":?0?}\n"},
-    {SPEEDTEST_MESSAGE_GOTGEOIP, "{\"info\":\"gotnat\",\"id\":?0?,\"result\":\"?1?\"}\n"},
+    {SPEEDTEST_MESSAGE_GOTNAT, "{\"info\":\"gotnat\",\"id\":?0?,\"result\":\"?1?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTSPEED, "{\"info\":\"startspeed\",\"id\":?0?}\n"},
     {SPEEDTEST_MESSAGE_GOTSPEED, "{\"info\":\"gotspeed\",\"id\":?0?,\"speed\":\"?1?\",\"maxspeed\":\"?2?\"}\n"},
     {SPEEDTEST_MESSAGE_STARTUPD, "{\"info\":\"startupd\",\"id\":?0?}\n"},
