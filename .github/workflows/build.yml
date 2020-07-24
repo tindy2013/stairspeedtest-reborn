@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: |
-        docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:x86-edge /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
+        docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:x86-latest-stable /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
         tar czf stairspeedtest_reborn_linux32.tar.gz stairspeedtest
     - name: Upload
       uses: actions/upload-artifact@v2
@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: |
-        docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:amd64-edge /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
+        docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:amd64-latest-stable /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
         tar czf stairspeedtest_reborn_linux64.tar.gz stairspeedtest
     - name: Upload
       uses: actions/upload-artifact@v2
