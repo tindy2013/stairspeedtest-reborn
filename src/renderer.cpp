@@ -281,14 +281,6 @@ void loadDefaultColor(std::string type)
     }
 }
 
-/*
-void test()
-{
-    pngwriter png;
-    rendererInit("tools\\misc\\WenQuanYiMicroHei-01.ttf", 12);
-    cout<<getWidth(&png, "tools\\misc\\WenQuanYiMicroHei-01.ttf", 12, "KB")<<" "<<getTextWidth(&png, "tools\\misc\\WenQuanYiMicroHei-01.ttf", 12, "KB")<<endl;
-}
-*/
 #ifndef _FAST_RENDER
 
 std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style, bool export_nat_type)

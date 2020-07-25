@@ -21,7 +21,7 @@ std::string tlsset_vmess = R"({"serverName":"?serverName?","allowInsecure":?veri
 std::string kcpset_vmess = R"({"mtu":1350,"tti":50,"uplinkCapacity":12,"downlinkCapacity":100,"congestion":false,"readBufferSize":2,"writeBufferSize":2,"header":{"type":"?type?"}})";
 std::string h2set_vmess = R"({"path":"?path?","host":[?host?]})";
 std::string quicset_vmess = R"({"security":"?host?","key":"?path?","header":{"type":"?type?"}})";
-std::string base_trojan = R"({"run_type":"client","local_addr":"127.0.0.1","local_port":?localport?,"remote_addr":"?server?","remote_port":?port?,"password":["?password?"],"ssl":{"verify":?verify?,"verify_hostname":?verify?,"sni":"?host?"},"tcp":{"reuse_port":true}})";
+std::string base_trojan = R"({"run_type":"client","local_addr":"127.0.0.1","local_port":?localport?,"remote_addr":"?server?","remote_port":?port?,"password":["?password?"],"ssl":{"verify":?verify?,"verify_hostname":?verifyhost?,"sni":"?host?"},"tcp":{"reuse_port":true}})";
 
 int explodeLog(const std::string &log, std::vector<nodeInfo> &nodes)
 {
@@ -219,6 +219,7 @@ std::string trojanConstruct(const std::string &group, const std::string &remarks
     base = replace_first(base, "?port?", port);
     base = replace_first(base, "?password?", password);
     base = replace_first(base, "?verify?", scv ? "false" : "true");
+    base = replace_first(base, "?verifyhost?", scv ? "false" : "true");
     base = replace_first(base, "?host?", host);
     base = replace_first(base, "?localport?", std::to_string(socksport));
     return base;

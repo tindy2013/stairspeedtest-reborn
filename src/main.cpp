@@ -576,8 +576,25 @@ void saveResult(std::vector<nodeInfo> &nodes)
     ini.ToFile(resultPath);
 }
 
+std::string removeEmoji(const std::string &orig_remark)
+{
+    char emoji_id[2] = {(char)-16, (char)-97};
+    std::string remark = orig_remark;
+    while(true)
+    {
+        if(remark[0] == emoji_id[0] && remark[1] == emoji_id[1])
+            remark.erase(0, 4);
+        else
+            break;
+    }
+    if(remark.empty())
+        return orig_remark;
+    return remark;
+}
+
 int singleTest(nodeInfo &node)
 {
+    node.remarks = trim(removeEmoji(node.remarks)); //remove all emojis
     int retVal = 0;
     std::string logdata, testserver, username, password, proxy;
     int testport;
@@ -795,19 +812,6 @@ void rewriteNodeID(std::vector<nodeInfo> &nodes)
 void rewriteNodeGroupID(std::vector<nodeInfo> &nodes, int groupID)
 {
     std::for_each(nodes.begin(), nodes.end(), [&](nodeInfo &x){ x.groupID = groupID; });
-}
-
-std::string removeEmoji(std::string remark)
-{
-    char emoji_id[2] = {(char)-16, (char)-97};
-    while(true)
-    {
-        if(remark[0] == emoji_id[0] && remark[1] == emoji_id[1])
-            remark.erase(0, 4);
-        else
-            break;
-    }
-    return remark;
 }
 
 void addNodes(std::string link, bool multilink)
@@ -1104,8 +1108,6 @@ int main(int argc, char* argv[])
         addNodes(link, multilink);
     }
     rewriteNodeID(allNodes); //reset all index
-    for(nodeInfo &x : allNodes)
-        x.remarks = trim(removeEmoji(x.remarks)); //remove all emojis
     node_count = allNodes.size();
     if(allNodes.size() > 1) //group or multi-link
     {
