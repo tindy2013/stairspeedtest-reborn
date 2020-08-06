@@ -116,6 +116,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
     SOCKET sHost;
     std::string request = "GET " + uri + " HTTP/1.1\r\n"
                           "Host: " + host + "\r\n"
+                          "Connection: close\r\n"
                           "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\r\n\r\n";
 
     sHost = initSocket(getNetworkType(localaddr), SOCK_STREAM, IPPROTO_TCP);
@@ -158,7 +159,7 @@ int _thread_download(std::string host, int port, std::string uri, std::string lo
                 cur_len = SSL_read(ssl, bufRecv, BUF_SIZE - 1);
                 if(cur_len < 0)
                 {
-                    if(errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN)
+                    if(errno == EWOULDBLOCK || errno == EAGAIN)
                     {
                         continue;
                     }
@@ -212,6 +213,7 @@ int _thread_upload(std::string host, int port, std::string uri, std::string loca
     int retVal, cur_len;
     SOCKET sHost;
     std::string request = "POST " + uri + " HTTP/1.1\r\n"
+                          "Connection: close\r\n"
                           "Content-Length: 134217728\r\n"
                           "Host: " + host + "\r\n\r\n";
     std::string post_data;
@@ -388,6 +390,7 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
     EXIT_FLAG = true; //terminate all threads right now
     while(!opened_socket.empty()) //close all sockets
     {
+        shutdown(opened_socket.front(), SD_BOTH);
         closesocket(opened_socket.front());
         opened_socket.pop();
     }
@@ -483,6 +486,7 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
     EXIT_FLAG = true; //terminate worker thread right now
     while(!opened_socket.empty()) //close all sockets
     {
+        shutdown(opened_socket.front(), SD_BOTH);
         closesocket(opened_socket.front());
         opened_socket.pop();
     }

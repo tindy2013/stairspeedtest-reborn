@@ -20,6 +20,9 @@
 #define SOCKADDR_IN sockaddr_in
 #define ZeroMemory(d,l) memset((d), 0, (l))
 #define ioctlsocket ioctl
+#define SD_BOTH SHUT_RDWR
+#define SD_RECEIVE SHUT_RD
+#define SD_SEND SHUT_WR
 #ifndef SA_INTERRUPT
 #define SA_INTERRUPT 0 //ignore this setting
 #endif
