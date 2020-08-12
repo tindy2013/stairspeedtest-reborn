@@ -383,16 +383,16 @@ int putSocksAddress(char **p, const std::string &host, const uint16_t dest_port)
 std::tuple<std::string, uint16_t> getSocksAddress(const std::string &data)
 {
     char cAddr[128] = {};
-    std::string retAddr, port_str = data.substr(1, 2);
-    int family = data[0];
+    std::string retAddr, port_str = data.substr(2, 2);
+    int family = data[1];
     uint16_t port = ntohs(*(short*)port_str.data());
     switch(family)
     {
     case 1: //IPv4
-        inet_ntop(AF_INET, data.substr(3).data(), cAddr, 127);
+        inet_ntop(AF_INET, data.data() + 4, cAddr, 127);
         break;
     case 2: //IPv6
-        inet_ntop(AF_INET6, data.substr(3).data(), cAddr, 127);
+        inet_ntop(AF_INET6, data.data() + 4, cAddr, 127);
         break;
     }
     retAddr.assign(cAddr);

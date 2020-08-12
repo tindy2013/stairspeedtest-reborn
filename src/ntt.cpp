@@ -107,7 +107,7 @@ std::tuple<uint16_t, uint16_t> socks5_init_udp(SOCKET s, SOCKET udp_s, const std
 
 std::string random_string(string_size length)
 {
-    const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    const std::string CHARACTERS = "0123456789ABCDEF";
 
     std::random_device random_device;
     std::mt19937 generator(random_device());
@@ -121,13 +121,47 @@ std::string random_string(string_size length)
     return random_string;
 }
 
+std::string make_transaction_id()
+{
+    //classic stun
+    //return random_string(16);
+    std::string id;
+    id.assign(reinterpret_cast<const char *>(MAGIC_COOKIE), 4);
+    id += random_string(12);
+    return id;
+}
+
+void parse_xor_address(std::string &address, const std::string &trans_id)
+{
+    if((address.size() != 8 && address.size() != 20) || trans_id.size() != 16)
+        return;
+    size_t family = address[1], addr_size = 0;
+    /// xor port with magic cookie byte 3 and 4
+    address[2] ^= trans_id[0];
+    address[3] ^= trans_id[1];
+    switch(family)
+    {
+    case 1: //IPv4
+        /// xor IPv4 with magic cookie
+        addr_size = 4;
+        break;
+    case 2: //IPv6
+        /// xor IPv6 with magic cookie & 12 random bytes
+        addr_size = 16;
+        break;
+    }
+    uint8_t *pAddr = reinterpret_cast<uint8_t*>(address.data()) + 4;
+    for(size_t i = 0; i < addr_size; i++)
+        pAddr[i] ^= trans_id[i];
+}
+
 STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &server, uint16_t udp_port, const std::string &target_server, uint16_t target_port, const std::string &send_data = "")
 {
     STUN_RESPONSE response;
     int len, sent_len;
 
     char msg_head[] = {0, 1};
-    std::string message, trans_id_str = random_string(16), send_data_len = long_to_str(send_data.size(), 2);
+    std::string message, trans_id_str = make_transaction_id(), send_data_len = long_to_str(send_data.size(), 2);
     message.assign(msg_head, 2);
     message += send_data_len;
     message += trans_id_str;
@@ -182,7 +216,7 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
     {
         attr_type = attrs.substr(pos, 2);
         attr_length = str_to_int(attrs.substr(pos + 2, 2));
-        attr_value = attrs.substr(pos + 5, attr_length);
+        attr_value = attrs.substr(pos + 4, attr_length);
         pos += attr_length + 4;
         if(attr_length % 4)
             attr_length += 4 - (attr_length % 4);
@@ -211,6 +245,16 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
             std::tie(ip, port) = getSocksAddress(attr_value);
             response.change_ip = ip;
             response.change_port = port;
+            response.failed = false;
+        }
+        else if(memcmp(attr_type.data(), XOR_MAPPED_ADDRESS, 2) == 0)
+        {
+            std::string ip;
+            uint16_t port;
+            parse_xor_address(attr_value, trans_id_str);
+            std::tie(ip, port) = getSocksAddress(attr_value);
+            response.xor_ip = ip;
+            response.xor_port = port;
             response.failed = false;
         }
     }

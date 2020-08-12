@@ -647,7 +647,7 @@ void explodeSocks(std::string link, const std::string &custom_port, nodeInfo &no
     node.proxyStr = socksConstruct(group, remarks, server, port, username, password);
 }
 
-void explodeHTTP(const std::string link, const std::string &custom_port, nodeInfo &node)
+void explodeHTTP(const std::string &link, const std::string &custom_port, nodeInfo &node)
 {
     std::string group, remarks, server, port, username, password;
     server = getUrlArg(link, "server");
@@ -719,7 +719,7 @@ void explodeHTTPSub(std::string link, const std::string &custom_port, nodeInfo &
 
 void explodeTrojan(std::string trojan, const std::string &custom_port, nodeInfo &node)
 {
-    std::string server, port, psk, addition, remark, host;
+    std::string server, port, psk, addition, group, remark, host;
     tribool tfo, scv;
     trojan.erase(0, 9);
     string_size pos = trojan.rfind("#");
@@ -746,18 +746,21 @@ void explodeTrojan(std::string trojan, const std::string &custom_port, nodeInfo 
     host = getUrlArg(addition, "peer");
     tfo = getUrlArg(addition, "tfo");
     scv = getUrlArg(addition, "allowInsecure");
+    group = UrlDecode(getUrlArg(addition, "group"));
 
     if(remark.empty())
         remark = server + ":" + port;
     if(host.empty() && !isIPv4(server) && !isIPv6(server))
         host = server;
+    if(group.empty())
+        group = TROJAN_DEFAULT_GROUP;
 
     node.linkType = SPEEDTEST_MESSAGE_FOUNDTROJAN;
-    node.group = TROJAN_DEFAULT_GROUP;
+    node.group = group;
     node.remarks = remark;
     node.server = server;
     node.port = to_int(port, 1);
-    node.proxyStr = trojanConstruct(node.group, remark, server, port, psk, host, true, tribool(), tfo, scv);
+    node.proxyStr = trojanConstruct(group, remark, server, port, psk, host, true, tribool(), tfo, scv);
 }
 
 void explodeQuan(const std::string &quan, const std::string &custom_port, nodeInfo &node)
@@ -1074,9 +1077,15 @@ void explodeClash(Node yamlnode, const std::string &custom_port, std::vector<nod
             singleproxy["cipher"] >>= cipher;
             singleproxy["password"] >>= password;
             singleproxy["protocol"] >>= protocol;
-            singleproxy["protocolparam"] >>= protoparam;
             singleproxy["obfs"] >>= obfs;
-            singleproxy["obfsparam"] >>= obfsparam;
+            if(singleproxy["protocol-param"].IsDefined())
+                singleproxy["protocol-param"] >>= protoparam;
+            else
+                singleproxy["protocolparam"] >>= protoparam;
+            if(singleproxy["obfs-param"].IsDefined())
+                singleproxy["obfs-param"] >>= obfsparam;
+            else
+                singleproxy["obfsparam"] >>= obfsparam;
 
             node.linkType = SPEEDTEST_MESSAGE_FOUNDSSR;
             node.proxyStr = ssrConstruct(group, ps, base64_encode(ps), server, port, protocol, cipher, obfs, password, obfsparam, protoparam, ssr_libev, udp, tfo, scv);
@@ -1140,7 +1149,7 @@ void explodeShadowrocket(std::string rocket, const std::string &custom_port, nod
         port = custom_port;
     if(port == "0")
         return;
-    remarks = UrlDecode(getUrlArg(addition, "remark"));
+    remarks = UrlDecode(getUrlArg(addition, "remarks"));
     obfs = getUrlArg(addition, "obfs");
     if(obfs.size())
     {
@@ -1933,7 +1942,7 @@ int explodeConfContent(const std::string &content, const std::string &custom_por
         return SPEEDTEST_ERROR_NONE;
 }
 
-void explode(std::string link, bool sslibev, bool ssrlibev, const std::string &custom_port, nodeInfo &node)
+void explode(const std::string &link, bool sslibev, bool ssrlibev, const std::string &custom_port, nodeInfo &node)
 {
     // TODO: replace strFind with startsWith if appropriate
     if(strFind(link, "ssr://"))
