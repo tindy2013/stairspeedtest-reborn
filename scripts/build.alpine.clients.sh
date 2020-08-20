@@ -58,10 +58,10 @@ if [[ "$ARCH" = "x86_64" ]];then
     else
         curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_arm.zip
         if [[ "$ARCH" = "aarch64" ]];then
-            curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm64.zip
+            curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm64-v8a.zip
             curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-linux-arm64-v1.3.1.tar.gz
             else if [[ "$ARCH" = "armhf" ]];then
-                curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm.zip
+                curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-arm32-v7a.zip
                 curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-linux-arm-v1.3.1.tar.gz
             fi
         fi
