@@ -65,6 +65,11 @@ curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websoc
 unzip websocketd-0.3.0-darwin_amd64.zip websocketd
 mv websocketd base/tools/gui/
 
+curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-darwin-amd64-v1.3.1.tar.gz
+tar xvf v2ray-plugin*.gz
+rm v2ray-plugin*.gz
+mv v2ray-plugin* base/tools/clients/v2ray-plugin
+
 chmod +rx base/tools/clients/* base/tools/gui/websocketd
 
 set +xe
