@@ -132,11 +132,11 @@ bool runProgram(std::string command, std::string runpath, bool wait)
         return false;
     case 0: /// child
     {
-        signal(SIGINT, SIG_DFL);
+        setpgid(0, 0);
         char curdir[1024] = {};
         getcwd(curdir, 1023);
         chdir(runpath.data());
-        execl("/bin/sh", "sh", "-c", command.data(), NULL);
+        execlp("sh", "sh", "-c", command.data(), (char*)NULL);
         _exit(127);
     }
     default: /// parent
