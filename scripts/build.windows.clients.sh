@@ -2,6 +2,13 @@
 set -xe
 mkdir base/tools/clients
 
+curl -LO https://github.com/shadowsocks/libev/archive/libev-mingw.tar.gz
+tar xvf libev-mingw.tar.gz
+cd libev-mingw
+./configure --prefix=$MINGW_PREFIX
+make install -j4
+cd ..
+
 git clone https://github.com/shadowsocks/simple-obfs --depth=1
 cd simple-obfs
 git submodule update --init
@@ -10,13 +17,6 @@ git submodule update --init
 make -j4
 gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a") -o simple-obfs -fstack-protector -static -lev -lws2_32 -s
 mv simple-obfs.exe ../base/tools/clients/
-cd ..
-
-curl -LO https://github.com/shadowsocks/libev/archive/libev-mingw.tar.gz
-tar xvf libev-mingw.tar.gz
-cd libev-mingw
-./configure --prefix=$MINGW_PREFIX
-make install -j4
 cd ..
 
 git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1
