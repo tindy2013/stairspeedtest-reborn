@@ -1,6 +1,6 @@
 #!/bin/bash
 set -xe
-mkdir tools/clients/
+mkdir base/tools/clients
 
 git clone https://github.com/shadowsocks/simple-obfs --depth=1
 cd simple-obfs
