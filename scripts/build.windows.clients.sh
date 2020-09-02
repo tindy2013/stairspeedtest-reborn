@@ -2,8 +2,8 @@
 set -xe
 mkdir base/tools/clients
 
-curl -LO https://github.com/shadowsocks/libev/archive/libev-mingw.tar.gz
-tar xvf libev-mingw.tar.gz
+curl -LO https://github.com/shadowsocks/libev/archive/mingw.zip
+unzip mingw.zip
 cd libev-mingw
 ./configure --prefix=$MINGW_PREFIX
 make install -j4
