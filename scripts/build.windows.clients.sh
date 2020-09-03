@@ -82,3 +82,5 @@ strip -s websocketd
 mv v2ray-plugin* base/tools/clients/v2ray-plugin.exe
 mv v2ray.exe v2ctl.exe base/tools/clients/
 mv websocketd base/tools/gui/websocketd.exe
+
+set +xe
