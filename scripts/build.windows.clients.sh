@@ -15,7 +15,7 @@ git submodule update --init
 ./autogen.sh
 ./configure --disable-documentation
 make -j4
-gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a") -o simple-obfs -fstack-protector -static -lev -lws2_32 -s
+gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o simple-obfs -fstack-protector -static -lev -lws2_32 -s
 mv simple-obfs.exe ../base/tools/clients/
 cd ..
 
@@ -29,7 +29,7 @@ git submodule update --init
 sed -i "s/%I/%z/g" src/utils.h
 
 make -j4
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a") -o ss-local -fstack-protector -static -lev -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o ss-local -fstack-protector -static -lev -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
 mv ss-local.exe ../base/tools/clients/
 cd ..
 
@@ -51,7 +51,7 @@ sed -i "s/^const/extern const/g" src/tls.h
 sed -i "s/^const/extern const/g" src/http.h
 
 make -j4
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a") -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lev -lsodium -lws2_32 -s
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lev -lws2_32 -s
 mv ssr-local.exe ../base/tools/clients/
 cd ..
 
@@ -86,7 +86,6 @@ unzip v2ray*.zip v2ray.exe v2ctl.exe
 unzip websocketd*.zip websocketd
 tar xvf v2ray-plugin*.gz
 rm v2ray-plugin*.gz
-strip -s websocketd
 mv v2ray-plugin* base/tools/clients/v2ray-plugin.exe
 mv v2ray.exe v2ctl.exe base/tools/clients/
 mv websocketd base/tools/gui/websocketd.exe
