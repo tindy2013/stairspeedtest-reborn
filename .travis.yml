@@ -102,8 +102,8 @@ matrix:
         - /C/tools/msys64
       script:
         - $mingw64 bash scripts/build.windows.release.sh
-        - $mingw64 bash scripts/build.windows.clients.sh
       before_deploy:
+        - $mingw64 bash scripts/build.windows.clients.sh
         - mv base stairspeedtest
         - 7z a stairspeedtest_reborn_win64.7z stairspeedtest/
       deploy:
@@ -139,8 +139,8 @@ matrix:
         - /C/tools/msys64
       script:
         - $mingw32 bash scripts/build.windows.release.sh
-        - $mingw32 bash scripts/build.windows.clients.sh
       before_deploy:
+        - $mingw32 bash scripts/build.windows.clients.sh
         - mv base stairspeedtest
         - 7z a stairspeedtest_reborn_win32.7z stairspeedtest/
       deploy:
