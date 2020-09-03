@@ -66,10 +66,13 @@ fi
 
 unzip v2ray*.zip v2ray v2ctl
 unzip websocketd*.zip websocketd
-tar xvf v2ray-plugin*.gz
-rm v2ray-plugin*.gz
+if [[ "$ARCH" = "armhf" ]];then
+  tar xvf v2ray-plugin*.gz v2ray-plugin_linux_arm7
+else
+  tar xvf v2ray-plugin*.gz
+fi
 strip -s websocketd
-mv v2ray-plugin* base/tools/clients/v2ray-plugin
+mv v2ray-plugin_* base/tools/clients/v2ray-plugin
 mv v2ray base/tools/clients/
 mv v2ctl base/tools/clients/
 mv websocketd base/tools/gui/

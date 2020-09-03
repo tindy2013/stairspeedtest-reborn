@@ -28,7 +28,8 @@ cd ..
 cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" .
 make -j4
 rm stairspeedtest.exe
-# this may change in the future
-export FREETYPE_DEPS="-lharfbuzz -lm -lusp10 -lgdi32 -lrpcrt4 -ldwrite -lfreetype -lbz2 -lpng16 -lz -lgraphite2 -lglib-2.0 -lintl -lws2_32 -lole32 -lwinmm -lshlwapi -pthread -lm -lpcre -lbrotlidec-static -lbrotlicommon-static"
 
-g++ $(find CMakeFiles/stairspeedtest.dir/src -name "*.obj") curl/lib/libcurl.a -o base/stairspeedtest.exe -static -levent -lcurl -lPNGwriter -lfreetype $FREETYPE_DEPS -lpng -lpcre2-8 -lyaml-cpp -lssl -lcrypto -lws2_32 -lwsock32 -lcrypt32 -lz -lbz2 -s
+# this may change in the future
+export FREETYPE_DEPS=$(pkg-config --libs --static harfbuzz | sed -E "s/(-lbrotli\S+)/\1-static/g")
+
+g++ $(find CMakeFiles/stairspeedtest.dir/src -name "*.obj") curl/lib/libcurl.a -o base/stairspeedtest.exe -static -levent -lPNGwriter -lfreetype $FREETYPE_DEPS -lpng -lpcre2-8 -lyaml-cpp -lssl -lcrypto -lws2_32 -lwsock32 -lcrypt32 -lz -lbz2 -s

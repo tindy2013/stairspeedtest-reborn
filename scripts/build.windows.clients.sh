@@ -75,10 +75,10 @@ if [[ "$MSYSTEM" = "MINGW32" ]];then
 fi
 
 unzip v2ray*.zip v2ray.exe v2ctl.exe
-unzip websocketd*.zip websocketd.exe
+unzip websocketd*.zip websocketd
 tar xvf v2ray-plugin*.gz
 rm v2ray-plugin*.gz
 strip -s websocketd
 mv v2ray-plugin* base/tools/clients/v2ray-plugin.exe
 mv v2ray.exe v2ctl.exe base/tools/clients/
-mv websocketd.exe base/tools/gui/
+mv websocketd base/tools/gui/websocketd.exe
