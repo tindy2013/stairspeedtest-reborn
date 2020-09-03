@@ -44,7 +44,7 @@ make -j4
 cd ..
 
 ./autogen.sh
-./configure --disable-documentation
+CFLAGS+="-fstack-protector" ./configure --disable-documentation
 
 # fix codes
 sed -i "s/^const/extern const/g" src/tls.h
