@@ -4,70 +4,81 @@ mkdir ~/clients/built
 cd ~/clients
 set -xe
 
-if [ ! -d libev-mingw/ ]; then
+if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
   curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
   tar xvf mingw.tar.gz
+  cd libev-mingw
+  ./configure --prefix="$MINGW_PREFIX"
+else
+  cd libev-mingw
 fi
-cd libev-mingw
-./configure --prefix="$MINGW_PREFIX"
 make install -j4
 cd ..
 
-if [ ! -d simple-obfs/ ]; then git clone https://github.com/shadowsocks/simple-obfs --depth=1; fi
-cd simple-obfs
-git pull --ff-only
-git submodule update --init
-./autogen.sh
-./configure --disable-documentation
-make -j4
+if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
+  git clone https://github.com/shadowsocks/simple-obfs --depth=1
+  cd simple-obfs
+  git pull --ff-only
+  git submodule update --init
+  ./autogen.sh
+  ./configure --disable-documentation
+  make -j4
+else
+  cd simple-obfs
+fi
+
 gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o simple-obfs -fstack-protector -static -lev -lws2_32 -s
-mv simple-obfs.exe built/
+mv simple-obfs.exe ../built/
 cd ..
 
-if [ ! -d shadowsocks-libev/ ]; then git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1; fi
-cd shadowsocks-libev
-
-# reset fix to avoid fast-forward conflict
-git checkout -- src/utils.h
-
-git pull --ff-only
-git submodule update --init
-./autogen.sh
-./configure --disable-documentation
+if [ ! -d shadowsocks-libev/ ]; then
+  git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1
+  cd shadowsocks-libev
+  git submodule update --init
+  ./autogen.sh
+  ./configure --disable-documentation
+else
+  cd shadowsocks-libev
+  # reset fix to avoid fast-forward conflict
+  git checkout -- src/utils.h
+  git pull --ff-only
+  git submodule update
+  # skip configure to save some time
+fi
 
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
 
 make -j4
 gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o ss-local -fstack-protector -static -lev -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
-mv ss-local.exe built/
+mv ss-local.exe ../built/
 cd ..
 
-if [ ! -d shadowsocksr-libev/ ]; then git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev; fi
-cd shadowsocksr-libev
+if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never update again
+  git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
+  cd shadowsocksr-libev
 
-# reset fix to avoid fast-forward conflict
-git checkout -- src/tls.h
-git checkout -- src/http.h
+  # build ahead to reconfigure
+  cd libudns
+  ./autogen.sh
+  ./configure
+  make -j4
+  cd ..
 
-git pull --ff-only
-# build ahead to reconfigure
-cd libudns
-./autogen.sh
-./configure
-make -j4
-cd ..
+  ./autogen.sh
+  CFLAGS+="-fstack-protector" ./configure --disable-documentation
 
-./autogen.sh
-CFLAGS+="-fstack-protector" ./configure --disable-documentation
+  # fix codes
+  sed -i "s/^const/extern const/g" src/tls.h
+  sed -i "s/^const/extern const/g" src/http.h
+  make -j4
+else
+  cd shadowsocksr-libev
+  # skip all other build steps
+fi
 
-# fix codes
-sed -i "s/^const/extern const/g" src/tls.h
-sed -i "s/^const/extern const/g" src/http.h
-
-make -j4
 gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lev -lws2_32 -s
-mv ssr-local.exe built/
+mv ssr-local.exe ../built/
 cd ..
 
 if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --depth=1; fi
@@ -76,7 +87,7 @@ git pull --ff-only
 cmake -DMYSQL_INCLUDE_DIR="$MINGW_PREFIX/include/mysql" -G "Unix Makefiles" .
 make -j4
 g++ -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lmysqlclient -lssl -lcrypto -lz -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -s
-mv trojan.exe built/
+mv trojan.exe ../built/
 cd ..
 
 if [[ "$MSYSTEM" = "MINGW64" ]];then
