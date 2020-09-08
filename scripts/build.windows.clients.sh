@@ -8,11 +8,11 @@ if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
   curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
   tar xvf mingw.tar.gz
   cd libev-mingw
-  ./configure --prefix="$MINGW_PREFIX"
-else
-  cd libev-mingw
+  mkdir build
+  ./configure --prefix=build
+  make -j4
 fi
-make install -j4
+
 cd ..
 
 if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
@@ -21,13 +21,13 @@ if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
   git pull --ff-only
   git submodule update --init
   ./autogen.sh
-  ./configure --disable-documentation
+  ./configure --disable-documentation --with-ev=../libev-mingw/build
   make -j4
 else
   cd simple-obfs
 fi
 
-gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o simple-obfs -fstack-protector -static -lev -lws2_32 -s
+gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") ../libev-mingw/build/lib/libev.a -o simple-obfs -fstack-protector -static -lws2_32 -s
 mv simple-obfs.exe ../built/
 cd ..
 
@@ -36,7 +36,7 @@ if [ ! -d shadowsocks-libev/ ]; then
   cd shadowsocks-libev
   git submodule update --init
   ./autogen.sh
-  ./configure --disable-documentation
+  ./configure --disable-documentation --with-ev=../libev-mingw/build
 else
   cd shadowsocks-libev
   # reset fix to avoid fast-forward conflict
@@ -50,7 +50,7 @@ fi
 sed -i "s/%I/%z/g" src/utils.h
 
 make -j4
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o ss-local -fstack-protector -static -lev -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") ../libev-mingw/build/lib/libev.a -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
 mv ss-local.exe ../built/
 cd ..
 
@@ -66,7 +66,7 @@ if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never upd
   cd ..
 
   ./autogen.sh
-  CFLAGS+="-fstack-protector" ./configure --disable-documentation
+  CFLAGS+="-fstack-protector" ./configure --disable-documentation --with-ev=../libev-mingw/build
 
   # fix codes
   sed -i "s/^const/extern const/g" src/tls.h
@@ -77,7 +77,7 @@ else
   # skip all other build steps
 fi
 
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lev -lws2_32 -s
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") ../libev-mingw/build/lib/libev.a -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lws2_32 -s
 mv ssr-local.exe ../built/
 cd ..
 
