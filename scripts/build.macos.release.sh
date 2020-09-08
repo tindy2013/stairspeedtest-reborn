@@ -41,14 +41,4 @@ make -j8
 rm stairspeedtest
 c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest -framework CoreFoundation -framework Security $(find CMakeFiles/stairspeedtest.dir/src/ -name "*.o") $(find . -name "*.a") -lcurl -ldl -lpthread -O3
 
-if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
-	bash scripts/build.macos.clients.sh
-
-	cd base
-	chmod +rx stairspeedtest *.sh
-	chmod +r *
-  cd ..
-  mv base stairspeedtest
-fi
-
 set +xe

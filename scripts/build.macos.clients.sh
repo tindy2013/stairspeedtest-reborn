@@ -52,14 +52,13 @@ cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-lib
 mv ssr-local ../../base/tools/clients
 cd ../..
 
-curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-macos.zip
-unzip v2ray-macos.zip v2ray v2ctl
-mv v2ray base/tools/clients
-mv v2ctl base/tools/clients
+curl -LO https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-macos-64.zip
+unzip v2ray*.zip v2ray v2ctl
+mv v2ray v2ctl base/tools/clients/
 
 curl -LO https://github.com/trojan-gfw/trojan/releases/download/v1.15.1/trojan-1.15.1-macos.zip
 unzip trojan*.zip trojan/trojan
-mv trojan/trojan base/tools/clients
+mv trojan/trojan base/tools/clients/
 
 curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-darwin_amd64.zip
 unzip websocketd-0.3.0-darwin_amd64.zip websocketd

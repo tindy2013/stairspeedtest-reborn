@@ -10,12 +10,11 @@ jobs:
     - name: Build
       run: |
         docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:x86-latest-stable /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
-        tar czf stairspeedtest_reborn_linux32.tar.gz stairspeedtest
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
         name: stairspeedtest_reborn_linux32
-        path: stairspeedtest_reborn_linux32.tar.gz
+        path: stairspeedtest/
 
   linux64_build:
     name: Linux x86_64 Build
@@ -25,12 +24,11 @@ jobs:
     - name: Build
       run: |
         docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:amd64-latest-stable /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
-        tar czf stairspeedtest_reborn_linux64.tar.gz stairspeedtest
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
         name: stairspeedtest_reborn_linux64
-        path: stairspeedtest_reborn_linux64.tar.gz
+        path: stairspeedtest/
 
   macos_build:
     name: macOS Build
@@ -39,10 +37,58 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: |
-        TRAVIS_BRANCH=action TRAVIS_TAG=action bash scripts/build.macos.release.sh
-        tar czf stairspeedtest_reborn_darwin64.tar.gz stairspeedtest
+        bash scripts/build.macos.release.sh
+        bash scripts/build.macos.clients.sh
+        mv base stairspeedtest
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
         name: stairspeedtest_reborn_darwin64
-        path: stairspeedtest_reborn_darwin64.tar.gz
+        path: stairspeedtest/
+        
+  windows64_build:
+    name: Windows x86_64 Build
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: base-devel git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-libevent mingw-w64-x86_64-pcre2 mingw-w64-x86_64-freetype mingw-w64-x86_64-libpng mingw-w64-x86_64-bzip2 mingw-w64-x86_64-openssl mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libsodium mingw-w64-x86_64-c-ares mingw-w64-x86_64-boost mingw-w64-x86_64-libmariadbclient unzip p7zip
+    - name: Build
+      run: |
+        bash scripts/build.windows.release.sh
+        bash scripts/build.windows.clients.sh
+        mv base stairspeedtest
+    - name: Upload
+      uses: actions/upload-artifact@v1
+      with:
+        name: stairspeedtest_reborn_win64
+        path: stairspeedtest/
+  windows32_build:
+    name: Windows x86 Build
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: base-devel git mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libevent mingw-w64-i686-pcre2 mingw-w64-i686-freetype mingw-w64-i686-libpng mingw-w64-i686-bzip2 mingw-w64-i686-openssl mingw-w64-i686-mbedtls mingw-w64-i686-libsodium mingw-w64-i686-c-ares mingw-w64-i686-boost mingw-w64-i686-libmariadbclient unzip p7zip
+        msystem: MINGW32
+    - name: Build
+      run: |
+        bash scripts/build.windows.release.sh
+        bash scripts/build.windows.clients.sh
+        mv base stairspeedtest
+    - name: Upload
+      uses: actions/upload-artifact@v1
+      with:
+        name: stairspeedtest_reborn_win32
+        path: stairspeedtest/
+        

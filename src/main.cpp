@@ -159,10 +159,10 @@ void copyNodesWithGroupID(std::vector<nodeInfo> &source, std::vector<nodeInfo> &
 void clientCheck()
 {
 #ifdef _WIN32
-    std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe";
-    std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe";
-    std::string ss_libev_path = "tools\\clients\\shadowsocks-libev\\ss-libev.exe";
-    std::string trojan_path = "tools\\clients\\trojan\\trojan-core.exe";
+    std::string v2core_path = "tools\\clients\\v2ray.exe";
+    std::string ssr_libev_path = "tools\\clients\\ssr-local.exe";
+    std::string ss_libev_path = "tools\\clients\\ss-local.exe";
+    std::string trojan_path = "tools\\clients\\trojan.exe";
 #else
     std::string v2core_path = "tools/clients/v2ray";
     std::string ssr_libev_path = "tools/clients/ssr-local";
@@ -215,18 +215,18 @@ void clientCheck()
 int runClient(int client)
 {
 #ifdef _WIN32
-    std::string v2core_path = "tools\\clients\\v2ray-core\\v2-core.exe -config config.json";
-    std::string ssr_libev_path = "tools\\clients\\shadowsocksr-libev\\ssr-libev.exe -u -c config.json";
+    std::string v2core_path = "tools\\clients\\v2ray.exe -config config.json";
+    std::string ssr_libev_path = "tools\\clients\\ssr-local.exe -u -c config.json";
 
-    std::string ss_libev_dir = "tools\\clients\\shadowsocks-libev\\";
-    std::string ss_libev_path = ss_libev_dir + "ss-libev.exe -u -c ..\\..\\..\\config.json";
+    std::string ss_libev_dir = "tools\\clients\\";
+    std::string ss_libev_path = ss_libev_dir + "ss-local.exe -u -c ..\\..\\..\\config.json";
 
-    std::string ssr_win_dir = "tools\\clients\\shadowsocksr-win\\";
+    std::string ssr_win_dir = "tools\\clients\\";
     std::string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
-    std::string ss_win_dir = "tools\\clients\\shadowsocks-win\\";
+    std::string ss_win_dir = "tools\\clients\\";
     std::string ss_win_path = ss_win_dir + "shadowsocks-win.exe";
 
-    std::string trojan_path = "tools\\clients\\trojan\\trojan-core.exe -c config.json";
+    std::string trojan_path = "tools\\clients\\trojan.exe -c config.json";
 
     switch(client)
     {
@@ -299,11 +299,12 @@ int runClient(int client)
 int killClient(int client)
 {
 #ifdef _WIN32
-    std::string v2core_name = "v2-core.exe";
-    std::string ss_libev_name = "ss-libev.exe";
-    std::string ssr_libev_name = "ssr-libev.exe";
+    std::string v2core_name = "v2ray.exe";
+    std::string ss_libev_name = "ss-local.exe";
+    std::string ssr_libev_name = "ssr-local.exe";
     std::string ss_win_name = "shadowsocks-win.exe";
     std::string ssr_win_name = "shadowsocksr-win.exe";
+    std::string trojan_name = "trojan.exe";
 
     switch(client)
     {
@@ -334,6 +335,10 @@ int killClient(int client)
             writeLog(LOG_TYPE_INFO, "Killing shadowsocks-win...");
             killProgram(ss_win_name);
         }
+        break;
+    case SPEEDTEST_MESSAGE_FOUNDTROJAN:
+        writeLog(LOG_TYPE_INFO, "Killing trojan...");
+        killProgram(trojan_name);
         break;
     }
 #else
