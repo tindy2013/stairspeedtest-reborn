@@ -9,8 +9,8 @@ if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
   tar xvf mingw.tar.gz
   cd libev-mingw
   mkdir build
-  ./configure --prefix=build
-  make -j4
+  ./configure --prefix="$PWD/build"
+  make install -j4
 fi
 
 cd ..
