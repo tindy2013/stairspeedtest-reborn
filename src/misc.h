@@ -2,6 +2,7 @@
 #define MISC_H_INCLUDED
 
 #include <string>
+#include <string.h>
 #include <vector>
 #include <sstream>
 #include <algorithm>
