@@ -13,7 +13,7 @@ if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
   make install -j4
   cd ..
 fi
-export LIBEV_PATH=~/clients/libev-mingw/build
+export LIBEV_PATH="$PWD/libev-mingw/build"
 
 if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
   git clone https://github.com/shadowsocks/simple-obfs --depth=1
