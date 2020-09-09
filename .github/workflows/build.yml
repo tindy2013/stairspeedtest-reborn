@@ -64,8 +64,9 @@ jobs:
         cache-name: cache-maindeps-64
       with:
         path: ~/maindeps
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }}
           ${{ runner.os }}-build-${{ env.cache-name }}
     - name: Cache built clients
       uses: actions/cache@v2
@@ -73,8 +74,9 @@ jobs:
         cache-name: cache-clients-64
       with:
         path: ~/clients
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }}
           ${{ runner.os }}-build-${{ env.cache-name }}
     - name: Build dependencies and clients
       run: |
@@ -110,8 +112,9 @@ jobs:
         cache-name: cache-maindeps-32
       with:
         path: ~/maindeps
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }}
           ${{ runner.os }}-build-${{ env.cache-name }}
     - name: Cache built clients
       uses: actions/cache@v2
@@ -119,8 +122,9 @@ jobs:
         cache-name: cache-clients-32
       with:
         path: ~/clients
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }}
           ${{ runner.os }}-build-${{ env.cache-name }}
     - name: Build dependencies and clients
       run: |
