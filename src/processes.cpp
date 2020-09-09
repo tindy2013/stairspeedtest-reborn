@@ -164,7 +164,7 @@ void killByHandle()
         }
 #else
         if(hProc != 0)
-            kill(hProc, SIGINT);
+            kill(-hProc, SIGINT); // kill process group
 #endif // _WIN32
         handles.pop();
     }
