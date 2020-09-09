@@ -1,7 +1,7 @@
 #!/bin/bash
-mkdir ~/clients
-mkdir ~/clients/built
-cd ~/clients
+mkdir "$USERPROFILE/clients"
+mkdir "$USERPROFILE/clients/built"
+cd "$USERPROFILE/clients"
 set -xe
 
 if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again

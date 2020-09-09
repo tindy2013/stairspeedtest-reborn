@@ -1,6 +1,6 @@
 #!/bin/bash
-mkdir ~/maindeps
-cd ~/maindeps
+mkdir "$USERPROFILE/maindeps"
+cd "$USERPROFILE/maindeps"
 set -xe
 
 if [ ! -d curl/ ]; then git clone https://github.com/curl/curl --depth=1; fi
