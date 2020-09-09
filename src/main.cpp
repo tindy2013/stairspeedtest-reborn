@@ -379,7 +379,7 @@ int terminateClient(int client)
     return 0;
 }
 
-void readConf(const std::string &path)
+void readConf(std::string path)
 {
     downloadLink link;
     linkMatchRule rule;
@@ -966,26 +966,27 @@ void addNodes(std::string link, bool multilink)
 
 void setcd(std::string &file)
 {
-    char szTemp[1024] = {}, filename[256] = {};
+    char filename[256] = {};
     std::string path;
 #ifdef _WIN32
+    char szTemp[1024] = {};
     char *pname = NULL;
     DWORD retVal = GetFullPathName(file.data(), 1023, szTemp, &pname);
     if(!retVal)
         return;
     strcpy(filename, pname);
     strrchr(szTemp, '\\')[1] = '\0';
+    path.assign(szTemp);
 #else
-    char *ret = realpath(file.data(), szTemp);
+    char *ret = realpath(file.data(), NULL);
     if(ret == NULL)
         return;
-    ret = strcpy(filename, strrchr(szTemp, '/') + 1);
-    if(ret == NULL)
-        return;
-    strrchr(szTemp, '/')[1] = '\0';
+    strncpy(filename, strrchr(ret, '/') + 1, 255);
+    strrchr(ret, '/')[1] = '\0';
+    path.assign(ret);
+    free(ret);
 #endif // _WIN32
     file.assign(filename);
-    path.assign(szTemp);
     chdir(path.data());
 }
 
