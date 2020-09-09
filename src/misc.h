@@ -2,13 +2,13 @@
 #define MISC_H_INCLUDED
 
 #include <string>
-#include <string.h>
 #include <vector>
 #include <sstream>
 #include <algorithm>
 #include <future>
 #include <sys/types.h>
 #include <dirent.h>
+#include <string.h>
 
 #include <yaml-cpp/yaml.h>
 
