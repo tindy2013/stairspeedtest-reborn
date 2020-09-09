@@ -992,22 +992,6 @@ void setcd(std::string &file)
 
 int main(int argc, char* argv[])
 {
-    /*
-    //do some trick to allow child processes die on termination
-    #ifndef _WIN32
-    setsid();
-    unshare(CLONE_NEWPID | CLONE_NEWUSER);
-    fileWrite("/proc/self/uid_map", "0 " + std::to_string(getuid()) + " 1", false);
-    int retVal = fork();
-    if(retVal == -1)
-    {
-        cerr << "error on fork" << endl;
-        return 1;
-    }
-    else if(retVal != 0)
-        return 0;
-    #endif // _WIN32
-    */
     std::vector<nodeInfo> nodes;
     nodeInfo node;
     std::string link;
@@ -1183,7 +1167,7 @@ int main(int argc, char* argv[])
     sleep(1);
     //std::cin.clear();
     //std::cin.ignore();
-    if(!rpcmode)
+    if(!rpcmode && sub_url.size())
         _getch();
 #ifdef _WIN32
     //stop socket library before exit

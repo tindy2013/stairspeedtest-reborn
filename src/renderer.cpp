@@ -36,7 +36,7 @@ int calcLength(const std::string &data)
     int total = 0;
     for(unsigned int i = 0; i < data.size(); i++)
     {
-        if(int(data[i]) > 255 || int(data[i]) < 0)
+        if(int(data[i]) > 127)
             total += 2;
         else
             total++;
