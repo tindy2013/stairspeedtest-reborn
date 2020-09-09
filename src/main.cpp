@@ -379,7 +379,7 @@ int terminateClient(int client)
     return 0;
 }
 
-void readConf(std::string path)
+void readConf(const std::string &path)
 {
     downloadLink link;
     linkMatchRule rule;
@@ -645,7 +645,6 @@ int singleTest(nodeInfo &node)
     defer(killByHandle();)
     proxy = buildSocks5ProxyString(testserver, testport, username, password);
 
-    //printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
     if(!rpcmode)
         printMsg(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, id, node.group, node.remarks, std::to_string(node_count));
     sleep(200); /// wait for client startup

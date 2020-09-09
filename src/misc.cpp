@@ -5,6 +5,7 @@
 #include <iosfwd>
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
 //#include <filesystem>
 #include <unistd.h>
 #include <stdarg.h>
@@ -198,7 +199,7 @@ std::string UrlDecode(const std::string& str)
 /*
 static inline bool is_base64(unsigned char c)
 {
-    return (isalnum(c) || (c == '+') || (c == '/'));
+    return (isalnum(c) || (c == '+') || (c == '/') || (c == '-') || (c == '_'));
 }
 */
 
@@ -208,7 +209,7 @@ std::string base64_encode(const std::string &string_to_encode)
     unsigned int in_len = string_to_encode.size();
 
     std::string ret;
-    int i = 0, j;
+    int i = 0;
     unsigned char char_array_3[3];
     unsigned char char_array_4[4];
 
@@ -230,6 +231,7 @@ std::string base64_encode(const std::string &string_to_encode)
 
     if (i)
     {
+        int j;
         for(j = i; j < 3; j++)
             char_array_3[j] = '\0';
 
@@ -280,7 +282,12 @@ std::string base64_decode(const std::string &encoded_string, bool accept_urlsafe
     {
         uchar = encoded_string[in_]; // make compiler happy
         if (!(accept_urlsafe ? itable[uchar] : (itable[uchar] == 1))) // break away from the while condition
+        {
+            ret += uchar; // not base64 encoded data, copy to result
+            in_++;
+            i = 0;
             continue;
+        }
         char_array_4[i++] = uchar;
         in_++;
         if (i == 4)
@@ -439,10 +446,9 @@ std::string getSystemProxy()
     return std::string();
 #else
     string_array proxy_env = {"all_proxy", "ALL_PROXY", "http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY"};
-    char* proxy;
     for(std::string &x : proxy_env)
     {
-        proxy = getenv(x.c_str());
+        char* proxy = getenv(x.c_str());
         if(proxy != NULL)
             return std::string(proxy);
     }
@@ -696,10 +702,10 @@ bool regFind(const std::string &src, const std::string &match)
     return reg.match(src, "g");
 }
 
-std::string regReplace(const std::string &src, const std::string &match, const std::string &rep, bool global)
+std::string regReplace(const std::string &src, const std::string &match, const std::string &rep, bool global, bool multiline)
 {
     jp::Regex reg;
-    reg.setPattern(match).addModifier("m").addPcre2Option(PCRE2_UTF|PCRE2_MULTILINE|PCRE2_ALT_BSUX).compile();
+    reg.setPattern(match).addModifier(multiline ? "m" : "").addPcre2Option(PCRE2_UTF|PCRE2_MULTILINE|PCRE2_ALT_BSUX).compile();
     if(!reg)
         return src;
     return reg.replace(src, rep, global ? "gx" : "x");
@@ -747,7 +753,7 @@ int regGetMatch(const std::string &src, const std::string &match, size_t group_c
 
 std::string regTrim(const std::string &src)
 {
-    return regReplace(src, "^\\s*?(.*?)\\s*$", "$1");
+    return regReplace(src, "^\\s*([\\s\\S]*)\\s*$", "$1", false, false);
 }
 
 std::string speedCalc(double speed)
@@ -836,7 +842,7 @@ bool isInScope(const std::string &path)
     if(path.find(":\\") != path.npos || path.find("..") != path.npos)
         return false;
 #else
-    if(path.find("/") == 0 || path.find("..") != path.npos)
+    if(startsWith(path, "/") || path.find("..") != path.npos)
         return false;
 #endif // _WIN32
     return true;
@@ -1030,10 +1036,9 @@ bool is_str_utf8(const std::string &data)
 {
     const char *str = data.c_str();
     unsigned int nBytes = 0;
-    unsigned char chr;
     for (unsigned int i = 0; str[i] != '\0'; ++i)
     {
-        chr = *(str + i);
+        unsigned char chr = *(str + i);
         if (nBytes == 0)
         {
             if (chr >= 0x80)
@@ -1086,6 +1091,7 @@ int to_int(const std::string &str, int def_value)
 {
     if(str.empty())
         return def_value;
+    /*
     int retval = 0;
     char c;
     std::stringstream ss(str);
@@ -1095,6 +1101,8 @@ int to_int(const std::string &str, int def_value)
         return def_value;
     else
         return retval;
+    */
+    return std::atoi(str.data());
 }
 
 std::string getFormData(const std::string &raw_data)
@@ -1113,7 +1121,7 @@ std::string getFormData(const std::string &raw_data)
     {
         if(i == 0)
             boundary = line.substr(0, line.length() - 1); // Get boundary
-        else if(line.find(boundary) == 0)
+        else if(startsWith(line, boundary))
             break; // The end
         else if(line.length() == 1)
         {
@@ -1125,11 +1133,10 @@ std::string getFormData(const std::string &raw_data)
             while(!endfile)
             {
                 int j = 0;
-                int k;
                 while(j < 256 && strstrm.get(c) && !endfile)
                 {
                     buffer[j] = c;
-                    k = 0;
+                    int k = 0;
                     // Verify if we are at the end
                     while(boundary[bl - 1 - k] == buffer[j - k])
                     {
@@ -1156,10 +1163,9 @@ std::string getFormData(const std::string &raw_data)
 std::string UTF8ToCodePoint(const std::string &data)
 {
     std::stringstream ss;
-    int charcode;
     for(std::string::size_type i = 0; i < data.size(); i++)
     {
-        charcode = data[i] & 0xff;
+        int charcode = data[i] & 0xff;
         if((charcode >> 7) == 0)
         {
             ss<<data[i];
