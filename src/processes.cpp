@@ -61,7 +61,8 @@ bool runProgram(std::string command, std::string runpath, bool wait)
 {
 #ifdef _WIN32
     BOOL retval = false;
-    STARTUPINFO si = {sizeof(STARTUPINFO)};
+    STARTUPINFO si = {};
+    si.cb = sizeof(STARTUPINFO);
     PROCESS_INFORMATION pi = {};
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits = {};
     char curdir[512] = {}, *cmdstr = {}, *pathstr = {};
@@ -264,7 +265,8 @@ bool killProgram(std::string program)
     {
         return false;
     }
-    PROCESSENTRY32 pe = { sizeof(pe) };
+    PROCESSENTRY32 pe = {};
+    pe.dwSize = sizeof(pe);
 
     for(BOOL bRet = Process32First(hShot, &pe); bRet; bRet = Process32Next(hShot, &pe))
     {

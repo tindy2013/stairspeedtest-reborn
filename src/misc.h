@@ -6,6 +6,8 @@
 #include <sstream>
 #include <algorithm>
 #include <future>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include <yaml-cpp/yaml.h>
 
@@ -65,7 +67,7 @@ std::string getFormData(const std::string &raw_data);
 void sleep(int interval);
 bool regValid(const std::string &reg);
 bool regFind(const std::string &src, const std::string &match);
-std::string regReplace(const std::string &src, const std::string &match, const std::string &rep, bool global = true);
+std::string regReplace(const std::string &src, const std::string &match, const std::string &rep, bool global = true, bool multiline = true);
 bool regMatch(const std::string &src, const std::string &match);
 int regGetMatch(const std::string &src, const std::string &match, size_t group_count, ...);
 std::string regTrim(const std::string &src);
@@ -90,6 +92,25 @@ bool fileExist(const std::string &path, bool scope_limit = false);
 bool fileCopy(const std::string &source, const std::string &dest);
 std::string fileToBase64(const std::string &filepath);
 std::string fileGetMD5(const std::string &filepath);
+
+template<typename F>
+int operateFiles(const std::string &path, F &&op)
+{
+    DIR* dir = opendir(path.data());
+    if(!dir)
+        return -1;
+    struct dirent* dp;
+    while((dp = readdir(dir)) != NULL)
+    {
+        if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        {
+            if(op(dp->d_name))
+                break;
+        }
+    }
+    closedir(dir);
+    return 0;
+}
 
 static inline bool strFind(const std::string &str, const std::string &target)
 {
@@ -182,7 +203,7 @@ public:
 
     operator bool() const { return _M_VALUE == 3; }
 
-    bool is_undef() { return _M_VALUE <= 1; }
+    bool is_undef() const { return _M_VALUE <= 1; }
 
     template <typename T> tribool define(const T &value)
     {
@@ -191,7 +212,7 @@ public:
         return *this;
     }
 
-    template <typename T> tribool read(const T &value)
+    template <typename T> tribool parse(const T &value)
     {
         define(value);
         return *this;
@@ -204,14 +225,14 @@ public:
         return *this;
     }
 
-    bool get(const bool &def_value = false)
+    bool get(const bool &def_value = false) const
     {
         if(_M_VALUE <= 1)
             return def_value;
         return _M_VALUE == 3;
     }
 
-    std::string get_str()
+    std::string get_str() const
     {
         switch(_M_VALUE)
         {

@@ -307,7 +307,7 @@ void ssrspeed_webserver_routine(const std::string &listen_address, int listen_po
             return "running";
         rapidjson::Document json;
         std::string suburl;
-        json.Parse(postdata.data());
+        json.Parse(request.postdata.data());
         suburl = GetMember(json, "url");
         eraseElements(allNodes);
         addNodes(suburl, false);
@@ -322,7 +322,7 @@ void ssrspeed_webserver_routine(const std::string &listen_address, int listen_po
             return "running";
         else
         {
-            if(explodeConfContent(getFormData(postdata), override_conf_port, ss_libev, ssr_libev, allNodes) == SPEEDTEST_ERROR_UNRECOGFILE)
+            if(explodeConfContent(getFormData(request.postdata), override_conf_port, ss_libev, ssr_libev, allNodes) == SPEEDTEST_ERROR_UNRECOGFILE)
                 return "error";
             else
                 return ssrspeed_generate_web_configs(allNodes);
@@ -338,7 +338,7 @@ void ssrspeed_webserver_routine(const std::string &listen_address, int listen_po
             return "done";
         start_flag = true;
         rapidjson::Document json;
-        json.Parse(postdata.data());
+        json.Parse(request.postdata.data());
         std::string test_mode = GetMember(json, "testMode"), sort_method = GetMember(json, "sortMethod"), group = GetMember(json, "group"), exp_color = GetMember(json, "colors");
 
         if(test_mode == "ALL")

@@ -100,10 +100,14 @@ matrix:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
         - /C/tools/msys64
+        - ~/maindeps
       script:
+        - $mingw64 bash scripts/build.windows.maindeps.sh
         - $mingw64 bash scripts/build.windows.release.sh
       before_deploy:
         - $mingw64 bash scripts/build.windows.clients.sh
+        - mv ~/clients/built/websocketd.exe base/tools/gui/
+        - mv ~/clients/built base/tools/clients
         - mv base stairspeedtest
         - 7z a stairspeedtest_reborn_win64.7z stairspeedtest/
       deploy:
@@ -137,10 +141,14 @@ matrix:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
         - /C/tools/msys64
+        - ~/maindeps
       script:
+        - $mingw32 bash scripts/build.windows.maindeps.sh
         - $mingw32 bash scripts/build.windows.release.sh
       before_deploy:
         - $mingw32 bash scripts/build.windows.clients.sh
+        - mv ~/clients/built/websocketd.exe base/tools/gui/
+        - mv ~/clients/built base/tools/clients
         - mv base stairspeedtest
         - 7z a stairspeedtest_reborn_win32.7z stairspeedtest/
       deploy:
