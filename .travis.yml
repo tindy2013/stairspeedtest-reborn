@@ -108,6 +108,8 @@ matrix:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
         - /C/tools/msys64
+        - ~/maindeps-32
+        - ~/clients-32
         - ~/maindeps-64
         - ~/clients-64
       script:
@@ -158,6 +160,8 @@ matrix:
         - /C/tools/msys64
         - ~/maindeps-32
         - ~/clients-32
+        - ~/maindeps-64
+        - ~/clients-64
       script:
         - $mingw32 bash scripts/build.windows.release.sh
       before_deploy:
