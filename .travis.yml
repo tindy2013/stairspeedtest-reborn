@@ -107,7 +107,6 @@ matrix:
       cache:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
-        - /C/tools/msys64
         - ~/maindeps-32
         - ~/clients-32
         - ~/maindeps-64
@@ -157,7 +156,6 @@ matrix:
       cache:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
-        - /C/tools/msys64
         - ~/maindeps-32
         - ~/clients-32
         - ~/maindeps-64
