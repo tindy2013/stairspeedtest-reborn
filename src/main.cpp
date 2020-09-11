@@ -379,7 +379,7 @@ int terminateClient(int client)
     return 0;
 }
 
-void readConf(std::string path)
+void readConf(const std::string &path)
 {
     downloadLink link;
     linkMatchRule rule;

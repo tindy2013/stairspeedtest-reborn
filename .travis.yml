@@ -93,19 +93,27 @@ matrix:
          taskkill //IM gpg-agent.exe //F
          export PATH=/C/tools/msys64/mingw64/bin:$PATH
          export MAKE=make
+      install:
+      - |-
+        [[ -d ~/maindeps-64/ ]] && mv ~/maindeps-64 ~/maindeps
+        [[ -d ~/clients-64/ ]] && mv ~/clients-64 ~/clients
+        $mingw64 bash scripts/build.windows.maindeps.sh
+        $mingw64 bash scripts/build.windows.clients.sh
       before_cache:
       - |-
+        mv ~/maindeps ~/maindeps-64
+        mv ~/clients ~/clients-64
         $msys2 pacman --sync --clean --noconfirm
       cache:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
-        - /C/tools/msys64
-        - ~/maindeps
+        - ~/maindeps-32
+        - ~/clients-32
+        - ~/maindeps-64
+        - ~/clients-64
       script:
-        - $mingw64 bash scripts/build.windows.maindeps.sh
         - $mingw64 bash scripts/build.windows.release.sh
       before_deploy:
-        - $mingw64 bash scripts/build.windows.clients.sh
         - mv ~/clients/built/websocketd.exe base/tools/gui/
         - mv ~/clients/built base/tools/clients
         - mv base stairspeedtest
@@ -134,19 +142,27 @@ matrix:
          taskkill //IM gpg-agent.exe //F
          export PATH=/C/tools/msys64/mingw64/bin:$PATH
          export MAKE=make
+      install:
+      - |-
+        [[ -d ~/maindeps-32/ ]] && mv ~/maindeps-32 ~/maindeps
+        [[ -d ~/clients-32/ ]] && mv ~/clients-32 ~/clients
+        $mingw32 bash scripts/build.windows.clients.sh
+        $mingw32 bash scripts/build.windows.maindeps.sh
       before_cache:
       - |-
+        mv ~/maindeps ~/maindeps-32
+        mv ~/clients ~/clients-32
         $msys2 pacman --sync --clean --noconfirm
       cache:
         directories:
         - $HOME/AppData/Local/Temp/chocolatey
-        - /C/tools/msys64
-        - ~/maindeps
+        - ~/maindeps-32
+        - ~/clients-32
+        - ~/maindeps-64
+        - ~/clients-64
       script:
-        - $mingw32 bash scripts/build.windows.maindeps.sh
         - $mingw32 bash scripts/build.windows.release.sh
       before_deploy:
-        - $mingw32 bash scripts/build.windows.clients.sh
         - mv ~/clients/built/websocketd.exe base/tools/gui/
         - mv ~/clients/built base/tools/clients
         - mv base stairspeedtest
