@@ -103,10 +103,10 @@ void rendererInit(const std::string &font, int fontsize)
     widDot = getWidth(&png, font, fontsize, ".");
     widUnkn = getWidth(&png, font, fontsize, "Unknown");
     widBlock = getWidth(&png, font, fontsize, "Blocked");
-    widFullCone = getWidth(&png, font, fontsize, "Full-cone NAT");
-    widRestCone = getWidth(&png, font, fontsize, "Restricted-cone NAT");
-    widPortRest = getWidth(&png, font, fontsize, "Restricted-port NAT");
-    widSym = getWidth(&png, font, fontsize, "Symmetric NAT");
+    widFullCone = getWidth(&png, font, fontsize, "FullCone");
+    widRestCone = getWidth(&png, font, fontsize, "RestrictedCone");
+    widPortRest = getWidth(&png, font, fontsize, "PortRestrictedCone");
+    widSym = getWidth(&png, font, fontsize, "Symmetric");
     writeLog(LOG_TYPE_RENDER, "Calculated basic string widths: Number=" + std::to_string(widNumber) + " N/A=" + std::to_string(widNA) + " KB=" + std::to_string(widKB) \
              + " MB=" + std::to_string(widMB) + " GB=" + std::to_string(widGB) + " Percent=" + std::to_string(widPercent) + " Dot=" + std::to_string(widDot));
 }
@@ -123,13 +123,13 @@ static inline int getTextWidth(pngwriter *png, const std::string &font, int font
         return widBlock;
     case "Unknown"_hash:
         return widUnkn;
-    case "Full-cone NAT"_hash:
+    case "FullCone"_hash:
         return widFullCone;
-    case "Restricted-cone NAT"_hash:
+    case "RestrictedCone"_hash:
         return widRestCone;
-    case "Restricted-port NAT"_hash:
+    case "PortRestrictedCone"_hash:
         return widPortRest;
-    case "Symmetric NAT"_hash:
+    case "Symmetric"_hash:
         return widSym;
     }
 
