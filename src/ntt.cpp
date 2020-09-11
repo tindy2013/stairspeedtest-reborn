@@ -30,7 +30,7 @@ enum NAT_TYPE
     SYMMETRIC_NAT
 };
 
-const char *NAT_TYPE_STR[] = {"Unknown", "Blocked", "Full-cone NAT", "Restricted-cone NAT", "Restricted-port NAT", "Symmetric NAT"};
+const char *NAT_TYPE_STR[] = {"Unknown", "Blocked", "FullCone", "RestrictedCone", "PortRestrictedCone", "Symmetric"};
 
 struct STUN_RESPONSE
 {
