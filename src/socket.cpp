@@ -272,11 +272,10 @@ std::string hostnameToIPAddr(std::string host)
     //new function
     int retVal;
     std::string retstr;
-    struct addrinfo hint = {}, *retAddrInfo, *cur;
+    struct addrinfo hint = {}, *retAddrInfo = NULL, *cur;
     retVal = getaddrinfo(host.data(), NULL, &hint, &retAddrInfo);
     if(retVal != 0)
     {
-        freeaddrinfo(retAddrInfo);
         return std::string();
     }
 
