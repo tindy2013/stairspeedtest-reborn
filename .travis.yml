@@ -10,6 +10,7 @@ matrix:
         - bash scripts/build.macos.release.sh
       before_deploy:
         - bash scripts/build.macos.clients.sh
+        - mv base stairspeedtest
         - tar czf stairspeedtest_reborn_darwin64.tar.gz stairspeedtest
       deploy:
         provider: releases
