@@ -219,7 +219,7 @@ int runClient(int client)
     std::string ssr_libev_path = "tools\\clients\\ssr-local.exe -u -c config.json";
 
     std::string ss_libev_dir = "tools\\clients\\";
-    std::string ss_libev_path = ss_libev_dir + "ss-local.exe -u -c ..\\..\\..\\config.json";
+    std::string ss_libev_path = ss_libev_dir + "ss-local.exe -u -c ..\\..\\config.json";
 
     std::string ssr_win_dir = "tools\\clients\\";
     std::string ssr_win_path = ssr_win_dir + "shadowsocksr-win.exe";
@@ -379,7 +379,7 @@ int terminateClient(int client)
     return 0;
 }
 
-void readConf(const std::string &path)
+void readConf(std::string path)
 {
     downloadLink link;
     linkMatchRule rule;
@@ -390,7 +390,7 @@ void readConf(const std::string &path)
     std::string strTemp;
 
     //ini.do_utf8_to_gbk = true;
-    ini.ParseFile("pref.ini");
+    ini.ParseFile(path);
 
     ini.EnterSection("common");
     if(ini.ItemPrefixExist("exclude_remark"))

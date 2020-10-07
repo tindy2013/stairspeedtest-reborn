@@ -273,18 +273,17 @@ std::string hostnameToIPAddr(std::string host)
     int retVal;
     std::string retstr;
     struct addrinfo hint = {}, *retAddrInfo = NULL, *cur;
+    defer(if(retAddrInfo) freeaddrinfo(retAddrInfo));
     retVal = getaddrinfo(host.data(), NULL, &hint, &retAddrInfo);
     if(retVal != 0)
-    {
         return std::string();
-    }
 
     for(cur = retAddrInfo; cur != NULL; cur = cur->ai_next)
     {
-        if((retstr = sockaddrToIPAddr(cur->ai_addr)).size())
+        retstr = sockaddrToIPAddr(cur->ai_addr);
+        if(!retstr.empty())
             break;
     }
-    freeaddrinfo(retAddrInfo);
     return retstr;
 }
 
