@@ -649,19 +649,19 @@ public:
     }
 
     /**
-    * @brief Retrieve one integer item value with the exact same name in the given section.
+    * @brief Retrieve a number item value with the exact same name in the given section.
     */
-    int GetInt(const std::string &section, const std::string &itemName)
+    template <typename T> T GetNumber(const std::string &section, const std::string &itemName, T def_value = 0)
     {
-        return to_int(Get(section, itemName), 0);
+        return to_number<T>(Get(section, itemName), def_value);
     }
 
     /**
-    * @brief Retrieve one integer item value with the exact same name in current section.
+    * @brief Retrieve a number item value with the exact same name in current section.
     */
-    int GetInt(const std::string &itemName)
+    template <typename T> T GetNumber(const std::string &itemName, T def_value = 0)
     {
-        return GetInt(current_section, itemName);
+        return GetNumber<T>(current_section, itemName, def_value);
     }
 
     /**
@@ -687,26 +687,26 @@ public:
     }
 
     /**
-    * @brief Retrieve a string style array with specific separator and write into integer array.
+    * @brief Retrieve a string style array with specific separator and write into number array.
     */
-    template <typename T> void GetIntArray(const std::string &section, const std::string &itemName, const std::string &separator, T &Array)
+    template <typename T, typename U> void GetNumberArray(const std::string &section, const std::string &itemName, const std::string &separator, U &Array)
     {
         string_array vArray;
         unsigned int index, UBound = sizeof(Array) / sizeof(Array[0]);
         vArray = split(Get(section, itemName), separator);
         for(index = 0; index < vArray.size() && index < UBound; index++)
-            Array[index] = stoi(vArray[index]);
+            Array[index] = to_number<T>(vArray[index]);
         for(; index < UBound; index++)
             Array[index] = 0;
     }
 
     /**
-    * @brief Retrieve a string style array with specific separator and write into integer array.
+    * @brief Retrieve a string style array with specific separator and write into number array.
     */
-    template <typename T> void GetIntArray(const std::string &itemName, const std::string &separator, T &Array)
+    template <typename T, typename U> void GetNumberArray(const std::string &itemName, const std::string &separator, U &Array)
     {
         if(current_section.size())
-            GetIntArray(current_section, itemName, separator, Array);
+            GetNumberArray<T>(current_section, itemName, separator, Array);
     }
 
     /**
@@ -763,35 +763,19 @@ public:
     }
 
     /**
-    *  @brief Add a double value with given values.
+    *  @brief Add a number value with given values.
     */
-    int SetDouble(const std::string &section, std::string itemName, double itemVal)
+    template <typename T> int SetNumber(const std::string &section, std::string itemName, T itemVal)
     {
         return Set(section, std::move(itemName), std::to_string(itemVal));
     }
 
     /**
-    *  @brief Add a double value with given values.
+    *  @brief Add a number value with given values.
     */
-    int SetDouble(std::string itemName, double itemVal)
+    template <typename T> int SetNumber(std::string itemName, T itemVal)
     {
-        return SetDouble(current_section, std::move(itemName), itemVal);
-    }
-
-    /**
-    *  @brief Add a long value with given values.
-    */
-    int SetLong(const std::string &section, std::string itemName, long itemVal)
-    {
-        return Set(section, std::move(itemName), std::to_string(itemVal));
-    }
-
-    /**
-    *  @brief Add a long value with given values.
-    */
-    int SetLong(std::string itemName, long itemVal)
-    {
-        return SetLong(current_section, std::move(itemName), itemVal);
+        return SetNumber<T>(current_section, std::move(itemName), itemVal);
     }
 
     /**

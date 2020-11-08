@@ -569,9 +569,9 @@ void saveResult(std::vector<nodeInfo> &nodes)
         ini.Set("AvgSpeed", x.avgSpeed);
         ini.Set("MaxSpeed", x.maxSpeed);
         ini.Set("ULSpeed", x.ulSpeed);
-        ini.SetLong("UsedTraffic", x.totalRecvBytes);
-        ini.SetLong("GroupID", x.groupID);
-        ini.SetLong("ID", x.id);
+        ini.SetNumber<unsigned long long>("UsedTraffic", x.totalRecvBytes);
+        ini.SetNumber<int>("GroupID", x.groupID);
+        ini.SetNumber<int>("ID", x.id);
         ini.SetBool("Online", x.online);
         ini.SetArray("RawPing", ",", x.rawPing);
         ini.SetArray("RawSitePing", ",", x.rawSitePing);

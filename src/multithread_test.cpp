@@ -30,7 +30,7 @@ const int times_to_ping = 10, fail_limit = 2;
 //for use of multi-thread socket test
 typedef std::lock_guard<std::mutex> guarded_mutex;
 std::mutex opened_socket_mutex;
-std::atomic_int received_bytes = 0;
+std::atomic_ullong received_bytes = 0;
 std::atomic_int launched = 0, still_running = 0;
 std::atomic_bool EXIT_FLAG = false;
 
@@ -361,7 +361,7 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
 
     writeLog(LOG_TYPE_FILEDL, "All threads launched. Start accumulating data.");
     auto start = steady_clock::now();
-    int transferred_bytes = 0, last_bytes = 0, this_bytes = 0, cur_recv_bytes = 0, max_speed = 0;
+    unsigned long long transferred_bytes = 0, last_bytes = 0, this_bytes = 0, cur_recv_bytes = 0, max_speed = 0;
     for(i = 1; i < 21; i++)
     {
         sleep(500); //accumulate data
@@ -421,6 +421,7 @@ int perform_test(nodeInfo &node, std::string localaddr, int localport, std::stri
         pthread_kill(threads[i], SIGUSR1);
 #endif
         */
+        pthread_cancel(threads[i]);
         pthread_join(threads[i], NULL);
         writeLog(LOG_TYPE_FILEDL, "Thread #" + std::to_string(i + 1) + " has exited.");
     }
@@ -466,7 +467,7 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
 
     writeLog(LOG_TYPE_FILEUL, "Worker threads launched. Start accumulating data.");
     auto start = steady_clock::now();
-    int transferred_bytes = 0, this_bytes = 0, cur_sent_bytes = 0;
+    unsigned long long transferred_bytes = 0, this_bytes = 0, cur_sent_bytes = 0;
     for(i = 1; i < 11; i++)
     {
         sleep(1000); //accumulate data
@@ -516,7 +517,9 @@ int upload_test(nodeInfo &node, std::string localaddr, int localport, std::strin
         pthread_kill(workers[i], SIGUSR1);
 #endif // _WIN32
         */
+        pthread_cancel(workers[i]);
         pthread_join(workers[i], NULL);
+        writeLog(LOG_TYPE_FILEUL, "Thread #" + std::to_string(i + 1) + " has exited.");
     }
     writeLog(LOG_TYPE_FILEUL, "Upload test completed.");
     return 0;

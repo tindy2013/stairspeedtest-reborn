@@ -18,8 +18,8 @@ struct nodeInfo
     std::string server;
     int port = 0;
     std::string proxyStr;
-    long long rawSpeed[20] = {};
-    long long totalRecvBytes = 0;
+    unsigned long long rawSpeed[20] = {};
+    unsigned long long totalRecvBytes = 0;
     int duration = 0;
     std::string avgSpeed = "N/A";
     std::string maxSpeed = "N/A";

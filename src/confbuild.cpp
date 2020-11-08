@@ -48,16 +48,16 @@ int explodeLog(const std::string &log, std::vector<nodeInfo> &nodes)
         node.remarks = vArray[1];
         node.avgPing = ini.Get("AvgPing");
         node.avgSpeed = ini.Get("AvgSpeed");
-        node.groupID = ini.GetInt("GroupID");
-        node.id = ini.GetInt("ID");
+        node.groupID = ini.GetNumber<int>("GroupID");
+        node.id = ini.GetNumber<int>("ID");
         node.maxSpeed = ini.Get("MaxSpeed");
         node.online = ini.GetBool("Online");
         node.pkLoss = ini.Get("PkLoss");
-        ini.GetIntArray("RawPing", ",", node.rawPing);
-        ini.GetIntArray("RawSitePing", ",", node.rawSitePing);
-        ini.GetIntArray("RawSpeed", ",", node.rawSpeed);
+        ini.GetNumberArray<int>("RawPing", ",", node.rawPing);
+        ini.GetNumberArray<int>("RawSitePing", ",", node.rawSitePing);
+        ini.GetNumberArray<unsigned long long>("RawSpeed", ",", node.rawSpeed);
         node.sitePing = ini.Get("SitePing");
-        node.totalRecvBytes = ini.GetInt("UsedTraffic");
+        node.totalRecvBytes = ini.GetNumber<unsigned long long>("UsedTraffic");
         node.ulSpeed = ini.Get("ULSpeed");
         nodes.push_back(node);
     }
@@ -160,7 +160,10 @@ std::string ssrConstruct(const std::string &group, const std::string &remarks, c
         config = config_libev;
     config = replace_first(config, "?group?", group);
     config = replace_first(config, "?remarks?", remarks);
-    config = replace_first(config, "?remarks_base64?", remarks_base64);
+    if(remarks_base64.empty())
+        config = replace_first(config, "?remarks_base64?", base64_encode(remarks));
+    else
+        config = replace_first(config, "?remarks_base64?", remarks_base64);
     config = replace_first(config, "?server?", isIPv6(server) ? "[" + server + "]" : server);
     config = replace_first(config, "?port?", port);
     config = replace_first(config, "?protocol?", protocol);
