@@ -28,6 +28,9 @@ cd ..
 
 git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
+# fix codes
+sed -i "s/^const/extern const/g" src/tls.h
+sed -i "s/^const/extern const/g" src/http.h
 ./autogen.sh
 ./configure --disable-documentation
 make -j4

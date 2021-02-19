@@ -56,7 +56,7 @@ curl -LO https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-maco
 unzip v2ray*.zip v2ray v2ctl
 mv v2ray v2ctl base/tools/clients/
 
-curl -LO https://github.com/trojan-gfw/trojan/releases/download/v1.15.1/trojan-1.15.1-macos.zip
+curl -LO https://github.com/trojan-gfw/trojan/releases/download/v1.16.0/trojan-1.16.0-macos.zip
 unzip trojan*.zip trojan/trojan
 mv trojan/trojan base/tools/clients/
 
