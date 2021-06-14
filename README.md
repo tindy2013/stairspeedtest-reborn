@@ -1,6 +1,6 @@
 # Stair Speedtest Reborn
 **Proxy performance batch tester based on Shadowsocks(R), V2Ray and Trojan**  
-[![Build Status](https://travis-ci.org/tindy2013/stairspeedtest-reborn.svg?branch=master)](https://travis-ci.org/tindy2013/stairspeedtest-reborn)
+[![Build Status](https://github.com/tindy2013/stairspeedtest-reborn/actions/workflows/build.yml/badge.svg)](https://github.com/tindy2013/stairspeedtest-reborn/actions/workflows/build.yml)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/tindy2013/stairspeedtest-reborn.svg)](https://github.com/tindy2013/stairspeedtest-reborn/tags)
 [![GitHub release](https://img.shields.io/github/release/tindy2013/stairspeedtest-reborn.svg)](https://github.com/tindy2013/stairspeedtest-reborn/releases)
 [![GitHub license](https://img.shields.io/github/license/tindy2013/stairspeedtest-reborn.svg)](https://github.com/tindy2013/stairspeedtest-reborn/blob/master/LICENSE)
