@@ -14,6 +14,7 @@
 #include "printout.h"
 #include "renderer.h"
 #include "speedtestutil.h"
+#include "version.h"
 
 std::atomic<bool> start_flag = false;
 std::atomic<time_t> done_time = 0;
@@ -275,16 +276,20 @@ std::string ssrspeed_generate_color()
 void ssrspeed_webserver_routine(const std::string &listen_address, int listen_port)
 {
     listener_args args = {listen_address, listen_port, 10, 4};
+    extern bool gServeFile;
+    extern std::string gServeFileRoot;
+    gServeFile = true;
+    gServeFileRoot = "webui/";
 
     append_response("GET", "/status", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return start_flag ? "running" : "stopped";
     });
 
-    append_response("GET", "/", "REDIRECT", [](RESPONSE_CALLBACK_ARGS) -> std::string
+    /*append_response("GET", "/", "REDIRECT", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
         return "http://web1.ospf.in/";
-    });
+    });*/
 
     append_response("GET", "/favicon.ico", "x-icon", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
@@ -293,7 +298,7 @@ void ssrspeed_webserver_routine(const std::string &listen_address, int listen_po
 
     append_response("GET", "/getversion", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
     {
-        return "{\"main\":\"2.7.4\",\"webapi\":\"0.6.1\"}";
+        return "{\"main\":\"" VERSION "\",\"webapi\":\"0.6.1\"}";
     });
 
     append_response("GET", "/getcolors", "text/plain", [](RESPONSE_CALLBACK_ARGS) -> std::string
