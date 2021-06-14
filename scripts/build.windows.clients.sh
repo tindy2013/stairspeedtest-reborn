@@ -100,8 +100,8 @@ if [[ "$MSYSTEM" = "MINGW32" ]];then
     curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-windows-386-v1.3.1.tar.gz
 fi
 
-curl -LO https://github.com/shadowsocks/shadowsocks-windows/releases/download/4.1.10.0/Shadowsocks-4.1.10.0.zip
-unzip Shadowsocks-4.1.10.0.zip Shadowsocks.exe
+curl -LO https://github.com/shadowsocks/shadowsocks-windows/releases/download/4.4.0.0/Shadowsocks-4.4.0.185.zip
+unzip Shadowsocks-4.4.0.185.zip Shadowsocks.exe
 mv Shadowsocks.exe built/shadowsocks-win.exe
 
 curl -LO https://github.com/shadowsocksrr/shadowsocksr-csharp/releases/download/4.9.2/ShadowsocksR-win-4.9.2.zip
