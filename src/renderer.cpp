@@ -433,7 +433,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         total_width += nattype_width;
 
     //generating information
-    std::string gentime = "Generated at " + getTime(3) + "by zzzzzrの专版 ";
+    std::string gentime = "Generated at " + getTime(3) + " by zzzzzrの专版 ";
     std::string traffic = "Traffic used : " + speedCalc((double)total_traffic) + ". ";
     std::string about = "By Stair Speedtest Reborn " VERSION ".";
     std::string title = "  Stair Speedtest Reborn Result Table ( " VERSION " )  ";
