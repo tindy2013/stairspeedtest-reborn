@@ -37,6 +37,7 @@ using namespace std::chrono;
 //use for command argument
 bool rpcmode = false;
 std::string sub_url;
+bool pause_on_done = true;
 
 //for use globally
 bool multilink = false;
@@ -419,6 +420,7 @@ void readConf(std::string path)
 #endif // _WIN32
     ini.GetIfExist("override_conf_port", override_conf_port);
     ini.GetIntIfExist("thread_count", def_thread_count);
+    ini.GetBoolIfExist("pause_on_done", pause_on_done);
 
     ini.EnterSection("export");
     ini.GetBoolIfExist("export_with_maxspeed", export_with_maxspeed);
@@ -1167,7 +1169,7 @@ int main(int argc, char* argv[])
     sleep(1);
     //std::cin.clear();
     //std::cin.ignore();
-    if(!rpcmode && sub_url.size())
+    if(!rpcmode && sub_url.size() && pause_on_done)
         _getch();
 #ifdef _WIN32
     //stop socket library before exit
