@@ -7,17 +7,21 @@ set -xe
 brew reinstall make cmake automake autoconf libtool
 brew reinstall libev libsodium c-ares mbedtls@2 pcre
 
+if [ -z "$HOMEBREW_PREFIX" ]; then
+  export HOMEBREW_PREFIX=/usr/local
+fi
+
 git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1
 cd shadowsocks-libev
 git submodule update --init
 ./autogen.sh > /dev/null
-CC=cc ./configure --disable-documentation --with-mbedtls=/opt/homebrew/opt/mbedtls@2 --with-sodium=/opt/homebrew/opt/libsodium --with-cares=/opt/homebrew/opt/c-ares --with-ev=/opt/homebrew/opt/libev > /dev/null
+CC=cc ./configure --disable-documentation --with-mbedtls="$HOMEBREW_PREFIX/opt/mbedtls@2" --with-sodium="$HOMEBREW_PREFIX/opt/libsodium" --with-cares="$HOMEBREW_PREFIX/opt/c-ares" --with-ev="$HOMEBREW_PREFIX/opt/libev" > /dev/null
 make -j8 > /dev/null
 cd src
-cp /opt/homebrew/opt/pcre/lib/libpcre.a .
-cp /opt/homebrew/opt/mbedtls@2/lib/libmbed*.a .
-cp /opt/homebrew/opt/libev/lib/libev.a .
-cp /opt/homebrew/opt/libsodium/lib/libsodium.a .
+cp "$HOMEBREW_PREFIX/opt/pcre/lib/libpcre.a" .
+cp "$HOMEBREW_PREFIX/opt/mbedtls@2/lib/libmbed*.a" .
+cp "$HOMEBREW_PREFIX/opt/libev/lib/libev.a" .
+cp "$HOMEBREW_PREFIX/opt/libsodium/lib/libsodium.a" .
 cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-libev.a *.a -o ss-local
 mv ss-local ../../base/tools/clients
 cd ../..
@@ -26,10 +30,10 @@ git clone https://github.com/shadowsocks/simple-obfs --depth=1
 cd simple-obfs
 git submodule update --init
 ./autogen.sh > /dev/null
-CC=cc ./configure --disable-documentation --with-ev=/opt/homebrew/opt/libev > /dev/null
+CC=cc ./configure --disable-documentation --with-ev="$HOMEBREW_PREFIX/opt/libev" > /dev/null
 make -j8 > /dev/null
 cd src
-cp /opt/homebrew/opt/libev/lib/libev.a .
+cp "$HOMEBREW_PREFIX/opt/libev/lib/libev.a" .
 cc -Xlinker -unexported_symbol -Xlinker "*" obfs_local*.o ../libcork/.libs/libcork.a *.a -o simple-obfs
 mv simple-obfs ../../base/tools/clients
 cd ../..
@@ -37,16 +41,16 @@ cd ../..
 git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
 ./autogen.sh > /dev/null
-export LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
-CC=cc ./configure --disable-documentation --with-openssl=/opt/homebrew/opt/openssl@1.1 > /dev/null
+export LDFLAGS="-L$HOMEBREW_PREFIX/opt/openssl@1.1/lib"
+export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/openssl@1.1/include"
+CC=cc ./configure --disable-documentation --with-openssl="$HOMEBREW_PREFIX/opt/openssl@1.1" > /dev/null
 make -j8 > /dev/null
 cd src
-cp /opt/homebrew/opt/pcre/lib/libpcre.a ..
-cp /opt/homebrew/opt/openssl@1.1/lib/libssl.a ..
-cp /opt/homebrew/opt/openssl@1.1/lib/libcrypto.a ..
-cp /opt/homebrew/opt/libsodium/lib/libsodium.a ..
-cp /opt/homebrew/opt/libev/lib/libev.a ..
+cp "$HOMEBREW_PREFIX/opt/pcre/lib/libpcre.a" ..
+cp "$HOMEBREW_PREFIX/opt/openssl@1.1/lib/libssl.a" ..
+cp "$HOMEBREW_PREFIX/opt/openssl@1.1/lib/libcrypto.a" ..
+cp "$HOMEBREW_PREFIX/opt/libsodium/lib/libsodium.a" ..
+cp "$HOMEBREW_PREFIX/opt/libev/lib/libev.a" ..
 cc -Xlinker -unexported_symbol -Xlinker "*" ss_local*.o .libs/libshadowsocks-libev.a ../libudns/.libs/libudns.a ../*.a -o ssr-local
 mv ssr-local ../../base/tools/clients
 cd ../..
