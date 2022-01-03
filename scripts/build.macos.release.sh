@@ -5,6 +5,10 @@ set -xe
 brew reinstall make cmake automake autoconf libtool
 brew reinstall libpng freetype rapidjson pcre2 libevent zlib bzip2 pkgconfig
 
+if [ -z "$HOMEBREW_PREFIX" ]; then
+  export HOMEBREW_PREFIX=/usr/local
+fi
+
 #git clone https://github.com/curl/curl --depth=1
 #cd curl
 #./buildconf > /dev/null
