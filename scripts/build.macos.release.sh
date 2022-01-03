@@ -35,7 +35,6 @@ cp $HOMEBREW_PREFIX/opt/openssl@1.1/lib/libssl.a .
 cp $HOMEBREW_PREFIX/opt/openssl@1.1/lib/libcrypto.a .
 cp $HOMEBREW_PREFIX/opt/pcre2/lib/libpcre2-8.a .
 cp $HOMEBREW_PREFIX/opt/bzip2/lib/libbz2.a .
-cp $HOMEBREW_PREFIX/opt/libpngwriter/lib/libPNGwriter.a .
 cp $HOMEBREW_PREFIX/opt/libpng/lib/libpng.a .
 cp $HOMEBREW_PREFIX/opt/freetype/lib/libfreetype.a .
 cp yaml-cpp/libyaml-cpp.a .
