@@ -19,7 +19,7 @@ cd ..
 cmake .
 make -j4
 rm stairspeedtest
-g++ -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o  -static -lpcre2-8 -levent -lyaml-cpp -lPNGwriter -lpng -lfreetype -lcurl -lnghttp2 -lssl -lcrypto -lz -lbz2 -lbrotlidec-static -lbrotlicommon-static -ldl -lpthread -O3 -s  
+g++ -o base/stairspeedtest CMakeFiles/stairspeedtest.dir/src/*.o  -static -lpcre2-8 -levent -lyaml-cpp -lPNGwriter -lpng -lfreetype -lcurl -lnghttp2 -lssl -lcrypto -lz -lbz2 -lbrotlidec -lbrotlicommon -ldl -lpthread -O3 -s  
 
 if [ "$TRAVIS_BRANCH" = "$TRAVIS_TAG" ];then
 	bash scripts/build.alpine.clients.sh
