@@ -29,19 +29,19 @@ cmake -DCMAKE_FIND_FRAMEWORK=NEVER -DCMAKE_INSTALL_PREFIX="$HOMEBREW_PREFIX" . >
 make install -j8 > /dev/null
 cd ..
 
-cp "$HOMEBREW_PREFIX/opt/libevent/lib/libevent.a" .
-cp "$HOMEBREW_PREFIX/opt/zlib/lib/libz.a" .
-cp "$HOMEBREW_PREFIX/opt/openssl@1.1/lib/libssl.a" .
-cp "$HOMEBREW_PREFIX/opt/openssl@1.1/lib/libcrypto.a" .
-cp "$HOMEBREW_PREFIX/opt/pcre2/lib/libpcre2-8.a" .
-cp "$HOMEBREW_PREFIX/opt/bzip2/lib/libbz2.a" .
-cp "$HOMEBREW_PREFIX/opt/libpng/lib/libpng.a" .
-cp "$HOMEBREW_PREFIX/opt/freetype/lib/libfreetype.a" .
+cp "$HOMEBREW_PREFIX"/opt/libevent/lib/libevent.a .
+cp "$HOMEBREW_PREFIX"/opt/zlib/lib/libz.a .
+cp "$HOMEBREW_PREFIX"/opt/openssl@1.1/lib/libssl.a .
+cp "$HOMEBREW_PREFIX"/opt/openssl@1.1/lib/libcrypto.a .
+cp "$HOMEBREW_PREFIX"/opt/pcre2/lib/libpcre2-8.a .
+cp "$HOMEBREW_PREFIX"/opt/bzip2/lib/libbz2.a .
+cp "$HOMEBREW_PREFIX"/opt/libpng/lib/libpng.a .
+cp "$HOMEBREW_PREFIX"/opt/freetype/lib/libfreetype.a .
 cp yaml-cpp/libyaml-cpp.a .
 cp pngwriter/libPNGwriter.a .
 
 #export CMAKE_CXX_FLAGS="-I$HOMEBREW_PREFIX/opt/openssl@1.1/include -I$HOMEBREW_PREFIX/opt/curl/include"
-cmake -DOPENSSL_ROOT_DIR="$HOMEBREW_PREFIX/opt/openssl@1.1" -DOPENSSL_USE_STATIC_LIBS=TRUE -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 .
+cmake -DOPENSSL_ROOT_DIR="$HOMEBREW_PREFIX"/opt/openssl@1.1 -DOPENSSL_USE_STATIC_LIBS=TRUE -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 .
 make -j8
 rm stairspeedtest
 c++ -Xlinker -unexported_symbol -Xlinker "*" -o base/stairspeedtest -framework CoreFoundation -framework Security $(find CMakeFiles/stairspeedtest.dir/src/ -name "*.o") ./*.a -lcurl -ldl -lpthread -O3
