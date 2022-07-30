@@ -99,17 +99,17 @@ cd ..
 
 if [[ "$MSYSTEM" = "MINGW64" ]];then
     curl -LO https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-windows-64.zip
-    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-windows_amd64.zip
+    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-windows_amd64.zip
     curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-windows-amd64-v1.3.1.tar.gz
 fi
 if [[ "$MSYSTEM" = "MINGW32" ]];then
     curl -LO https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-windows-32.zip
-    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-windows_386.zip
+    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-windows_386.zip
     curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-windows-386-v1.3.1.tar.gz
 fi
 
-curl -LO https://github.com/shadowsocks/shadowsocks-windows/releases/download/4.4.0.0/Shadowsocks-4.4.0.185.zip
-unzip Shadowsocks-4.4.0.185.zip Shadowsocks.exe
+curl -LO https://github.com/shadowsocks/shadowsocks-windows/releases/download/4.4.1.0/Shadowsocks-4.4.1.0.zip
+unzip Shadowsocks-4.4.1.0.zip Shadowsocks.exe
 mv Shadowsocks.exe built/shadowsocks-win.exe
 
 curl -LO https://github.com/shadowsocksrr/shadowsocksr-csharp/releases/download/4.9.2/ShadowsocksR-win-4.9.2.zip
