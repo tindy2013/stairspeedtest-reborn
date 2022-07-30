@@ -4,6 +4,13 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
+if [ ! -d mbedtls/ ]; then git clone https://github.com/Mbed-TLS/mbedtls --branch mbedtls-2.28 --depth=1; fi
+cd mbedtls
+git pull --ff-only
+cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF -DMBEDTLS_FATAL_WARNINGS=OFF -DUSE_STATIC_MBEDTLS_LIBRARY=ON -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
+make install -j4
+cd ..
+
 if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
   curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
   tar xvf mingw.tar.gz
@@ -31,8 +38,9 @@ mv simple-obfs.exe ../built/
 cd ..
 
 if [ ! -d shadowsocks-libev/ ]; then
-  git clone https://github.com/shadowsocks/shadowsocks-libev --depth=1
+  git clone https://github.com/shadowsocks/shadowsocks-libev
   cd shadowsocks-libev
+  git reset --hard c2fc967
   git submodule update --init
   ./autogen.sh
   ./configure --disable-documentation --with-ev="$LIBEV_PATH"
