@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Add commit id into version
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - name: Build
       run: |
         docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:x86-latest-stable /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
@@ -19,12 +22,24 @@ jobs:
       with:
         name: stairspeedtest_reborn_linux32
         path: stairspeedtest/
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: tar czf stairspeedtest_reborn_linux32.tar.gz stairspeedtest
+    - name: Draft Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: stairspeedtest_reborn_linux32.tar.gz
+        draft: true
 
   linux64_build:
     name: Linux x86_64 Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Add commit id into version
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - name: Build
       run: |
         docker run -v $GITHUB_WORKSPACE:/root/workdir -e TRAVIS_BRANCH=action -e TRAVIS_TAG=action multiarch/alpine:amd64-latest-stable /bin/sh -c "apk add bash git && cd /root/workdir && bash scripts/build.alpine.release.sh"
@@ -33,12 +48,24 @@ jobs:
       with:
         name: stairspeedtest_reborn_linux64
         path: stairspeedtest/
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: tar czf stairspeedtest_reborn_linux64.tar.gz stairspeedtest
+    - name: Draft Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: stairspeedtest_reborn_linux64.tar.gz
+        draft: true
 
   macos_build:
     name: macOS Build
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Add commit id into version
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - name: Build
       run: |
         bash scripts/build.macos.release.sh
@@ -49,6 +76,15 @@ jobs:
       with:
         name: stairspeedtest_reborn_darwin64
         path: stairspeedtest/
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: tar czf stairspeedtest_reborn_darwin64.tar.gz stairspeedtest
+    - name: Draft Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: stairspeedtest_reborn_darwin64.tar.gz
+        draft: true
         
   windows64_build:
     name: Windows x86_64 Build
@@ -58,6 +94,9 @@ jobs:
         shell: msys2 {0}
     steps:
     - uses: actions/checkout@v2
+    - name: Add commit id into version
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - uses: msys2/setup-msys2@v2
       with:
         update: true
@@ -95,6 +134,16 @@ jobs:
       with:
         name: stairspeedtest_reborn_win64
         path: stairspeedtest/
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: tar czf stairspeedtest_reborn_win64.tar.gz stairspeedtest
+    - name: Draft Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: stairspeedtest_reborn_win64.tar.gz
+        draft: true
+
   windows32_build:
     name: Windows x86 Build
     runs-on: windows-latest
@@ -103,6 +152,9 @@ jobs:
         shell: msys2 {0}
     steps:
     - uses: actions/checkout@v2
+    - name: Add commit id into version
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - uses: msys2/setup-msys2@v2
       with:
         update: true
@@ -141,3 +193,12 @@ jobs:
       with:
         name: stairspeedtest_reborn_win32
         path: stairspeedtest/
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: tar czf stairspeedtest_reborn_win32.tar.gz stairspeedtest
+    - name: Draft Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: stairspeedtest_reborn_win32.tar.gz
+        draft: true

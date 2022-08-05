@@ -63,8 +63,8 @@ curl -LO https://github.com/trojan-gfw/trojan/releases/download/v1.16.0/trojan-1
 unzip trojan*.zip trojan/trojan
 mv trojan/trojan base/tools/clients/
 
-curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-darwin_amd64.zip
-unzip websocketd-0.3.0-darwin_amd64.zip websocketd
+curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-darwin_amd64.zip
+unzip websocketd-0.4.1-darwin_amd64.zip websocketd
 mv websocketd base/tools/gui/
 
 curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-darwin-amd64-v1.3.1.tar.gz
