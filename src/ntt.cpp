@@ -18,7 +18,7 @@ unsigned char CHANGE_REQUEST_IPPORT[] = {0x0, 0x3, 0x0, 0x4, 0x0, 0x0, 0x0, 0x6}
 unsigned char CHANGE_REQUEST_PORT[] = {0x0, 0x3, 0x0, 0x4, 0x0, 0x0, 0x0, 0x2};
 unsigned char SOURCE_ADDRESS[] = {0x0, 0x4};
 unsigned char CHANGED_ADDRESS[] = {0x0, 0x5};
-unsigned char XOR_MAPPED_ADDRESS[] = {0x80, 0x20};
+unsigned char XOR_MAPPED_ADDRESS[] = {0x0, 0x20};
 
 enum NAT_TYPE
 {
@@ -187,17 +187,17 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
             fail_count++;
             continue;
         }
-        msg_type.assign(buf, buf + 2);
-        recv_trans_id.assign(buf + 4, buf + 20);
-        attrs.assign(buf + 20, buf + len);
-        if(memcmp(msg_type.data(), BIND_RESPONSE_MSG, 2) != 0)
+        msg_type.assign(buf, 2);
+        recv_trans_id.assign(buf + 4, 16);
+        attrs.assign(buf + 20, len - 20);
+        if(memcmp(msg_type.c_str(), BIND_RESPONSE_MSG, 2) != 0)
         {
             //cerr<<"return false response"<<endl;
             writeLog(LOG_TYPE_STUN, "STUN returned false response. Returned: " + std::to_string((int)msg_type[0]) + " " + std::to_string((int)msg_type[1]));
             fail_count++;
             continue;
         }
-        if(memcmp(recv_trans_id.data(), trans_id_str.data(), 16) != 0)
+        if(memcmp(recv_trans_id.c_str(), trans_id_str.c_str(), 16) != 0)
         {
             //cerr<<"return false trans_id"<<endl;
             writeLog(LOG_TYPE_STUN, "STUN returned false trans_id. Probably the response from the last test. Try again...");
@@ -220,7 +220,7 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
         pos += attr_length + 4;
         if(attr_length % 4)
             attr_length += 4 - (attr_length % 4);
-        if(memcmp(attr_type.data(), MAPPED_ADDRESS, 2) == 0)
+        if(memcmp(attr_type.c_str(), MAPPED_ADDRESS, 2) == 0)
         {
             std::string ip;
             uint16_t port;
@@ -229,7 +229,7 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
             response.ext_port = port;
             response.failed = false;
         }
-        else if(memcmp(attr_type.data(), SOURCE_ADDRESS, 2) == 0)
+        else if(memcmp(attr_type.c_str(), SOURCE_ADDRESS, 2) == 0)
         {
             std::string ip;
             uint16_t port;
@@ -238,7 +238,7 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
             response.src_port = port;
             response.failed = false;
         }
-        else if(memcmp(attr_type.data(), CHANGED_ADDRESS, 2) == 0)
+        else if(memcmp(attr_type.c_str(), CHANGED_ADDRESS, 2) == 0)
         {
             std::string ip;
             uint16_t port;
@@ -247,7 +247,7 @@ STUN_RESPONSE get_stun_response_thru_socks5(SOCKET udp_s, const std::string &ser
             response.change_port = port;
             response.failed = false;
         }
-        else if(memcmp(attr_type.data(), XOR_MAPPED_ADDRESS, 2) == 0)
+        else if(memcmp(attr_type.c_str(), XOR_MAPPED_ADDRESS, 2) == 0)
         {
             std::string ip;
             uint16_t port;
