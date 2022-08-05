@@ -49,6 +49,7 @@ else
   # reset fix to avoid fast-forward conflict
   git checkout -- src/utils.h
   git pull --ff-only
+  git reset --hard c2fc967
   git submodule update
   # skip configure to save some time
 fi
