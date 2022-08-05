@@ -341,26 +341,31 @@ void ssrspeed_webserver_routine(const std::string &listen_address, int listen_po
         time_t cur_time = time(NULL);
         if(cur_time - done_time < 5)
             return "done";
-        start_flag = true;
-        rapidjson::Document json;
-        json.Parse(request.postdata.data());
-        std::string test_mode = GetMember(json, "testMode"), sort_method = GetMember(json, "sortMethod"), group = GetMember(json, "group"), exp_color = GetMember(json, "colors");
+        std::thread t([=]()
+        {
+            start_flag = true;
+            rapidjson::Document json;
+            json.Parse(request.postdata.data());
+            std::string test_mode = GetMember(json, "testMode"), sort_method = GetMember(json, "sortMethod"), group = GetMember(json, "group"), exp_color = GetMember(json, "colors");
 
-        if(test_mode == "ALL")
-            speedtest_mode = "all";
-        else if(test_mode == "TCP_PING")
-            speedtest_mode = "pingonly";
-        std::transform(sort_method.begin(), sort_method.end(), sort_method.begin(), ::tolower);
-        export_sort_method = replace_all_distinct(sort_method, "reverse_", "r");
-        custom_group = group;
-        if(exp_color.size())
-            export_color_style = exp_color;
+            if(test_mode == "ALL")
+                speedtest_mode = "all";
+            else if(test_mode == "TCP_PING")
+                speedtest_mode = "pingonly";
+            std::transform(sort_method.begin(), sort_method.end(), sort_method.begin(), ::tolower);
+            export_sort_method = replace_all_distinct(sort_method, "reverse_", "r");
+            custom_group = group;
+            if(exp_color.size())
+                export_color_style = exp_color;
 
-        ssrspeed_regenerate_node_list(json);
-        batchTest(targetNodes);
-        done_time = time(NULL);
-        start_flag = false;
-        return "done";
+            ssrspeed_regenerate_node_list(json);
+            batchTest(targetNodes);
+            done_time = time(NULL);
+            start_flag = false;
+        });
+        t.detach();
+        response.status_code = 202;
+        return "running";
     });
 
     append_response("GET", "/getresults", "text/plain;charset=utf-8", [](RESPONSE_CALLBACK_ARGS) -> std::string

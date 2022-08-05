@@ -88,7 +88,7 @@ int explodeLog(const std::string &log, std::vector<nodeInfo> &nodes);
 int tcping(nodeInfo &node);
 void getTestFile(nodeInfo &node, const std::string &proxy, const std::vector<downloadLink> &downloadFiles, const std::vector<linkMatchRule> &matchRules, const std::string &defaultTestFile);
 void ssrspeed_webserver_routine(const std::string &listen_address, int listen_port);
-std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &username = "", const std::string &password = "", const std::string &stun_server = "stun.ekiga.net", uint16_t stun_port = 3478);
+std::string get_nat_type_thru_socks5(const std::string &server, uint16_t port, const std::string &username = "", const std::string &password = "", const std::string &stun_server = "stun.l.google.com", uint16_t stun_port = 19302);
 
 //original codes
 
@@ -647,9 +647,10 @@ int singleTest(nodeInfo &node)
     defer(killByHandle();)
     proxy = buildSocks5ProxyString(testserver, testport, username, password);
 
+    //printMsg(SPEEDTEST_MESSAGE_GOTSERVER, node, rpcmode);
     if(!rpcmode)
         printMsg(SPEEDTEST_MESSAGE_GOTSERVER, rpcmode, id, node.group, node.remarks, std::to_string(node_count));
-    sleep(1000); /// wait for client startup
+    sleep(200); /// wait for client startup
     writeLog(LOG_TYPE_INFO, "Now started fetching GeoIP info...");
     printMsg(SPEEDTEST_MESSAGE_STARTGEOIP, rpcmode, id);
     node.inboundGeoIP.set(std::async(std::launch::async, [node](){ return getGeoIPInfo(node.server, ""); }));
