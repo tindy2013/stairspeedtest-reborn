@@ -205,15 +205,11 @@
 					}
 				},
 				beforeUpload(file) {
-					const isType = file.type === 'application/json' || file.type === 'application/octet-stream'
 					const fsize = file.size / 1024 / 1024 <= 2;
-					if (!isType) {
-						this.$message.error('选择的文件格式有误!');
-					}
 					if (!fsize) {
 						this.$message.error('上传的文件不能超过2MB!');
 					}
-					return isType && fsize;
+					return fsize;
 				},
 				checkUploadStatus(type) {
 					if(!this.upload)

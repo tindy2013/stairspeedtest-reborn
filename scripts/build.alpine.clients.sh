@@ -48,11 +48,11 @@ cd ..
 
 if [[ "$ARCH" = "x86_64" ]];then
     curl -LO https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-linux-64.zip
-    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_amd64.zip
+    curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-linux_amd64.zip
     curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-linux-amd64-v1.3.1.tar.gz
     else if [[ "$ARCH" = "x86" ]];then
         curl -LO https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-linux-32.zip
-        curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.3.1/websocketd-0.3.1-linux_386.zip
+        curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-linux_386.zip
         curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-linux-386-v1.3.1.tar.gz
     else
         if [[ "$ARCH" = "aarch64" ]];then
