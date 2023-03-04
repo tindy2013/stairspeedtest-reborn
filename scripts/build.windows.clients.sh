@@ -1,4 +1,11 @@
 #!/bin/bash
+curl -LO https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz
+tar xvf pcre2-10.42.tar.gz
+cd pcre2-10.42
+./configure
+make install
+
+
 mkdir "$USERPROFILE/clients"
 mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
