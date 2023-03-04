@@ -1,7 +1,7 @@
 #!/bin/bash
-curl -LO https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz
-tar xvf pcre2-10.42.tar.gz
-cd pcre2-10.42
+curl -LO https://onboardcloud.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz
+tar xvf pcre-8.45.tar.gz
+cd pcre-8.45
 ./configure
 make install
 
