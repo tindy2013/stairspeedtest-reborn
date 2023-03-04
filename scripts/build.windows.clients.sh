@@ -3,7 +3,7 @@ mkdir "$USERPROFILE/clients"
 mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
-
+./scripts/feeds install libpcre
 if [ ! -d mbedtls/ ]; then git clone https://github.com/Mbed-TLS/mbedtls --branch mbedtls-2.28 --depth=1; fi
 cd mbedtls
 git pull --ff-only
